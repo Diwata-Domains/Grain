@@ -1,0 +1,30 @@
+import click
+from pathlib import Path
+
+from forge.services.init_service import init_repo
+from forge.cli.output import CommandResult, print_result
+
+
+@click.command("init")
+@click.option("--force", is_flag=True, default=False, help="Overwrite existing non-canonical files.")
+@click.option("--dry-run", is_flag=True, default=False, help="Report intended actions without writing anything.")
+@click.pass_context
+def init_cmd(ctx, force, dry_run):
+    """Initialize repository structure and baseline toolkit artifacts."""
+    repo = ctx.obj.get("repo") if ctx.obj else None
+    fmt = ctx.obj.get("fmt", "text") if ctx.obj else "text"
+    root = Path(repo).resolve() if repo else Path.cwd()
+
+    svc_result = init_repo(root=root, force=force, dry_run=dry_run)
+
+    result = CommandResult(
+        ok=True,
+        command="init",
+        repo=str(root),
+        files_created=svc_result.created,
+        files_skipped=svc_result.skipped,
+        files_blocked=svc_result.blocked,
+        warnings=["dry-run: no files written"] if dry_run else [],
+    )
+
+    print_result(result, fmt=fmt)

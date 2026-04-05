@@ -1,0 +1,533 @@
+# Data Contracts
+
+## 1. Purpose
+
+This document defines the filesystem-level data contracts for `Forge`.
+
+It governs:
+- required document identifiers and structural metadata
+- manifest structure
+- task packet structure
+- task packet metadata expectations
+- lifecycle status value contracts
+- context bundle contract
+- stable naming conventions for v1
+
+It controls decisions about:
+- what files and fields are required
+- how packet and doc metadata are represented
+- what values are valid for packet status
+- how structured repository artifacts are named and organized
+- what minimum schemas validators must enforce
+
+It does not cover:
+- product scope
+- architecture component boundaries
+- CLI command behavior
+- detailed workflow semantics beyond the data that workflow depends on
+- provider-specific external integration payloads
+
+Those belong in product scope, architecture, workflow specification, and CLI specification.
+
+---
+
+## 2. Contract Design Principles
+
+1. **Filesystem-readable**
+   - all primary artifacts should be understandable in plain files
+
+2. **Minimal but explicit**
+   - required structure should be sufficient for validation without overloading v1 with metadata
+
+3. **Stable identifiers**
+   - doc IDs, packet IDs, and status values should remain predictable
+
+4. **Separation by artifact type**
+   - canonical docs, working docs, runtime docs, and task packets must not collapse into one schema
+
+5. **Validator-friendly**
+   - contracts should be easy to check deterministically
+
+---
+
+## 3. Repository Artifact Classes
+
+The repository contains four artifact classes relevant to this document:
+
+1. **documentation artifacts**
+2. **task packet artifacts**
+3. **template artifacts**
+4. **export artifacts**
+
+This document defines required contracts for the first two and minimal expectations for export artifacts.
+
+---
+
+## 4. Canonical Document Contract
+
+Canonical docs are stable markdown documents in:
+
+```text
+docs/canonical/
+```
+
+#### Required v1 canonical docs
+
+- `product_scope.md`
+- `architecture.md`
+- `workflow_spec.md`
+- `cli_spec.md`
+- `data_contracts.md`
+
+#### Contract rules
+
+- filenames are stable
+- files must be markdown
+- files are considered canonical by path, not by frontmatter
+- canonical docs are individually addressable by manifest ID
+
+#### Required doc-level metadata source
+
+Doc metadata should be stored in the manifest, not duplicated in document frontmatter in v1.
+
+---
+
+## 5. Manifest Contract
+
+The manifest is the machine-readable registry of documentation and packet conventions.
+
+#### Required path
+
+```text
+docs/runtime/docs_manifest.yaml
+```
+
+#### Required top-level sections
+
+- `version:`
+- `project:`
+- `canonical:`
+- `working:`
+- `runtime:`
+- `tasks:`
+- `rules:`
+
+Each top-level section is required in v1.
+
+---
+
+## 6. Manifest Schema
+
+### 6.1 Root Schema
+
+```yaml
+version: <integer>
+
+project:
+  name: <string>
+  type: <string>
+  mode: <string>
+  storage: <string>
+  authority_model: <string>
+
+canonical: <list>
+working: <list>
+runtime: <list>
+
+tasks:
+  root: <string>
+  packet_files: <list>
+  patch_dir: <string>
+  status_values: <list>
+  id_format: <string>
+
+rules:
+  authority_order: <list>
+  canonical_change_policy: <mapping>
+  context_policy: <mapping>
+  execution_policy: <mapping>
+  completion_policy: <mapping>
+```
+
+### 6.2 Document Entry Schema
+
+Each entry in `canonical`, `working`, or `runtime` must have:
+
+```yaml
+- id: <string>
+  path: <string>
+  purpose: <string>
+  authority: <string>
+  editable_by_agents: <boolean>
+  read_when: <list[string]>
+```
+
+#### Field rules
+
+**`id`**
+- unique within the manifest
+- lowercase snake_case recommended
+
+**`path`**
+- repository-relative path
+- must point to a file or directory expected by the layer
+
+**`purpose`**
+- one concise sentence
+
+**`authority`**
+
+Allowed descriptive values in v1:
+- `highest`
+- `high`
+- `highest_runtime`
+- `high_runtime`
+- `secondary`
+- `informational`
+- `advisory`
+
+The validator may treat these as descriptive labels and rely on `rules.authority_order` for final precedence.
+
+**`editable_by_agents`**
+- boolean only
+
+**`read_when`**
+- list of scenario strings
+- at least one required
+
+### 6.3 Tasks Section Schema
+
+```yaml
+tasks:
+  root: tasks/
+  packet_files:
+    - name: <string>
+      filename: <string>
+      required: <boolean>
+  patch_dir: patches/
+  status_values:
+    - draft
+    - ready
+    - in_progress
+    - blocked
+    - review
+    - done
+  id_format: "P<N>-T<NN>-TASK-####"
+```
+
+#### Required rules
+
+- `root` must be a repository-relative directory path
+- `packet_files` must define packet file expectations
+- `patch_dir` must be relative to a packet directory
+- `status_values` must include the workflow-approved set
+- `id_format` must define packet ID style
+
+### 6.4 Rules Section Schema
+
+**`authority_order`**
+- ordered list of path patterns or doc groups from highest to lowest authority
+
+**`canonical_change_policy`**
+
+Required fields:
+- `direct_agent_edits_allowed`
+- `require_human_approval`
+- `proposal_location`
+
+**`context_policy`**
+
+Required fields:
+- `load_minimum_required_docs`
+- `prefer_task_packet_context`
+- `avoid_full_repo_context`
+
+**`execution_policy`**
+
+Required fields:
+- `use_task_packets`
+- `one_task_one_packet`
+- `patch_over_rewrite`
+- `preserve_doc_separation`
+
+**`completion_policy`**
+
+Required fields:
+- `require_defined_deliverable`
+- `require_results_recorded`
+- `require_rule_check`
+
+---
+
+## 7. Task Packet Contract
+
+Task packets live under:
+
+```text
+tasks/P<N>-T<NN>-TASK-####/
+```
+
+Each packet directory represents one coherent unit of work.
+
+#### Packet directory naming rule
+
+- must match `P<N>-T<NN>-TASK-####`
+- `P<N>` is the phase number (e.g. `P1`, `P2`)
+- `T<NN>` is the task number within the phase (e.g. `T01`, `T09`)
+- `TASK-####` is the zero-padded four-digit unique packet ID
+- The `TASK-####` segment remains the authoritative packet ID for cross-references
+
+Examples:
+- `P1-T01-TASK-0001`
+- `P2-T07-TASK-0016`
+
+Note: Phase 1 packets (`TASK-0001` through `TASK-0009`) predate this convention
+and retain their original names.
+
+---
+
+## 8. Required Packet File Contract
+
+Each packet must define the following files:
+
+- `task.md`
+- `context.md`
+- `plan.md`
+- `deliverable_spec.md`
+
+Optional at creation time but required before closure when applicable:
+
+- `results.md`
+- `handoff.md`
+
+Optional directory:
+
+- `patches/`
+
+---
+
+## 9. Packet Metadata Contract
+
+The toolkit may store packet metadata in one or both of the following ways in v1:
+
+- infer from directory + file presence
+- store minimal structured metadata within `task.md`
+
+Preferred v1 rule:
+
+- keep packet metadata minimal
+- do not require a separate packet JSON/YAML file unless later phases justify it
+
+#### Recommended minimum metadata fields in `task.md`
+
+```markdown
+# Task: <title>
+
+## Metadata
+- ID: TASK-0001
+- Status: draft
+- Phase: phase-1
+- Dependencies: none
+```
+
+Validators should tolerate absent optional metadata fields, but must enforce:
+
+- packet ID
+- packet status
+
+---
+
+## 10. Packet Status Contract
+
+Allowed v1 status values:
+
+- `draft`
+- `ready`
+- `in_progress`
+- `blocked`
+- `review`
+- `done`
+
+These values must be treated as exact strings.
+
+#### Status normalization rule
+
+- lowercase only
+- underscore-separated where applicable
+
+#### Invalid examples
+
+- `in progress`
+- `Done`
+- `READY`
+
+---
+
+## 11. Packet State Transition Contract
+
+The workflow specification defines the semantics of state transitions. This contract defines the machine-checkable allowed transitions for v1:
+
+```text
+draft       -> ready
+ready       -> in_progress
+in_progress -> blocked
+in_progress -> review
+blocked     -> draft
+blocked     -> ready
+review      -> in_progress
+review      -> done
+```
+
+A validator should treat all other transitions as invalid unless future config explicitly extends them.
+
+---
+
+## 12. Context Bundle Contract
+
+A context bundle is the structured output produced when assembling packet execution context.
+
+A context bundle may be represented as:
+
+- one markdown export
+- one directory of copied/referenced materials
+- structured JSON metadata plus markdown body
+
+v1 minimum requirement:
+
+- context assembly must identify exactly which sources were selected
+
+#### Required logical sections
+
+- packet reference
+- selected packet files
+- selected canonical docs
+- selected working docs, if any
+- selection metadata or rationale summary
+
+#### Minimum metadata fields
+
+- `task_id`
+- `generated_at` or equivalent timestamp
+- `sources`
+
+---
+
+## 13. File Naming Contracts
+
+### 13.1 Markdown documents
+
+```text
+.md
+```
+
+### 13.2 Manifest/config documents
+
+```text
+.yaml
+```
+
+### 13.3 Packet IDs and Directory Names
+
+Packet ID (used in `task.md` metadata and cross-references):
+
+```text
+TASK-####
+```
+
+Packet directory name (folder under `tasks/`):
+
+```text
+P<N>-T<NN>-TASK-####
+```
+
+### 13.4 Directory paths
+
+Use repository-relative paths in manifests and generated metadata.
+
+---
+
+## 14. Template Contract
+
+Templates are source artifacts used to generate repository files.
+
+Minimum expected template areas:
+
+- `templates/docs/`
+- `templates/tasks/`
+- `templates/prompts/` (if prompt templating is included in v1)
+
+#### Contract rule
+
+- templates must not be treated as live project state
+- validators should distinguish template presence from generated artifact presence
+
+---
+
+## 15. Validation Minimums
+
+A contract validator in v1 must be able to check:
+
+- required canonical docs exist
+- manifest exists and has required top-level sections
+- manifest entries contain required fields
+- packet directories match required naming format
+- required packet files exist
+- packet status values are valid
+- packet status transitions are valid when change is attempted
+- contract-required paths reference existing artifacts where applicable
+
+---
+
+## 16. Forward-Compatibility Rules
+
+To keep v1 practical while allowing evolution:
+
+- new optional fields may be added without breaking old valid artifacts
+- required fields must not be renamed casually
+- packet ID pattern should remain stable once adopted
+- validators should distinguish:
+  - missing required field
+  - unknown optional field
+  - invalid field value
+
+#### Versioning rule
+
+`docs_manifest.yaml` must contain an integer `version`. Future migrations should use this field rather than inferring by file shape.
+
+---
+
+## 17. Deferred Contract Complexity
+
+The following are deferred:
+
+- JSON schema generation
+- deep typed frontmatter standards
+- rich packet metadata registry files
+- database-backed artifact indexing
+- content hashing requirements
+- advanced inheritance between templates and generated docs
+
+v1 should prefer simple deterministic checks over heavy schema systems.
+
+---
+
+## 18. Decision Boundaries
+
+### 18.1 Decisions This Document Controls
+
+- required artifact names and structures
+- manifest schema expectations
+- packet directory and file requirements
+- allowed status value strings
+- machine-checkable transition contract
+- minimum validator targets
+
+### 18.2 Decisions This Document Does Not Control
+
+- why the product exists
+- component/module boundaries
+- CLI command behavior
+- workflow-stage rationale
+- provider-specific export formats
+
+Those must conform to these data contracts but are governed elsewhere.

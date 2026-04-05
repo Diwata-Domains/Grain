@@ -1,0 +1,58 @@
+version: 1
+
+project:
+  name: Forge-test
+  type: cli_toolkit
+  mode: single_user
+  storage: filesystem
+  authority_model: explicit_hierarchy
+
+canonical:
+  - id: architecture
+    path: docs/canonical/architecture.md
+    purpose: Defines system structure
+    authority: super_high  # invalid — triggers authority validation error
+    editable_by_agents: false
+    read_when:
+      - designing_features
+
+working: []
+
+runtime:
+  - id: project_rules
+    path: docs/runtime/PROJECT_RULES.md
+    purpose: Global rules
+    authority: highest_runtime
+    editable_by_agents: false
+    read_when:
+      - always
+
+tasks:
+  root: tasks/
+  packet_files: []
+  patch_dir: patches/
+  status_values:
+    - draft
+    - done
+  id_format: "TASK-####"
+
+rules:
+  authority_order:
+    - docs/runtime/PROJECT_RULES.md
+  canonical_change_policy:
+    direct_agent_edits_allowed: false
+    require_human_approval: true
+    proposal_location: docs/working/change_proposals.md
+  context_policy:
+    load_minimum_required_docs: true
+    prefer_task_packet_context: true
+    avoid_full_repo_context: true
+  execution_policy:
+    use_task_packets: true
+    one_task_one_packet: true
+    patch_over_rewrite: true
+    preserve_doc_separation: true
+  completion_policy:
+    require_defined_deliverable: true
+    require_results_recorded: true
+    require_rule_check: true
