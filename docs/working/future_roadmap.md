@@ -149,29 +149,65 @@ Future work should expand its capabilities **without destabilizing the core buil
 * **Suggested Target:** v2
 * **Why it matters:**
 
-  * introduces automated validation and bug detection
-  * closes the loop between building and verification
+  * Sentinel is the companion verification system to Forge — where Forge asks "how do we build it?", Sentinel asks "does it work?"
+  * introduces automated validation, bug detection, and reproducibility into the build loop
+  * closes the loop between building and verification by feeding structured issues back into Forge as work inputs
+  * Sentinel is a **paid product** — primary monetization vehicle for the Forge+Sentinel system
 * **Scope:**
 
-  * issue reporting SDK
-  * test orchestration engine
-  * adversarial bug hunter
-  * artifact capture (logs, repro steps, screenshots)
-  * ticket + fix pipeline
-  * human approval workflow
+  * automated testing and validation orchestration
+  * bug and issue ingestion pipeline
+  * reproducible artifact generation
+  * screenshot and artifact capture (logs, repro steps, visual state)
+  * sandbox/container execution for isolated verification
+  * structured issue output fed back into Forge as `candidate_task` proposal objects
+  * human approval workflow for issue → work conversion
+  * observability and workflow intelligence layer
 * **Why not now:**
 
   * Forge must be stable enough to build Sentinel with it
+  * onboarding flow (FR-012) must exist for Sentinel to be bootstrapped cleanly
 * **Dependencies:**
 
   * stable Forge workflow (Phase 5 complete)
   * task packet system
   * adapter groundwork (FR-001)
-  * FR-012 — New Project Onboarding Flow (Sentinel is a new project and must be bootstrapped through it)
+  * FR-012 — New Project Onboarding Flow (Sentinel is a new project bootstrapped through this flow)
 * **Notes:**
 
-  * Sentinel will feed issues back into Forge as structured work
-  * building Sentinel with Forge is the intended v1 real-world validation — if the onboarding flow works cleanly for Sentinel, it proves the system works on a fresh project
+  * Sentinel feeds verified issues back into Forge as structured proposal objects — not raw bug reports
+  * building Sentinel with Forge is the intended v1 real-world validation
+  * Sentinel monetization is based on verification, reproducibility, and observability — not on limiting Forge core
+
+---
+
+### FR-005b — Forge Pro (Intelligence and Advanced Project Management Layer)
+
+* **Status:** candidate
+* **Suggested Target:** v3
+* **Why it matters:**
+
+  * Forge Core is open and generous by design — Pro capabilities should derive value from intelligence and coordination, not from limiting the core
+  * advisory intelligence, multi-project visibility, and advanced project management are natural paid extensions
+* **Scope:**
+
+  * advisory intelligence layer — candidate task generation, roadmap suggestions, efficiency analysis, determinism/ambiguity insights
+  * multi-project coordination and cross-project backlog visibility
+  * advanced workflow metrics and observability dashboards
+  * team-level workflow features
+* **Why not now:**
+
+  * Forge Core and Sentinel take priority
+  * advisory intelligence requires stable telemetry layer first
+* **Dependencies:**
+
+  * stable Forge Core (Phase 5 complete)
+  * FR-005 Sentinel (observability patterns established)
+  * Telemetry/Observability Layer (FR-011)
+* **Notes:**
+
+  * Forge Core must remain fully functional without Pro
+  * Pro should never gate basic execution, packet management, or core adapter functionality
 
 ---
 

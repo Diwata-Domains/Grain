@@ -34,7 +34,39 @@ Those belong in product scope and workflow specification.
 
 `Forge` is a local CLI application that reads and writes structured repository files in order to orchestrate AI-assisted development workflows.
 
-The architecture should be organized around the following top-level concerns:
+### 2.1 Layered Subsystem Model
+
+The architecture is organized into four distinct layers. These layers have explicit authority relationships — lower layers may not be mutated by higher layers without passing through the Review/Gate Layer.
+
+```
+┌─────────────────────────────────────┐
+│     Advisory / Intelligence Layer   │  suggests, proposes, drafts
+├─────────────────────────────────────┤
+│        Review / Gate Layer          │  validates proposals before commit
+├─────────────────────────────────────┤
+│     Telemetry / Observability Layer │  observes, measures, records
+├─────────────────────────────────────┤
+│          Runtime Core               │  executes, enforces contracts, manages state
+└─────────────────────────────────────┘
+```
+
+**Runtime Core** — task execution, packet lifecycle, contract enforcement, state transitions. This is the authoritative layer. It does not accept unvalidated advisory input.
+
+**Advisory / Intelligence Layer** — suggests next tasks, phases, roadmap items; identifies missing work; provides efficiency and determinism insights. Outputs are proposals only — they do not directly mutate state.
+
+**Telemetry / Observability Layer** — token usage, prompt counts, retries, latency, workflow efficiency, determinism signals, rework/drift/acceptance metrics.
+
+**Review / Gate Layer** — validates advisory proposals; rejects malformed or inconsistent proposals; ensures contract compliance before any proposal is committed to system state.
+
+### 2.2 Foundational Authority Rule
+
+> **Intelligence may generate proposals. Only validated proposals may affect system state.**
+
+This is a foundational architectural constraint. It applies to all advisory outputs, agent-generated content, and intelligence layer suggestions. No advisory output bypasses the Review/Gate Layer.
+
+### 2.3 Component Concerns
+
+The architecture is further organized around these internal concerns:
 
 1. **CLI surface**
 2. **application services**
@@ -72,6 +104,16 @@ The architecture must keep orchestration logic separate from external execution 
 
 7. **Patchable architecture**
    - components should allow extension without forcing rewrite of core flows
+
+8. **Intelligence proposes, validation commits**
+   - advisory and intelligence outputs are proposals, not direct state mutations
+   - the Review/Gate Layer must validate all proposals before they affect the Runtime Core
+   - this applies to agent-generated content, roadmap suggestions, candidate tasks, and all advisory outputs
+
+9. **Constrained autonomy**
+   - Forge supports advisory intelligence with an explicit autonomy model: observe → suggest → draft → constrained commit
+   - constrained commit means advisory outputs may only affect system state under explicit, documented rules
+   - no advisory layer component has unconditional write authority over canonical state
 
 ---
 
@@ -264,6 +306,78 @@ Provide initial file templates for canonical docs, working docs, runtime docs, a
 
 ---
 
+### 4.10 Advisory / Intelligence Layer
+
+#### Responsibility
+Generate proposals, suggestions, and advisory outputs that help the operator plan, prioritize, and improve workflow quality. This layer observes system state and produces structured proposal objects — it does not execute or commit.
+
+#### Advisory outputs
+- `candidate_task` — proposed task not yet accepted into the backlog
+- `candidate_phase` — proposed phase not yet committed to the plan
+- `candidate_roadmap_item` — proposed roadmap entry not yet accepted
+- `recommendation` — general advisory suggestion (efficiency, sequencing, gaps)
+- efficiency insights — token usage patterns, rework signals, drift warnings
+- determinism/ambiguity analysis — identifies underspecified areas before execution
+
+#### Must do
+- output structured proposal objects
+- clearly mark all outputs as advisory/draft
+- pass outputs to the Review/Gate Layer before any state change
+
+#### Must not do
+- directly mutate canonical docs, task packets, or system state
+- bypass the Review/Gate Layer
+- autonomously commit proposals without human validation
+
+---
+
+### 4.11 Telemetry / Observability Layer
+
+#### Responsibility
+Record, aggregate, and surface workflow quality signals. Provides the data inputs for both human review and the Advisory Layer.
+
+#### Metrics tracked
+- token usage (input, output, total per task and phase)
+- prompt run counts and conversation restarts
+- retry and rework counts
+- task latency and phase duration
+- workflow efficiency metrics
+- determinism signals (variance in outputs for similar tasks)
+- drift incidents and acceptance rates
+
+#### Must do
+- record metrics non-intrusively alongside normal workflow execution
+- expose metrics in structured, inspectable form
+- support both exact counts (when runtimes expose them) and proxy metrics
+
+#### Must not do
+- block or alter execution flow
+- require external telemetry services in v1
+
+---
+
+### 4.12 Review / Gate Layer
+
+#### Responsibility
+Validate advisory proposals before they may affect system state. Acts as the enforcement boundary between the Advisory Layer and the Runtime Core.
+
+#### Gate responsibilities
+- validate that proposal objects are well-formed and consistent
+- reject proposals that violate canonical constraints, contract rules, or workflow authority
+- ensure canonical change proposals follow the approved change flow
+- record gate decisions (accepted, rejected, deferred)
+
+#### Must do
+- evaluate all advisory proposals against canonical and runtime rules
+- provide clear rejection reasons
+- support human override as the final approval authority
+
+#### Must not do
+- auto-commit proposals without explicit human approval for canonical-impacting changes
+- block execution of non-advisory runtime operations
+
+---
+
 ## 5. Repository Structure
 
 The architecture should assume a repository layout similar to:
@@ -412,6 +526,18 @@ Deferred to a later phase:
 
 These deferred fields were part of the original aspirational schema but are not present in `agent_profiles.md` or the v1 implementation. They may be added when the routing domain is extended.
 
+### 7.5 Proposal Object
+
+Represents an advisory output before it has been validated and committed. Proposal objects are first-class artifacts — they are inspectable, rejectable, and deferrable.
+
+Minimum fields:
+- `type` — one of: `recommendation`, `candidate_task`, `candidate_phase`, `candidate_roadmap_item`
+- `source` — which layer or agent produced the proposal
+- `status` — one of: `draft`, `under_review`, `accepted`, `rejected`, `deferred`
+- `summary` — human-readable description of the proposal
+- `affected_artifacts` — what canonical docs, packets, or backlog items would be changed if accepted
+- `validation_notes` — gate layer findings
+
 ---
 
 ## 8. Architectural Flows
@@ -457,6 +583,27 @@ These deferred fields were part of the original aspirational schema but are not 
 3. proposal is attached to packet or working-doc proposal area
 4. human reviews and approves separately
 
+### 8.6 Advisory Proposal Flow
+
+The general flow for all advisory outputs follows a strict propose → validate → commit model:
+
+1. Advisory/Intelligence Layer generates a proposal object (`candidate_task`, `recommendation`, etc.)
+2. Proposal is passed to the Review/Gate Layer
+3. Gate Layer validates against canonical rules and contracts
+4. If valid: proposal is surfaced to the human operator for acceptance
+5. If accepted: proposal is committed to the appropriate artifact (backlog, roadmap, canonical doc)
+6. If rejected or deferred: proposal is recorded with reason; no state change occurs
+
+At no point does an advisory output directly mutate system state. The operator is the final commit authority for canonical-impacting proposals.
+
+### 8.7 Telemetry Collection Flow
+
+1. workflow events are emitted during task execution, review, and close
+2. Telemetry Layer records event data non-intrusively
+3. metrics are aggregated at task and phase boundaries
+4. aggregated signals are available to the Advisory Layer and human operator
+5. efficiency insights may become `recommendation` proposals through the advisory flow
+
 ---
 
 ## 9. Architectural Constraints
@@ -480,6 +627,20 @@ Core services must not depend on one model vendor or one external coding tool.
 ### 9.5 No Broad Repository Ingestion by Default
 
 Architecture must preserve targeted context assembly.
+
+### 9.6 No Unvalidated Advisory Mutation
+
+Advisory and intelligence layer outputs must not directly alter canonical docs, task packets, backlog, or system state. All advisory outputs must pass through the Review/Gate Layer and receive explicit human approval before committing to canonical-impacting artifacts.
+
+### 9.7 Constrained Autonomy Boundary
+
+The permitted autonomy model for advisory components is:
+1. **Observe** — read system state without modifying it
+2. **Suggest** — generate proposal objects marked as draft
+3. **Draft** — produce candidate artifacts for human review
+4. **Constrained commit** — update non-canonical artifacts (working docs, task results) only under explicit documented rules
+
+Advisory components must not operate outside this boundary.
 
 ---
 

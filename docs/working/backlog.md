@@ -323,7 +323,7 @@ Default status for new backlog items in this file: `draft`
 - **Ready:** completed
 
 ### P4-T09 — Implement model selection logic
-- **Status:** draft
+- **Status:** done
 - **Description:** Given a workflow stage or task role, return the appropriate model class. Logic mirrors `agent_profiles.md` escalation rules without hardcoding vendor names.
 - **Files:** `src/forge/domain/routing.py`, `src/forge/services/model_service.py` (new)
 - **Model:** frontier_model
@@ -331,7 +331,7 @@ Default status for new backlog items in this file: `draft`
 - **Ready:** after P4-T08
 
 ### P4-T10 — Implement `forge model show`
-- **Status:** draft
+- **Status:** done
 - **Description:** Display configured model classes and their capabilities. Text lists each class and use cases. JSON serializes profiles.
 - **Files:** `src/forge/cli/model.py`
 - **Model:** open_model
@@ -347,7 +347,7 @@ Default status for new backlog items in this file: `draft`
 - **Ready:** after P4-T09
 
 ### P4-T12 — Implement `forge model escalate`
-- **Status:** draft
+- **Status:** done
 - **Description:** Given current model class and reason, return the escalation target class. Covers open_model → frontier_model and * → reviewer_model escalation paths.
 - **Files:** `src/forge/cli/model.py`, `src/forge/services/model_service.py`
 - **Model:** open_model
@@ -355,7 +355,7 @@ Default status for new backlog items in this file: `draft`
 - **Ready:** after P4-T09
 
 ### P4-T13 — Add context and routing tests
-- **Status:** draft
+- **Status:** done
 - **Description:** End-to-end tests: context source selection, bundle completeness, export output, model class resolution, escalation path coverage.
 - **Files:** `tests/test_context_build.py`, `tests/test_context_export.py`, `tests/test_model_routing.py`
 - **Model:** open_model
@@ -367,39 +367,39 @@ Default status for new backlog items in this file: `draft`
 ## 6. Phase 5 — Review, Handoff, and Hardening
 
 ### P5-T01 — Implement review validation service
-- **Status:** draft
+- **Status:** done
 - **Description:** Validate packet completion readiness and review preconditions.
 
 ### P5-T02 — Implement `forge review check`
-- **Status:** draft
+- **Status:** done
 - **Description:** Run review-oriented checks against a packet.
 
 ### P5-T03 — Implement handoff artifact support
-- **Status:** draft
+- **Status:** done
 - **Description:** Create or validate handoff summary output for completed or review-ready packets.
 
 ### P5-T04 — Implement `forge review handoff`
-- **Status:** draft
+- **Status:** done
 - **Description:** Expose handoff generation or validation through CLI.
 
 ### P5-T05 — Implement `forge review summary`
-- **Status:** draft
+- **Status:** done
 - **Description:** Produce a structured summary of packet state, validation findings, and next actions.
 
 ### P5-T06 — Expand integration tests across core flows
-- **Status:** draft
+- **Status:** done
 - **Description:** Add end-to-end tests covering init, docs validation, task creation, context export, and review flows.
 
 ### P5-T07 — Add golden fixtures for manifests and packets
-- **Status:** draft
+- **Status:** done
 - **Description:** Create stable test fixtures for core repository and packet artifacts.
 
 ### P5-T08 — Improve CLI help and ergonomics
-- **Status:** draft
+- **Status:** done
 - **Description:** Refine help text, common defaults, and output clarity for daily usage.
 
 ### P5-T09 — Clean up error messages and failure reporting
-- **Status:** draft
+- **Status:** done
 - **Description:** Improve user-facing failure messages while preserving precise failure modes.
 
 ---

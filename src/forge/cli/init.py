@@ -6,8 +6,8 @@ from forge.cli.output import CommandResult, print_result
 
 
 @click.command("init")
-@click.option("--force", is_flag=True, default=False, help="Overwrite existing non-canonical files.")
-@click.option("--dry-run", is_flag=True, default=False, help="Report intended actions without writing anything.")
+@click.option("--force", is_flag=True, default=False, show_default=True, help="Overwrite existing non-canonical files.")
+@click.option("--dry-run", is_flag=True, default=False, show_default=True, help="Report intended actions without writing anything.")
 @click.pass_context
 def init_cmd(ctx, force, dry_run):
     """Initialize repository structure and baseline toolkit artifacts."""

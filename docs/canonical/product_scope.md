@@ -32,16 +32,35 @@ Those belong in architecture and workflow specifications.
 
 ## 2. Product Definition
 
-`Forge` is a CLI-first workflow orchestration toolkit for AI-assisted software development.
+### 2.1 Forge
 
-Its role is to structure software development work so that humans and external coding agents can operate through:
+`Forge` is a CLI-first workflow orchestration system for AI-assisted software development.
+
+Forge is the **build and execution system**. Its role is to structure software development work so that humans and external coding agents can operate through:
 - explicit documentation layers
 - scoped task packets
 - minimal context loading
 - model-agnostic execution paths
 - reviewable, human-controlled canonical change flow
 
-The toolkit is not a coding agent. It does not replace external coding tools. It prepares, structures, and governs work so external tools can execute tasks with clearer boundaries and less unnecessary context.
+Forge is not a coding agent. It does not replace external coding tools. It prepares, structures, and governs work so external tools can execute tasks with clearer boundaries and less unnecessary context.
+
+Forge evolves toward an **assistant-guided system** while preserving precision and reliability. Intelligence and advisory behavior are supported but are explicitly separated from execution authority and contract enforcement. Forge should not be characterized as a purely dumb executor — advisory capability is part of its design — but all advisory outputs are proposals until validated, never direct mutations.
+
+### 2.2 Sentinel
+
+`Sentinel` is the companion **verification and reproducibility system** to Forge.
+
+Where Forge asks **"how do we build it?"**, Sentinel asks **"does it work?"**
+
+Sentinel operates as a separate system that feeds structured verification results back into Forge as work inputs. It is a paid product built on top of a stable Forge foundation.
+
+### 2.3 Product System
+
+Together, Forge and Sentinel form a complete AI-assisted development system:
+
+- **Forge** — build, execution, workflow orchestration
+- **Sentinel** — verification, reproducibility, issue detection and ingestion
 
 ---
 
@@ -92,6 +111,8 @@ There is no UI requirement for v1. All primary workflows must succeed through CL
 ### 4.6 Not a Fully Autonomous Builder
 The toolkit should not decide broad product direction independently or perform uncontrolled multi-step implementation loops without explicit task structure.
 
+Advisory intelligence is supported — Forge may suggest tasks, phases, roadmap items, and efficiency improvements. However, advisory outputs are proposals, not authoritative decisions. Only validated proposals may affect system state. Forge must never autonomously mutate canonical state, task structure, or system contracts without explicit human approval.
+
 ---
 
 ## 5. Target User
@@ -119,6 +140,9 @@ The toolkit should not assume:
 - advanced prompt engineering knowledge
 - custom database administration
 
+### 5.3 Agent CLI Assumption
+Users of Forge are expected to have access to an agent CLI (e.g. Claude Code or equivalent). The primary workflow surface is agent-driven prompts, not raw CLI commands alone. The CLI handles mechanical operations; the agent handles reasoning, planning, and content generation. Documentation, prompts, and onboarding flows should be designed with this assumption.
+
 ---
 
 ## 6. Core Product Objects
@@ -144,6 +168,17 @@ Abstract execution roles:
 - `reviewer_model`
 
 These are workflow roles, not vendor bindings.
+
+### 6.6 Proposal Objects
+First-class objects representing advisory outputs before they are validated and committed. Proposal objects are distinct from committed work and may not directly alter canonical state.
+
+Types:
+- `recommendation` — general advisory suggestion
+- `candidate_task` — a proposed task not yet accepted into the backlog
+- `candidate_phase` — a proposed phase not yet committed to the plan
+- `candidate_roadmap_item` — a proposed roadmap entry not yet accepted
+
+Proposal objects become governed artifacts only after human review and validation. They must not bypass the canonical change flow.
 
 ---
 
@@ -262,9 +297,53 @@ v1 should favor explicit files and simple flows over abstract orchestration mach
 7. **Human-in-the-loop canonical control**
    - execution can move fast; canonical truth changes more slowly and deliberately
 
+8. **Intelligence proposes, validation commits**
+   - advisory outputs from agents or intelligence layers are proposals, not authoritative decisions
+   - only validated proposals may affect system state
+   - this is a foundational constraint, not a style preference
+
+9. **Open-core posture**
+   - Forge core functionality should be genuinely useful without artificial limitation
+   - paid capabilities derive value from verification, reproducibility, intelligence, and multi-project coordination — not from withholding basic execution capability
+
 ---
 
-## 11. Success Criteria
+## 11. Product Ladder
+
+Forge and Sentinel follow an open-core model.
+
+### 11.1 Forge Core — Open
+The core Forge system is open and generous. It includes:
+- full workflow orchestration (build loop, task packets, lifecycle management)
+- context assembly and export
+- model routing
+- documentation registry and validation
+- core adapters: `frontend_adapter`, `backend_adapter`, `docs_adapter`, `spreadsheet_adapter`
+- prompt library and templates
+
+Forge Core should be fully usable for individual developers and small teams without payment.
+
+### 11.2 Forge Pro — Future Paid Layer
+A possible future paid layer covering advanced capabilities:
+- intelligence and advisory features (candidate task generation, roadmap suggestions, efficiency analysis)
+- multi-project coordination and visibility
+- advanced project management features
+
+This is secondary to Sentinel monetization and may not exist in v1 or v2. Basic Forge Core must remain useful and complete without it.
+
+### 11.3 Sentinel — Paid Product
+Sentinel is a paid verification and reproducibility system. Monetization is based on:
+- automated testing and validation
+- reproducible artifact generation
+- bug detection and issue ingestion
+- observability and workflow intelligence
+- structured issue feedback into Forge as work inputs
+
+Sentinel derives value from what it adds, not from limiting Forge.
+
+---
+
+## 12. Success Criteria
 
 The product is successful in v1 if it can reliably do the following:
 
@@ -279,7 +358,7 @@ The product is successful in v1 if it can reliably do the following:
 
 ---
 
-## 12. Scope Boundaries for Downstream Decisions
+## 13. Scope Boundaries for Downstream Decisions
 
 ### 12.1 Decisions This Document Controls
 - whether a feature belongs in v1

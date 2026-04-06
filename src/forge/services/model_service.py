@@ -5,7 +5,7 @@ from pathlib import Path
 from forge.adapters.model_config import load_model_profiles
 from forge.cli.output import CommandResult
 from forge.domain.errors import ForgeError
-from forge.domain.routing import ModelSelection, select_model_class
+from forge.domain.routing import ModelSelection, get_escalation_target, select_model_class
 
 
 def select_model_for_stage_or_role(
@@ -39,4 +39,44 @@ def select_model_for_stage_or_role(
             status=decision.selected_class,
         ),
         decision,
+    )
+
+
+def escalate_model_for_class(
+    root: Path,
+    current_class: str,
+    reason: str | None = None,
+) -> tuple[CommandResult, str | None]:
+    """Return the escalation target class for the given model class."""
+    try:
+        config = load_model_profiles(root)
+    except ForgeError as exc:
+        return (
+            CommandResult(
+                ok=False,
+                command="model escalate",
+                errors=[exc.message],
+            ),
+            None,
+        )
+
+    target = get_escalation_target(config, current_class, reason)
+    if target is None:
+        return (
+            CommandResult(
+                ok=False,
+                command="model escalate",
+                errors=[f"no escalation path defined for class '{current_class}'"],
+            ),
+            None,
+        )
+
+    return (
+        CommandResult(
+            ok=True,
+            command="model escalate",
+            repo=str(root),
+            status=target,
+        ),
+        target,
     )

@@ -18,6 +18,7 @@ The project is a CLI-first toolkit for structuring AI-assisted software developm
 6. Do not make silent canonical changes.
 7. Preserve model-agnostic behavior.
 8. Optimize for clarity, speed, token efficiency, and local filesystem simplicity.
+9. **Intelligence may generate proposals. Only validated proposals may affect system state.** Advisory outputs, agent suggestions, and intelligence layer outputs are proposals until explicitly validated and committed. This rule has no exceptions.
 
 ---
 
@@ -131,6 +132,7 @@ Confirm:
 - deliverable is explicit
 - dependencies are known
 - canonical conflicts are absent or recorded
+- if the next backlog item is too broad, split it during planning before packet generation rather than during review or closeout
 
 ### During execution
 - Follow the packet plan
@@ -145,6 +147,7 @@ Confirm:
 - Prepare handoff if review or follow-up is required
 - Persist review and closeout intake into task artifacts before final closure
 - Record token-efficiency data in task artifacts when the runtime exposes it, and record proxy efficiency data when exact token counts are unavailable
+- Route task generation or backlog splitting back into the planning layer rather than doing it implicitly during review or closeout
 
 ---
 

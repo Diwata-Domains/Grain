@@ -131,32 +131,42 @@ This phase should make it possible to:
 
 ---
 
-## Phase 4 — Context Assembly and Model Routing ← ACTIVE
+## Phase 4 — Context Assembly and Model Routing ✓ CLOSED
 
 ### Objective
 Implement minimal-context preparation and model-class selection support.
 
 ### Major Deliverables
-- context selection service
-- packet context bundle builder
-- context show/export commands
-- model profile loader
-- model selection logic
-- model escalation command
+- context selection service ✓ (P4-T01–T03)
+- packet context bundle builder ✓ (P4-T04)
+- context build/show/export commands ✓ (P4-T05–T07)
+- model profile loader ✓ (P4-T08)
+- model selection logic ✓ (P4-T09)
+- `forge model show` / `select` / `escalate` ✓ (P4-T10–T12)
+- context and routing tests ✓ (P4-T13)
 
 ### Output Focus
 This phase should make it possible to:
-- assemble task-local execution context
-- export context for external tools
-- map work to `open_model`, `frontier_model`, or `reviewer_model`
+- assemble task-local execution context ✓
+- export context for external tools ✓
+- map work to `open_model`, `frontier_model`, or `reviewer_model` ✓
+
+### Notes
+- 349/349 tests passing at phase close (77 new tests added)
+- Rework count: 2 (T09 review cycle, T12 self-loop bug)
+- First-pass success: 11/13
+- CP-005 applied: placeholder command behavior now canonical
+- CP-008 applied: ModelProfile fields aligned with v1 implementation
+- Q11 resolved: no-tag context invocation defaults to `running_tasks`
+- Major architectural additions this phase: layered subsystem model, proposal objects, advisory/intelligence layer, product ladder, open-core model
 
 ### Dependencies
-- requires Phase 2 document registry
-- requires Phase 3 task packet system
+- requires Phase 2 document registry ✓
+- requires Phase 3 task packet system ✓
 
 ---
 
-## Phase 5 — Review, Handoff, and Hardening
+## Phase 5 — Review, Handoff, and Hardening ✓ CLOSED
 
 ### Objective
 Complete the operational workflow with review support, handoff artifacts, and baseline reliability improvements.
@@ -174,6 +184,10 @@ This phase should make it possible to:
 - review packet outputs consistently
 - support packet closure and handoff
 - run core v1 workflows with confidence
+
+### Notes
+- Phase 5 complete: 9/9 tasks done
+- Phase 5 closed the v1 core workflow and enables promotion of v2 planning into scoped implementation work
 
 ### Dependencies
 - requires Phases 1 through 4
@@ -236,7 +250,7 @@ Guardrails:
 
 ---
 
-## 7. Out-of-Sequence Work to Avoid
+## 8. Out-of-Sequence Work to Avoid
 
 Do not start these before their prerequisite phases are stable:
 - advanced provider-specific integrations before Phase 4
@@ -247,7 +261,7 @@ Do not start these before their prerequisite phases are stable:
 
 ---
 
-## 8. Phase Completion Standard
+## 9. Phase Completion Standard
 
 A phase is complete when:
 - its major deliverables exist
@@ -257,7 +271,33 @@ A phase is complete when:
 
 ---
 
-## 9. Phase Retrospective Rule
+## 10. Post-v1 Transition Planning
+
+Before Phase 5 closes, v2 planning may proceed in working docs only.
+
+Allowed:
+- defining v2 sequencing
+- planning adapter contracts
+- planning onboarding flows
+- identifying dependencies and open questions
+
+Not allowed until Phase 5 closes:
+- moving v2 work into active implementation
+- creating implementation task packets for adapters or onboarding
+- treating v2 planning docs as authority to bypass the active v1 phase
+
+After Phase 5 closes:
+- v2 items may be promoted into active implementation when they are concrete, scoped, and dependency-ready
+- promotion should begin with the smallest adapter-system slice, not with broad onboarding automation
+
+Primary planning docs:
+- `docs/working/v2_plan.md`
+- `docs/working/v2_adapters.md`
+- `docs/working/v2_onboarding.md`
+
+---
+
+## 11. Phase Retrospective Rule
 
 Use phase review and close to improve the system deliberately, not continuously at random.
 

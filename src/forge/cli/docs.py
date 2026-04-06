@@ -29,7 +29,13 @@ def docs_validate(ctx):
 
 
 @docs_group.command("index")
-@click.option("--dry-run", is_flag=True, default=False, help="Print intended output without writing.")
+@click.option(
+    "--dry-run",
+    is_flag=True,
+    default=False,
+    show_default=True,
+    help="Print intended output without writing files.",
+)
 @click.pass_context
 def docs_index(ctx, dry_run):
     """Generate or refresh docs/runtime/docs_index.md from the manifest."""

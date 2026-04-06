@@ -115,6 +115,8 @@ Confirm that the selected task:
 
 If the selected task cannot be safely executed, stop and return the reason.
 
+If the next backlog item is too broad for one packet, do not split it inside execution. Stop and route task planning through `prompts/task.plan.next.md` first.
+
 ---
 
 ## Step 4 — Generate the Task Packet
@@ -194,12 +196,11 @@ Include in `results.md`:
 * summary of work completed
 * files changed
 * tests run or validation performed
-* efficiency metrics:
-  * prompt runs
+* efficiency metrics for the Execute stage only — do not fill in Review or Close:
+  * prompt runs for this conversation
   * conversation restarts
   * files read estimated
-  * exact tokens if the runtime exposes them
-  * efficiency notes
+  * notes on where cost was high or low
 * blockers encountered
 * unresolved follow-up items
 

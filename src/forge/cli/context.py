@@ -192,6 +192,7 @@ def context_show(ctx, task_id, include_working, context_tags):
     "--output",
     "output_path",
     default=None,
+    metavar="PATH",
     help="Output markdown path (default: <packet-dir>/context_export.md).",
 )
 @click.option("--include-working", is_flag=True, default=False, help="Include selected working docs.")

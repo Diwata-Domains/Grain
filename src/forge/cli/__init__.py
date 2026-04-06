@@ -20,7 +20,14 @@ from forge.domain.errors import ForgeError
 @click.group()
 @click.version_option(_VERSION, "--version", "-V")
 @click.option("--repo", default=None, metavar="PATH", help="Path to repository root (auto-detected if omitted).")
-@click.option("--format", "fmt", default="text", type=click.Choice(["text", "json"]), help="Output format.")
+@click.option(
+    "--format",
+    "fmt",
+    default="text",
+    show_default=True,
+    type=click.Choice(["text", "json"]),
+    help="Output format for command results.",
+)
 @click.pass_context
 def main(ctx, repo, fmt):
     """Forge — CLI workflow orchestrator for AI-assisted development."""

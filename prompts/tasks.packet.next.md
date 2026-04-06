@@ -78,7 +78,7 @@ Before generating the packet, confirm:
 
 If the selected task appears too broad, narrow it to the smallest valid unit that still matches the backlog.
 
-If narrowing would create a new task not represented in the backlog, stop and report that the backlog item should be split by a human or in working docs first.
+If narrowing would create a new task not represented in the backlog, stop and report that the backlog item should be split in working docs first via `prompts/task.plan.next.md`.
 
 ---
 

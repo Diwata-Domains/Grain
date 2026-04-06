@@ -54,9 +54,25 @@ Check:
 * missing documentation updates
 * missing follow-up notes
 * whether deliverable_spec.md is satisfied
-* whether `results.md` and `handoff.md` conform to the current task templates
+* whether `results.md` and `handoff.md` conform to the current task templates — note: `results.md` does NOT have a top-level `## Status` field; packet status lives only in `task.md`
 
-## Step 3 — Determine Status
+## Step 3 — Apply Trivial Fixes Inline (Optional)
+
+Before recording the review decision, check whether any required fix is trivial enough to apply directly:
+
+A fix is trivial if it meets **all** of the following:
+- Self-contained change of roughly 20 lines or fewer
+- No new canonical decisions or workflow semantics required
+- No ambiguity about what the correct fix is
+- Change touches at most 1–2 files
+
+If a fix is trivial: apply it, run tests to confirm, update `results.md` with a note in Review Notes, and set the review decision to `ready`.
+
+If a fix requires domain reasoning, touches multiple files, or introduces any ambiguity: do not apply it. Record it under Required Fixes and set the review decision to `needs fixes` so the executor can address it.
+
+If all fixes were applied inline: proceed to Step 4 as if the task were already ready.
+
+## Step 4 — Determine Status
 
 Decide whether the task is:
 
@@ -65,7 +81,7 @@ Decide whether the task is:
 * blocked
 * unclear due to spec conflict
 
-## Step 4 — Classify Review Follow-Ups
+## Step 5 — Classify Review Follow-Ups
 
 Classify follow-ups explicitly so closeout can apply them without guessing from prose.
 
@@ -80,9 +96,11 @@ Use these buckets:
 
 Do not place optional improvements or speculative ideas into `open_questions_to_log` or `proposal_candidates_to_log`.
 
+If review shows that a backlog item was too broad or should be split, record that as a follow-up or working-doc planning note. Do not split backlog items during review.
+
 If a bucket is empty, return `None`.
 
-## Step 5 — Persist Review Intake For Closeout
+## Step 6 — Persist Review Intake For Closeout
 
 Update `results.md` directly so the structured review outcome is recorded in the task artifacts.
 
@@ -101,7 +119,7 @@ At minimum, persist:
 * proposal candidates to log
 * follow-ups to log
 * residual risks
-* efficiency section retained or updated if the task results omitted it
+* efficiency Review stage filled in — prompt runs and conversation restarts for this review conversation only; do not modify Execute or Close stages
 
 If `handoff.md` does not exist, create it.
 

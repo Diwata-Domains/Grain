@@ -167,6 +167,25 @@ def select_model_class(
     )
 
 
+def get_escalation_target(
+    config: ModelRoutingConfig,
+    current_class: str,
+    reason: str | None = None,  # noqa: ARG001 — reserved for future condition matching
+) -> str | None:
+    """Return the escalation target class for the given model class.
+
+    Checks class-specific rules first, then wildcard ('*') rules.
+    Returns None when no escalation path is defined.
+    """
+    for rule in config.escalation_rules:
+        if rule.source_class == current_class:
+            return rule.target_class
+    for rule in config.escalation_rules:
+        if rule.source_class == "*" and rule.target_class != current_class:
+            return rule.target_class
+    return None
+
+
 def _match_profile_use_for(config: ModelRoutingConfig, query: str) -> str | None:
     """Match query text against profile use_for phrases with class priority."""
     if not query:

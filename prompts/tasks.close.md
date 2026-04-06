@@ -49,7 +49,7 @@ Confirm that:
 * the review bundle is complete
 * `results.md` contains explicit persisted review intake
 * `results.md` and `handoff.md` conform to the current task templates
-* `results.md` includes the efficiency section required by the current task template
+* `results.md` includes the per-stage efficiency section — Execute and Review stages should already be filled by prior agents; Close stage is filled by this agent now
 * the deliverable_spec is satisfied
 * no blocker remains
 * no unresolved follow-up prevents closure
@@ -81,6 +81,7 @@ Rules:
 * if a labeled item is too vague to apply safely, stop and report that the task should stay at review until the review bundle is clarified
 * use `decision_needed` for newly logged open questions unless another status is explicit
 * create draft-style proposal entries unless the review bundle explicitly says an existing proposal should be updated
+* do not split or generate backlog tasks during close; if planning work is needed, route it to `prompts/task.plan.next.md`
 
 ---
 
@@ -98,6 +99,7 @@ If the task is ready to close:
   Status: unset
 
 * update `results.md` and `handoff.md` if they still need final status or closure notes
+* fill in the Close stage of the efficiency section in `results.md` — prompt runs and conversation restarts for this close conversation only
 * update `docs/working/backlog.md`: find the entry matching this task's backlog ID and set its status to `done`
 
 Do not start the next task.

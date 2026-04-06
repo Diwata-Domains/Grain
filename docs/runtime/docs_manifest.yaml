@@ -116,6 +116,35 @@ working:
       - closing_phase
       - reviewing_workflow_health
 
+  - id: v2_plan
+    path: docs/working/v2_plan.md
+    purpose: Working-layer transition plan for post-v1 sequencing and v2 readiness
+    authority: advisory
+    editable_by_agents: true
+    read_when:
+      - planning_v2
+      - sequencing_future_work
+
+  - id: v2_adapters
+    path: docs/working/v2_adapters.md
+    purpose: Planning document for the v2 adapter contract and integration boundaries
+    authority: advisory
+    editable_by_agents: true
+    read_when:
+      - planning_v2
+      - designing_adapters
+      - planning_onboarding
+
+  - id: v2_onboarding
+    path: docs/working/v2_onboarding.md
+    purpose: Planning document for new-project onboarding and existing-project adoption flows
+    authority: advisory
+    editable_by_agents: true
+    read_when:
+      - planning_v2
+      - planning_onboarding
+      - adopting_existing_projects
+
 runtime:
   - id: project_rules
     path: docs/runtime/PROJECT_RULES.md

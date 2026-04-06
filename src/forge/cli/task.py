@@ -133,11 +133,21 @@ def task_status(ctx, task_id, new_status):
 
 
 @task_group.command("validate")
-@click.option("--id", "task_id", default=None, metavar="TASK-####", help="Validate one packet.")
-@click.option("--all", "validate_all", is_flag=True, default=False, help="Validate all packets.")
+@click.option("--id", "task_id", default=None, metavar="TASK-####", help="Validate one packet by task ID.")
+@click.option(
+    "--all",
+    "validate_all",
+    is_flag=True,
+    default=False,
+    show_default=True,
+    help="Validate all packets (default behavior when no selector is provided).",
+)
 @click.pass_context
 def task_validate(ctx, task_id, validate_all):
-    """Validate one packet or all packets."""
+    """Validate one packet or all packets.
+
+    When neither --id nor --all is provided, defaults to validating all packets.
+    """
     repo = ctx.obj.get("repo") if ctx.obj else None
     fmt = ctx.obj.get("fmt", "text") if ctx.obj else "text"
     root = resolve_repo_root(repo)

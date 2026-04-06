@@ -15,11 +15,22 @@
 [N/N new tests passing. N/N total passing.]
 
 ## Efficiency
-- **Prompt Runs:** [count for this task workflow so far]
+
+### Execute
+- **Prompt Runs:** [count]
 - **Conversation Restarts:** [count]
 - **Files Read (estimated):** [count]
-- **Exact Tokens:** [input/output/total if available, otherwise "not available"]
-- **Efficiency Notes:** [where token usage stayed low, where waste occurred, or "None"]
+- **Notes:** [where cost stayed low, where waste occurred, or "None"]
+
+### Review
+- **Prompt Runs:** [count]
+- **Conversation Restarts:** [count]
+- **Notes:** ["None" until reviewer fills this in]
+
+### Close
+- **Prompt Runs:** [count]
+- **Conversation Restarts:** [count]
+- **Notes:** ["None" until closer fills this in]
 
 ## Review Notes
 - [key fact a reviewer should verify]

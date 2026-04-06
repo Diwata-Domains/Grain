@@ -121,3 +121,25 @@ def test_model_select_missing_profile_exits_nonzero(tmp_path):
     )
 
     assert result.exit_code != 0
+    assert "model select: failed" in result.output
+    assert "agent_profiles.md" in result.output
+
+
+def test_model_select_missing_profile_json_failure_shape(tmp_path):
+    runner = CliRunner()
+    result = runner.invoke(
+        main,
+        [
+            "--repo", str(tmp_path),
+            "--format", "json",
+            "model", "select",
+            "--stage", "execute",
+        ],
+    )
+
+    assert result.exit_code != 0
+    data = json.loads(result.output)
+    assert data["ok"] is False
+    assert data["command"] == "model select"
+    assert data["stage"] == "execute"
+    assert "errors" in data
