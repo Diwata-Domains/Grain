@@ -88,6 +88,20 @@ def test_validate_one_json_output(packet_repo):
     assert data["errors"] == []
 
 
+def test_validate_one_legacy_packet_without_adapter_metadata_exits_zero(tmp_path):
+    repo = _setup_subprocess_repo(tmp_path)
+    _run_forge("--repo", str(repo), "task", "create", "--phase", "3", "--task-num", "10")
+
+    task_md = repo / "tasks" / "P3-T10-TASK-0001" / "task.md"
+    content = task_md.read_text(encoding="utf-8")
+    content = content.replace("- **Primary Adapter:** none\n", "")
+    content = content.replace("- **Secondary Adapters:** none\n", "")
+    task_md.write_text(content, encoding="utf-8")
+
+    result = _run_forge("--repo", str(repo), "task", "validate", "--id", "TASK-0001")
+    assert result.returncode == 0
+
+
 # --- validate all ---
 
 def test_validate_all_empty_exits_zero(packet_repo):

@@ -24,6 +24,35 @@ def _write_context_docs(repo_root):
     _write_file(repo_root, "docs/working/backlog.md", "# Backlog\nSelecting tasks.\n")
 
 
+def _write_adapter_profiles(repo_root):
+    _write_file(
+        repo_root,
+        "docs/runtime/adapter_profiles.md",
+        """# Adapter Profiles
+
+## 5. Adapter Profiles
+
+### code_adapter
+- `adapter_id`: `code_adapter`
+- `domain_type`: `code`
+- `applies_to`:
+  - Python
+- `relevant_file_patterns`:
+  - `src/**`
+  - `tests/**`
+  - `build/**`
+- `ignore_file_patterns`:
+  - `build/**`
+- `context_priority_rules`:
+  - prioritize touched source files, then nearby tests
+- `test_or_validation_hints`:
+  - run focused tests before full suite
+- `review_focus_hints`:
+  - behavior regressions
+""",
+    )
+
+
 def _write_manifest(repo_root):
     _write_manifest_file(
         repo_root,
@@ -135,3 +164,39 @@ def test_build_source_metadata_labels_each_source_kind(packet_repo):
     assert kinds_by_path["docs/canonical/workflow_spec.md"] == "canonical"
     assert kinds_by_path["docs/working/backlog.md"] == "working"
     assert all(exists_by_path.values())
+
+
+def test_build_context_bundle_applies_primary_adapter_source_bias(packet_repo):
+    _write_manifest(packet_repo)
+    _write_context_docs(packet_repo)
+    _write_adapter_profiles(packet_repo)
+    _write_file(packet_repo, "src/main.py", "print('hello')\n")
+    _write_file(packet_repo, "tests/test_main.py", "def test_main():\n    assert True\n")
+    _write_file(packet_repo, "build/generated.py", "print('generated')\n")
+    create_packet_directory(packet_repo, phase=6, task_num=5)
+
+    task_md = packet_repo / "tasks" / "P6-T05-TASK-0001" / "task.md"
+    task_md.write_text(
+        task_md.read_text(encoding="utf-8").replace(
+            "- **Primary Adapter:** none",
+            "- **Primary Adapter:** code_adapter",
+        ),
+        encoding="utf-8",
+    )
+
+    result, bundle = build_context_bundle(packet_repo, "TASK-0001")
+
+    assert result.ok is True
+    assert bundle is not None
+    sources = bundle.export_metadata["sources"]
+    assert "src/main.py" in sources
+    assert "tests/test_main.py" in sources
+    assert "build/generated.py" not in sources
+    assert sources.index("src/main.py") < sources.index("tests/test_main.py")
+
+    adapter_context = bundle.export_metadata["adapter_context"]
+    assert adapter_context["primary_adapter"] == "code_adapter"
+    assert adapter_context["applied"] is True
+    assert adapter_context["selected_sources"] == ["src/main.py", "tests/test_main.py"]
+    assert adapter_context["review_focus_hints"] == ["behavior regressions"]
+    assert adapter_context["test_or_validation_hints"] == ["run focused tests before full suite"]

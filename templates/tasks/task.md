@@ -7,6 +7,8 @@
 - **Backlog:** [backlog item]
 - **Packet Path:** tasks/[packet-dir]/
 - **Dependencies:** [none or TASK-IDs]
+- **Primary Adapter:** none
+- **Secondary Adapters:** none
 
 ## Objective
 [What must be built or done. One clear paragraph.]

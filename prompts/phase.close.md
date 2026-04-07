@@ -174,7 +174,23 @@ Update the **Aggregate** section totals.
 
 Do not modify prior phase entries unless correcting a clear factual error.
 
-## Step 6 — Phase Close Summary
+## Step 6 — Archive Closed Phase Artifacts
+
+After working docs are updated, archive the closed phase's task packets:
+
+1. Create `tasks/archive/phase-N/` where N is the closing phase number.
+2. Move all task folders for the closing phase from `tasks/` into that archive directory.
+3. In `backlog.md`, collapse the closed phase's full task list into a one-line summary entry:
+   `## Phase N — <Name> ✓ CLOSED (<count> tasks — archived to tasks/archive/phase-N/)`
+   Remove the individual task entries for that phase.
+
+Rules:
+* only archive the phase that is currently closing — do not touch other phases
+* do not archive task folders that belong to a different phase
+* do not archive the current or future phases
+* early unnumbered task folders (e.g. `TASK-0001`) belong to Phase 1 — include them if closing Phase 1
+
+## Step 7 — Phase Close Summary
 
 Generate a concise phase close summary including:
 
@@ -184,7 +200,7 @@ Generate a concise phase close summary including:
 * whether canonical proposals were created
 * what should happen next
 
-## Step 7 — Readiness for Next Step
+## Step 8 — Readiness for Next Step
 
 Determine one of:
 
@@ -211,8 +227,9 @@ Return ONLY:
    * ignore
 3. updated contents or targeted updates for working docs
 4. updated workflow_metrics.md for the closing phase
-5. phase close summary
-6. next-step readiness:
+5. archive actions taken (folders moved, backlog collapsed)
+6. phase close summary
+7. next-step readiness:
 
    * next task
    * next phase planning

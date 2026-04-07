@@ -176,13 +176,44 @@ Record the following in each task packet `results.md`:
 
 ---
 
+### Phase 6
+
+* Tasks completed: 7 (P6-T01 through P6-T07)
+* Blocked tasks: 0
+* Prompt runs: 20 (7 execute × 1 each + 7 review × 1 each + 6 close × 1 each; P6-T01 close pre-filled as 0 by executor)
+* Avg prompt runs per completed task: 2.9
+* Manual interventions: 0 (no human decisions required; all review fixes applied inline by reviewer agent)
+* First-pass success rate: 7/7 implementation ✓; review intake pre-fill error on all 7 tasks (Recommended Next Status incorrectly set to `review` by executor, corrected by reviewer inline)
+* Rework count: 0 (implementation rework); 7 inline review corrections (systematic executor pre-fill)
+* Drift incidents: 0
+* Phase duration: Session 6
+* Tests at phase close: 399 (+20 new tests from 379 at v1 close)
+* Conversation model: multi-agent (separate executor / reviewer / closer conversations)
+* Token tracking: proxy metrics only
+
+### Phase 6 Notes
+
+* What felt efficient: adapter domain/loader/context extension stayed additive throughout; model-loader pattern from Phase 4 reused directly; no canonical changes required; clean close sequence with no rework
+* What created friction: executor systematically pre-fills `Recommended Next Status: review` in Packet State and `Definition of Done Met: no` before review runs — reviewer corrects inline, but it is a recurring artifact; executors also pre-fill Close efficiency section as `0 / execute stage only` which closer corrects
+* What to tighten next: consider removing executor pre-fill of Review Intake and Close stage entirely from the execute template, or marking those sections as reviewer/closer-only to eliminate systematic correction overhead
+
+### Phase Retrospective Classification
+
+* **Fix now:** none
+* **Batch next phase:** executor pre-fill of Review Intake fields (Recommended Next Status, Definition of Done Met) — remove or mark as reviewer-only in execute prompt template; executor pre-fill of Close efficiency section — mark as closer-only; `secondary_adapters` raw string normalization deferred until context services consume it
+* **Ignore:** P6-T01 Close stage pre-filled as 0 (task was doc-only; no closer conversation used)
+
+---
+
 ## Aggregate
 
-* Total tasks completed: 53
+* Total tasks completed: 60 (53 v1 + 7 Phase 6)
 * Total blocked: 0
-* Total tests at v1 close: 379
-* Open questions resolved total: Q1–Q11 (all 11 resolved)
-* Canonical change proposals applied total: CP-001 through CP-008 (all 8 applied)
+* Total tests at v1 close: 379; tests at Phase 6 close: 399
+* Open questions resolved total: Q1–Q11 (all 11 resolved; none raised in Phase 6)
+* Canonical change proposals applied total: CP-001 through CP-008 (all 8 applied; none raised in Phase 6)
 * V1 phases closed: 5 (all complete)
+* V2 phases closed: 1 (Phase 6)
 * Major v1 additions: full CLI (init/docs/task/context/model/review), packet lifecycle, doc registry, context assembly, model routing, review/handoff/summary commands, integration tests, golden fixtures
+* Major Phase 6 additions: adapter profiles runtime doc, AdapterProfile domain model, adapter loader/parser, packet adapter metadata fields, adapter-aware context biasing, adapter hint surfacing in context outputs, adapter system tests
 * V2 planning docs created: v2_plan.md, v2_adapters.md, v2_onboarding.md

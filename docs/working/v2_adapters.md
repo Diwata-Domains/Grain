@@ -174,13 +174,31 @@ These directions are still working-layer planning guidance until promoted into a
 
 ---
 
-## 9. Open Planning Questions
+## 9. Planning Decisions (Resolved in P6-T01)
 
-1. What is the smallest useful `adapter_profiles` schema that still works for frontend and spreadsheet cases?
-2. How should multi-adapter context selection avoid pulling both domains into every prompt by default?
-3. Should adapter-aware onboarding generate one shared profile file or one section per active adapter?
-4. When no adapter is selected, should Forge infer one, recommend one, or remain adapter-neutral?
-5. Should `agent_profiles.md` gain a `cli_cmd` field per model class (e.g. `claude -p`, `codex -p`) to support multi-provider automation, or should provider selection live in a separate runtime config?
+1. Smallest useful `adapter_profiles` schema:
+   - required: `adapter_id`, `domain_type`, `applies_to`
+   - required: at least one hint section from `context_priority_rules` or `test_or_validation_hints`
+   - other sections optional and may remain empty in early profiles
+
+2. Multi-adapter context selection default:
+   - apply `primary_adapter` hints by default
+   - include `secondary_adapters` only when explicitly needed by task context or future CLI flags
+   - avoid loading both domains into every prompt by default
+
+3. Adapter-aware onboarding profile-file structure:
+   - use one shared runtime profile file: `docs/runtime/adapter_profiles.md`
+   - represent active adapters as sections within that single file
+
+4. No-adapter fallback behavior:
+   - remain adapter-neutral by default
+   - do not infer an adapter during execution
+   - onboarding may recommend adapters, but packet metadata remains explicit
+
+5. Provider command mapping (`cli_cmd`) decision:
+   - do not add `cli_cmd` fields to `agent_profiles.md` in Phase 6
+   - keep provider-command selection in a separate future runtime config
+   - defer that config design until after adapter contract proving is complete
 
 ---
 

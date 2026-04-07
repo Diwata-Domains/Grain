@@ -1,0 +1,161 @@
+# Adapter Profiles
+
+## 1. Purpose
+
+This runtime document defines the v2 adapter profile contract for Forge.
+
+Adapter profiles guide:
+- context prioritization
+- execution and validation hints
+- review focus hints
+
+Adapter profiles must not change:
+- packet lifecycle states
+- review/close semantics
+- canonical authority order
+
+---
+
+## 2. Contract Summary
+
+### Required Fields
+
+- `adapter_id`
+- `domain_type`
+- `applies_to` (at least one signal)
+
+### Required Hint Presence
+
+Each adapter profile must include at least one of:
+- `context_priority_rules`
+- `test_or_validation_hints`
+
+Other hint sections are optional and may be empty.
+
+---
+
+## 3. Multi-Adapter and Fallback Rules
+
+### Adapter Selection Shape
+
+- packet metadata uses one `primary_adapter`
+- packet metadata may include `secondary_adapters`
+
+### Context Selection Defaults
+
+- by default, prioritize `primary_adapter` hints only
+- include `secondary_adapters` hints only when explicitly requested by task context or future CLI flags
+- do not load all adapter hints by default
+
+### No-Adapter Behavior
+
+- when no adapter is declared, remain adapter-neutral
+- do not infer an adapter during execution by default
+- onboarding may recommend adapters, but execution remains explicit
+
+---
+
+## 4. Profile Structure
+
+Each profile should follow this section structure:
+
+- `adapter_id`
+- `domain_type`
+- `applies_to`
+- `relevant_file_patterns`
+- `ignore_file_patterns`
+- `build_or_run_hints`
+- `test_or_validation_hints`
+- `review_focus_hints`
+- `context_priority_rules`
+- `default_model_bias`
+
+---
+
+## 5. Adapter Profiles
+
+### code_adapter
+
+- `adapter_id`: `code_adapter`
+- `domain_type`: `code`
+- `applies_to`:
+  - Python
+  - Rust
+  - backend services
+  - CLI tooling
+- `relevant_file_patterns`:
+  - `src/**`
+  - `tests/**`
+  - `pyproject.toml`
+  - `Cargo.toml`
+  - `Makefile`
+- `ignore_file_patterns`:
+  - `node_modules/**`
+  - `dist/**`
+  - `build/**`
+- `build_or_run_hints`:
+  - prefer project-native CLI entrypoints (`forge`, `python -m`, `cargo`, `make`)
+  - keep execution local and deterministic
+- `test_or_validation_hints`:
+  - run focused tests before full suite
+  - prefer explicit test files for changed modules
+- `review_focus_hints`:
+  - behavior regressions
+  - state transition correctness
+  - error handling and exit semantics
+- `context_priority_rules`:
+  - prioritize touched source files, then nearby tests
+  - include only canonical/runtime docs needed for the current command family
+- `default_model_bias`:
+  - `open_model` for narrow edits
+  - `frontier_model` for ambiguous or structural work
+
+### frontend_adapter
+
+- `adapter_id`: `frontend_adapter`
+- `domain_type`: `frontend`
+- `applies_to`:
+  - TypeScript
+  - JavaScript
+  - React
+  - Storybook
+  - Tauri UI
+- `relevant_file_patterns`:
+  - `src/**/*.tsx`
+  - `src/**/*.ts`
+  - `src/**/*.jsx`
+  - `src/**/*.js`
+  - `*.css`
+  - `*.scss`
+  - `vite.config.*`
+  - `next.config.*`
+  - `storybook/**`
+- `ignore_file_patterns`:
+  - `coverage/**`
+  - `dist/**`
+  - `build/**`
+  - snapshot or generated bundles unless debugging test drift
+- `build_or_run_hints`:
+  - prefer package-manager scripts declared by the repo
+  - separate lint/typecheck/test/build when possible
+- `test_or_validation_hints`:
+  - include component or integration tests near changed views
+  - verify desktop and mobile layout behavior when UI changes are included
+- `review_focus_hints`:
+  - UI regressions and interaction breakage
+  - accessibility and responsive behavior
+  - test coverage for changed interaction paths
+- `context_priority_rules`:
+  - prioritize modified UI modules and their co-located tests/styles
+  - include design-system tokens/components before unrelated app areas
+- `default_model_bias`:
+  - `open_model` for scoped UI copy/layout fixes
+  - `frontier_model` for larger interaction or architecture changes
+
+---
+
+## 6. Deferred Items
+
+Deferred from P6-T01:
+- provider CLI command mapping (for example `claude -p`, `codex -p`) remains outside `agent_profiles.md`
+- dedicated provider runtime config location to be decided in a later phase

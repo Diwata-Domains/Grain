@@ -271,24 +271,91 @@ A phase is complete when:
 
 ---
 
+## Phase 6 — Adapter System Foundation (V2) ✓ CLOSED
+
+### Objective
+Implement the minimal v2 adapter contract: adapter profiles runtime doc, loader, packet-level adapter field, and adapter hint wiring into context assembly and packet generation.
+
+### Major Deliverables
+- `docs/runtime/adapter_profiles.md` — human-readable adapter contract and initial `code_adapter` + `frontend_adapter` profiles
+- Adapter domain model (`AdapterProfile`)
+- Adapter profile loader/parser
+- `primary_adapter` and optional `secondary_adapters` fields in task packet metadata
+- Adapter hint wiring into context assembly (file-pattern biasing, context priority rules)
+- Adapter hint wiring into packet context.md output (review and validation hints surface)
+- Adapter tests covering loading, packet metadata, and context selection with/without adapter
+
+### Output Focus
+After this phase, Forge can operate with adapter-awareness:
+- task packets can declare their domain
+- context assembly can bias file selection toward the declared adapter
+- review surfaces domain-specific hints
+- no adapter declared = adapter-neutral behavior (safe degradation)
+
+### Dependencies
+- Phase 3 stable task packet contract ✓
+- Phase 4 stable context assembly ✓
+- v2_adapters.md planning doc ✓
+- v2 readiness gates met (Phase 5 closed) ✓
+
+### Sequencing Notes
+- begin by resolving open planning questions in v2_adapters.md §9 (P6-T01)
+- prove the adapter contract with code_adapter first, frontend_adapter second
+- do not start onboarding flow work (Phase 7) until adapter contract is stable
+- if packet metadata changes require a data_contracts.md update, capture as a change proposal before editing canonical docs
+
+### Notes
+- Phase 6 complete: 7/7 tasks done
+- 399/399 tests passing at phase close (+20 new tests)
+- Adapter contract proven with `code_adapter`; `frontend_adapter` profile exists as a starter but is implementation-deferred
+- No canonical change proposals raised during Phase 6
+
+---
+
+## Phase 7 — New-Project Onboarding Flow
+
+### Objective
+Implement the minimal onboarding flow for new projects: guided `forge init` with adapter selection, starter packet generation, and basic project scaffolding that uses the stable adapter contract from Phase 6.
+
+### Major Deliverables
+- Stable new-project onboarding prompt entrypoint with question-first intake and explicit adapter-selection inputs
+- `forge init` scaffolding that creates baseline seed files from templates while preserving additive-only and dry-run behavior
+- Adapter-selection support in onboarding initialization (`primary` + `secondary`) with runtime-profile-aware validation
+- Optional starter task-packet bootstrap during onboarding to reduce time-to-first-execution
+- Integration tests and user-facing docs updates proving the minimal new-project onboarding path end-to-end
+
+### Output Focus
+After this phase, a new project can be initialized with adapter-awareness from the start.
+
+### Dependencies
+- Phase 6 stable adapter contract ✓
+- v2_onboarding.md planning doc
+
+### Sequencing Notes
+- Phase 7 initial backlog slice is seeded in `docs/working/backlog.md` (first ready task: `P7-T01`)
+- `P7-T01` locks the minimal onboarding decisions in `docs/working/v2_onboarding.md`:
+  - hybrid surface (prompt entrypoint + thin CLI support)
+  - optional starter packet bootstrap (not mandatory by default)
+  - provider-generic onboarding (no provider-specific branching in first slice)
+  - existing-project adoption remains deferred in `P7-T07`
+- scope narrowly: prove onboarding with one adapter before generalizing
+- keep existing-project adoption flow implementation deferred until new-project onboarding is stable
+- route any required canonical contract changes through `docs/working/change_proposals.md` before canonical edits
+
+---
+
 ## 10. Post-v1 Transition Planning
 
-Before Phase 5 closes, v2 planning may proceed in working docs only.
+With Phase 5 closed, v2 items may now be promoted into active implementation when they are:
+- concrete
+- scoped
+- dependency-ready
 
-Allowed:
-- defining v2 sequencing
-- planning adapter contracts
-- planning onboarding flows
-- identifying dependencies and open questions
-
-Not allowed until Phase 5 closes:
-- moving v2 work into active implementation
-- creating implementation task packets for adapters or onboarding
-- treating v2 planning docs as authority to bypass the active v1 phase
-
-After Phase 5 closes:
-- v2 items may be promoted into active implementation when they are concrete, scoped, and dependency-ready
-- promotion should begin with the smallest adapter-system slice, not with broad onboarding automation
+Rules:
+- promote the smallest adapter-system slice first
+- do not begin with broad onboarding automation
+- do not run multiple major v2 workstreams in parallel until the adapter contract is proven
+- continue routing canonical or runtime contract changes through change proposals when needed
 
 Primary planning docs:
 - `docs/working/v2_plan.md`

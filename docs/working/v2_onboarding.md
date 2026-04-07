@@ -101,19 +101,77 @@ Onboarding should not need the full adapter implementation to start planning, bu
 
 ---
 
-## 7. Open Planning Questions
+## 7. Resolved Planning Decisions (P7-T01, 2026-04-07)
 
-1. Should new-project onboarding be prompt-only in v2, or also have a thin CLI entrypoint?
-2. How should existing-project scans balance accuracy against token cost?
-3. Which canonical docs should be generated as draft versus ready-to-use?
-4. Should onboarding generate one starter backlog packet immediately, or stop at backlog creation?
-5. How should onboarding handle provider/CLI selection — should it ask "which agent CLI do you use" (claude, codex, open model) and record that in agent_profiles.md, or leave it as a post-onboarding manual step?
+### Q1 — Prompt-only or thin CLI entrypoint?
+Decision:
+- use a hybrid surface for the minimal slice:
+  - stable prompt entrypoint for question-first onboarding flow (`P7-T02`)
+  - thin CLI support through `forge init` scaffolding/options (`P7-T03` onward)
+
+Why:
+- keeps onboarding agent-first while preserving predictable local CLI mechanics.
+
+### Q2 — Existing-project scan depth versus token cost?
+Decision:
+- do not implement existing-project scan behavior in the first Phase 7 slice.
+- keep adoption flow deferred behind `P7-T07` until new-project onboarding is stable.
+
+Why:
+- avoids mixing two onboarding modes before the new-project path is proven.
+
+### Q3 — Canonical docs draft versus ready-to-use?
+Decision:
+- generate canonical docs from templates as starter drafts that are immediately usable for execution, but still expected to be reviewed/edited by the operator.
+- unresolved project specifics must be captured in working docs/open questions rather than guessed.
+
+Why:
+- preserves momentum without implying canonical completeness from generated defaults.
+
+### Q4 — Generate starter packet immediately or stop at backlog?
+Decision:
+- support an optional starter packet bootstrap step in onboarding (`P7-T05`), not mandatory by default.
+
+Why:
+- reduces time-to-first-task while preserving safe, additive initialization behavior.
+
+### Q5 — Provider/CLI selection during onboarding?
+Decision:
+- keep provider routing generic in the minimal slice; do not add provider-specific onboarding capture yet.
+- retain existing model-class abstraction and allow manual provider selection post-onboarding.
+
+Why:
+- keeps first slice model-agnostic and avoids premature provider-coupled branching.
 
 ---
 
-## 8. Recommended Next Planning Step
+## 8. Minimal Phase 7 Slice (Locked)
 
-When Phase 5 closes:
-- define the question flow for new-project onboarding
-- define the scan-and-question flow for existing-project adoption
-- decide which outputs are generated directly versus scaffolded as draft
+In scope now:
+- new-project onboarding flow only
+- prompt entrypoint + thin `forge init` onboarding support
+- adapter selection focused on proving `code_adapter` path
+- optional starter packet bootstrap
+
+Out of scope for this slice:
+- existing-project adoption execution path
+- deep repo scan heuristics and token-optimized scan tuning
+- provider-specific onboarding branches
+- onboarding expansion for `frontend_adapter` before `code_adapter` path is proven
+
+Exit criteria for this slice:
+- `P7-T02` through `P7-T06` completed and reviewed
+- integration path demonstrates end-to-end new-project onboarding with stable artifacts
+- adoption flow remains deferred until the above is stable
+
+---
+
+## 9. Current Planning State
+
+Phase 7 is seeded and execution-ready with planning decisions locked.
+
+Current state:
+- new-project onboarding is the active v2 execution track
+- `P7-T01` resolves planning ambiguity and locks execution boundaries
+- next implementation tasks proceed from ready backlog items only
+- existing-project adoption remains deferred until the new-project path is stable

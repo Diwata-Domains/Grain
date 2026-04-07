@@ -201,8 +201,11 @@ Include in `results.md`:
   * conversation restarts
   * files read estimated
   * notes on where cost was high or low
+* Review Notes — facts and tradeoffs a reviewer should inspect
 * blockers encountered
 * unresolved follow-up items
+
+Do NOT fill in the Review Intake section (`Review Decision`, `Definition of Done Met`, `Recommended Next Status`). Leave those fields as `[reviewer fills]`. The reviewer owns that section.
 
 Include in `handoff.md`:
 

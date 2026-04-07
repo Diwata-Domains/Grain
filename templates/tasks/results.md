@@ -2,8 +2,8 @@
 
 ## Packet State
 - **Current Task Status:** [in_progress / blocked / review]
-- **Review Readiness:** [ready / blocked / needs fixes]
-- **Recommended Next Status:** [review / blocked / in_progress]
+- **Review Readiness:** [reviewer fills]
+- **Recommended Next Status:** [reviewer fills]
 
 ## Files Changed
 - [path] — [description of change]
@@ -37,9 +37,10 @@
 - [drift, ambiguity, or tradeoff to inspect]
 
 ## Review Intake
-- **Review Decision:** [ready / needs fixes / blocked / unclear due to spec conflict]
-- **Definition of Done Met:** [yes / no]
-- **Recommended Next Status:** [review / in_progress / blocked / done]
+<!-- reviewer fills this section — executor must leave all fields below as-is -->
+- **Review Decision:** [reviewer fills]
+- **Definition of Done Met:** [reviewer fills]
+- **Recommended Next Status:** [reviewer fills]
 
 ### Required Fixes
 - [fix, or "None"]

@@ -49,3 +49,4 @@
 | `docs_manifest` | `docs/runtime/docs_manifest.yaml` | high_runtime | yes | Machine-readable doc registry and load rules |
 | `context_loading` | `docs/runtime/context_loading.md` | high_runtime | yes | Rules for selecting minimal relevant context |
 | `agent_profiles` | `docs/runtime/agent_profiles.md` | high_runtime | yes | Model classes, routing logic, and escalation rules |
+| `adapter_profiles` | `docs/runtime/adapter_profiles.md` | high_runtime | yes | Adapter contract and domain-specific execution/context/review hints |

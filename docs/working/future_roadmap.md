@@ -23,7 +23,23 @@ Future work should expand its capabilities **without destabilizing the core buil
 * `candidate` — worth building, but not scheduled
 * `deferred` — explicitly postponed
 * `planned` — intended for a future phase/version
+* `promoted` — moved into active planning or implementation work elsewhere in working docs
+* `graduated` — delivered or fully absorbed into active product/workflow state; no longer a future capability
 * `revisit_later` — unclear value or timing
+
+### Lifecycle Convention
+
+Use roadmap statuses this way:
+
+- keep `idea`, `candidate`, `planned`, `deferred`, and `revisit_later` for genuinely future-facing items
+- use `promoted` when the item has moved into:
+  - `docs/working/implementation_plan.md`
+  - `docs/working/backlog.md`
+  - `docs/working/current_focus.md`
+- use `graduated` only when the roadmap item is effectively delivered and no longer belongs in future planning
+
+Do not use the roadmap as a second active backlog.
+If an item is actively being executed, the working docs own the operational state and the roadmap should only preserve the high-level trace.
 
 ---
 
@@ -31,7 +47,7 @@ Future work should expand its capabilities **without destabilizing the core buil
 
 ### FR-001 — Adapter System Formalization
 
-* **Status:** planned
+* **Status:** promoted
 * **Suggested Target:** v2
 * **Why it matters:**
 
@@ -63,6 +79,7 @@ Future work should expand its capabilities **without destabilizing the core buil
   * the workflow itself never changes per adapter — only execution hints, validation rules, and file patterns change
   * adapter design must not require changes to canonical packet or workflow contracts
   * a project may have multiple adapters active (e.g. a Tauri project has both `frontend_adapter` and `code_adapter`)
+  * promoted into active work through Phase 6 and follow-on v2 planning
 
 ---
 
@@ -140,6 +157,69 @@ Future work should expand its capabilities **without destabilizing the core buil
 * **Notes:**
 
   * should remain thin wrapper, not heavy abstraction
+
+---
+
+### FR-004b — Forge Distribution and Installation Paths
+
+* **Status:** candidate
+* **Suggested Target:** v2
+* **Why it matters:**
+
+  * future users need a simple install path before Forge can be adopted broadly
+  * local editable install is fine for current development, but not a sufficient distribution story for general use
+* **Scope:**
+
+  * PyPI publishing for `pip install forge`
+  * `uv tool install` compatibility and documentation
+  * optional Homebrew distribution for macOS users
+  * clear versioned install and upgrade instructions
+  * installation verification and troubleshooting docs
+* **Why not now:**
+
+  * adapter and onboarding work should stabilize before wider distribution
+  * packaging and support overhead should follow a clearer public user path
+* **Dependencies:**
+
+  * stable core CLI surface
+  * stable onboarding entrypoint
+  * stable packaging metadata and release process
+* **Notes:**
+
+  * start with PyPI first
+  * keep installation simple and boring before adding platform-specific channels
+
+---
+
+### FR-004c — Workflow Automation Runner
+
+* **Status:** planned
+* **Suggested Target:** v2
+* **Why it matters:**
+
+  * the Forge task loop should eventually be automatable without hiding state or bypassing review
+  * users should be able to automate the legal next workflow step instead of manually launching every prompt
+* **Scope:**
+
+  * state-driven next-step runner
+  * automatic choice between task planning, execute, review, close, and phase review/close based on repo state
+  * stop conditions at task gates, review gates, and phase boundaries
+  * explicit reporting when human input, review, or canonical decisions are required
+  * optional prompt-launch integration for supported agent CLIs
+* **Why not now:**
+
+  * adapter and onboarding work should stabilize first
+  * automation should wrap a proven workflow, not compensate for an unstable one
+* **Dependencies:**
+
+  * stable prompt entrypoints
+  * stable task packet and working-doc contracts
+  * stable phase planning and task planning surfaces
+* **Notes:**
+
+  * automate the next valid step, not hidden planning
+  * keep all workflow state in files already used by Forge
+  * phase boundaries should be valid stop points for the automation runner
 
 ---
 
@@ -260,6 +340,39 @@ Future work should expand its capabilities **without destabilizing the core buil
 
 ---
 
+### FR-007b — Forge TUI
+
+* **Status:** candidate
+* **Suggested Target:** v2
+* **Why it matters:**
+
+  * gives users a faster operator surface for navigating phases, backlog, packets, open questions, and proposals without leaving the terminal
+  * makes Forge easier to use in daily practice while preserving the CLI-first and file-backed workflow model
+* **Scope:**
+
+  * current phase and next-task view
+  * backlog list by phase and status
+  * task packet inspection
+  * open questions and change proposals panels
+  * workflow metrics view
+  * thin action launcher for common flows such as task execute, review, close, and phase review
+* **Why not now:**
+
+  * adapter and onboarding work should stabilize first
+  * the workflow model is more important than the interface layer at the current stage
+* **Dependencies:**
+
+  * stable Forge core
+  * stable task and phase prompt surfaces
+  * stable file-backed workflow contracts
+* **Notes:**
+
+  * the TUI should read and write the same files Forge already uses
+  * it should not introduce hidden state or an alternate workflow model
+  * first version should be a thin terminal operator shell, not embedded agent orchestration
+
+---
+
 ### FR-008 — Multi-Project / Template System
 
 * **Status:** candidate
@@ -375,7 +488,7 @@ Future work should expand its capabilities **without destabilizing the core buil
 
 ### FR-012 — New Project Onboarding Flow
 
-* **Status:** planned
+* **Status:** promoted
 * **Suggested Target:** v2
 * **Why it matters:**
 
@@ -403,6 +516,7 @@ Future work should expand its capabilities **without destabilizing the core buil
   * primary surface is the agent prompt, not the CLI — assumes users have an agent CLI (e.g. Claude Code)
   * open questions generated at onboarding should be marked `decision_needed` by default
   * this is the required path for Sentinel bootstrap
+  * promoted into active work through Phase 7 planning and backlog seeding
 
 ---
 

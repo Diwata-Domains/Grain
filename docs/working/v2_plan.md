@@ -2,15 +2,15 @@
 
 ## 1. Purpose
 
-This document captures v2 planning while Phase 5 of v1 is still active.
+This document captures v2 transition and sequencing after v1 closure.
 
 It exists to:
 - define the post-v1 transition boundary
 - sequence the first v2 workstreams
 - prevent premature v2 implementation drift while planning proceeds
 
-This document does not authorize v2 implementation by itself.
-Until Phase 5 is closed, v2 work in this repository is planning-only.
+This document does not authorize broad or unsized v2 implementation by itself.
+It defines the planning and promotion boundary for post-v1 work.
 
 ---
 
@@ -23,17 +23,17 @@ Allowed now:
 - identifying dependencies and open questions
 - drafting working-layer planning docs
 
-Not allowed yet:
-- promoting v2 items into the active implementation backlog
-- implementing adapter runtime behavior
-- implementing onboarding commands or prompts as active build work
+Not allowed without explicit promotion into scoped work:
+- broad unsized v2 implementation
+- implementing multiple v2 workstreams in parallel without sequencing
+- implementing onboarding flows before the adapter contract is proven
 - changing canonical docs for v2 unless a concrete change proposal is approved
 
 ---
 
 ## 3. Readiness Gates Before V2 Implementation
 
-V2 implementation should not begin until all of the following are true:
+The first promoted v2 slice should not begin until all of the following are true:
 
 1. Phase 5 is formally closed
 2. v1 review, handoff, and close workflow is stable enough to use on new work
@@ -98,12 +98,13 @@ When promoted:
 
 ## 7. Current Recommendation
 
-With Phase 5 closed:
-- keep v2 implementation narrow and sequencing-driven
-- continue adapter and onboarding planning in working docs
-- promote only the smallest dependency-ready v2 slice first
+Phase 7 (New-Project Onboarding Flow) is now seeded and active.
 
-This keeps momentum without destabilizing the closed v1 core.
+- Phase 6 adapter work is complete and provides the dependency base
+- `P7-T01` is the first executable onboarding task
+- existing-project adoption remains out of the active execution loop until the new-project flow is proven
+
+Active tracking: `docs/working/current_focus.md`
 
 ---
 
@@ -113,15 +114,17 @@ Use this planning cadence:
 
 1. `prompts/phase.plan.next.md`
    - define the next phase or transition slice
-2. `prompts/phase.replan.md`
+2. `prompts/phase.tasks.seed.md`
+   - generate the initial task slice for a newly defined phase
+3. `prompts/phase.replan.md`
    - revise current or next phase only when reality changed materially
-3. `prompts/task.plan.next.md`
+4. `prompts/task.plan.next.md`
    - continuously select the next task or split a too-broad backlog item
-4. `prompts/task.execute.md`
+5. `prompts/task.execute.md`
    - packetize and implement one task
-5. `prompts/task.review.md`
+6. `prompts/task.review.md`
    - review one task
-6. `prompts/task.close.md`
+7. `prompts/task.close.md`
    - close one reviewed task
 
 Task generation and task splitting belong in the planning layer before packet generation.

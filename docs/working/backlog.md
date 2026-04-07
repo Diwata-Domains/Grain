@@ -22,385 +22,161 @@ Default status for new backlog items in this file: `draft`
 
 ---
 
-## 2. Phase 1 — Repository Foundation and Core CLI
-
-### P1-T01 — Create base repository source structure
-- **Status:** done
-- **Description:** Create `src/forge/` with initial module directories for `cli`, `services`, `domain`, `adapters`, `validators`, and `templates`.
-
-### P1-T02 — Implement CLI entrypoint
-- **Status:** done
-- **Description:** Add the main executable entrypoint and top-level command dispatch for the CLI.
-
-### P1-T03 — Scaffold command groups
-- **Status:** done
-- **Description:** Add command group handlers for `init`, `docs`, `task`, `context`, `model`, and `review`.
-
-### P1-T04 — Add repository root resolution
-- **Status:** done
-- **Description:** Implement logic to resolve repository root from current path or explicit `--repo` option.
-
-### P1-T05 — Implement `forge init`
-- **Status:** done
-- **Description:** Create the initialization command that scaffolds required repo directories and starter files without silently overwriting protected artifacts.
-
-### P1-T06 — Create template directory structure
-- **Status:** done
-- **Description:** Add `templates/docs/`, `templates/tasks/`, and `templates/prompts/` structure with placeholder template loading support.
-
-### P1-T07 — Add CLI output formatting base
-- **Status:** done
-- **Description:** Implement shared output formatting for text output and prepare a stable interface for optional JSON output.
-
-### P1-T08 — Add exit code and error handling conventions
-- **Status:** done
-- **Description:** Implement shared error types and exit code mapping aligned with canonical CLI rules.
-
-### P1-T09 — Add initial CLI smoke tests
-- **Status:** done
-- **Description:** Create basic tests that verify CLI invocation, help output, and command group loading.
+## 2. Phase 1 — Repository Foundation and Core CLI ✓ CLOSED
+9 tasks done — archived to `tasks/archive/phase-1/`
 
 ---
 
-## 3. Phase 2 — Documentation Registry and Validation
-
-### P2-T01 — Implement manifest file loader
-- **Status:** done
-- **Description:** Load `docs/runtime/docs_manifest.yaml` from repository-relative path.
-- **Files:** `src/forge/adapters/manifest.py`, `pyproject.toml` (add `PyYAML`)
-- **Model:** open_model
-- **Dependencies:** none (Phase 1 complete)
-- **Packet:** TASK-0010 (draft)
-- **Ready:** yes
-
-### P2-T02 — Implement manifest schema validation
-- **Status:** done
-- **Description:** Validate required top-level manifest sections and required fields for doc entries and task config.
-- **Files:** `src/forge/validators/manifest_validator.py`
-- **Model:** frontier_model
-- **Dependencies:** P2-T01
-- **Ready:** after P2-T01 implemented
-
-### P2-T03 — Implement document registry model
-- **Status:** done
-- **Description:** Create in-memory structures for document records and layer-aware lookup.
-- **Files:** `src/forge/domain/documents.py`
-- **Model:** frontier_model
-- **Dependencies:** P2-T01, P2-T02
-- **Ready:** after P2-T02 implemented
-
-### P2-T04 — Implement document existence validation
-- **Status:** done
-- **Description:** Validate that manifest-declared files and directories exist where required.
-- **Files:** `src/forge/validators/doc_existence_validator.py`
-- **Model:** open_model
-- **Dependencies:** P2-T03
-- **Ready:** after P2-T03 implemented
-
-### P2-T05 — Implement authority-order validation
-- **Status:** done
-- **Description:** Validate manifest authority ordering and detect invalid editable/authority combinations where applicable.
-- **Files:** `src/forge/validators/authority_validator.py`
-- **Model:** frontier_model
-- **Dependencies:** P2-T03
-- **Ready:** after P2-T03 implemented
-
-### P2-T06 — Implement `forge docs validate`
-- **Status:** done
-- **Description:** Expose repository documentation validation through CLI. Composes schema, existence, and authority validators.
-- **Files:** `src/forge/cli/docs.py`, `src/forge/services/docs_service.py`
-- **Model:** frontier_model
-- **Dependencies:** P2-T02, P2-T04, P2-T05
-- **Ready:** after P2-T05 implemented
-
-### P2-T07 — Implement `forge docs show`
-- **Status:** done
-- **Packet:** P2-T07-TASK-0016
-- **Description:** Show metadata and path information for one manifest-registered document.
-- **Files:** `src/forge/cli/docs.py`
-- **Model:** open_model
-- **Dependencies:** P2-T03
-- **Ready:** after P2-T03 implemented (can run in parallel with P2-T04/T05)
-
-### P2-T08 — Implement `forge docs index` baseline behavior
-- **Status:** done
-- **Packet:** P2-T08-TASK-0018
-- **Description:** Generate `docs_index.md` from the manifest as the authoritative source. Manifest is primary; index is derived. `forge docs index` writes or refreshes the index file from registered manifest entries.
-- **Files:** `src/forge/services/docs_service.py`, `src/forge/cli/docs.py`, `docs/runtime/docs_index.md`
-- **Model:** frontier_model
-- **Dependencies:** P2-T03 (done)
-- **Q5 decision:** manifest primary, index generated — resolved 2026-04-02
-- **Ready:** yes
-
-### P2-T09 — Add validator test fixtures for docs
-- **Status:** done
-- **Packet:** P2-T09-TASK-0017
-- **Description:** Create valid and invalid manifest/doc structure test fixtures for all Phase 2 validators.
-- **Files:** `tests/fixtures/`, `tests/test_docs_*.py`
-- **Model:** open_model
-- **Dependencies:** P2-T06 (all validators exist)
-- **Ready:** after P2-T06 implemented
+## 3. Phase 2 — Documentation Registry and Validation ✓ CLOSED
+9 tasks done — archived to `tasks/archive/phase-2/`
 
 ---
 
-## 4. Phase 3 — Task Packet System
+## 4. Phase 3 — Task Packet System ✓ CLOSED
+13 tasks done — archived to `tasks/archive/phase-3/`
 
-### P3-T01 — Implement task ID generator
+---
+
+## 5. Phase 4 — Context Assembly and Model Routing ✓ CLOSED
+13 tasks done — archived to `tasks/archive/phase-4/`
+
+---
+
+## 6. Phase 5 — Review, Handoff, and Hardening ✓ CLOSED
+9 tasks done — archived to `tasks/archive/phase-5/`
+
+---
+
+## 8. Phase 6 — Adapter System Foundation (V2) ✓ CLOSED
+7 tasks done
+
+### P6-T01 — Resolve adapter contract open questions and create adapter_profiles.md
 - **Status:** done
-- **Description:** Generate packet IDs in `TASK-####` format with zero-padding.
-- **Files:** `src/forge/domain/packets.py` (new)
-- **Model:** open_model
+- **Description:** Resolve open planning questions from v2_adapters.md §9 (minimal schema, multi-adapter context selection, no-adapter fallback, shared profile file structure). Create `docs/runtime/adapter_profiles.md` with the contract and initial `code_adapter` and `frontend_adapter` profiles.
+- **Files:** `docs/runtime/adapter_profiles.md`, `docs/runtime/docs_manifest.yaml` (register new runtime doc), `docs/working/v2_adapters.md` (mark questions resolved)
+- **Model:** frontier_model
 - **Dependencies:** none
 - **Ready:** yes
 
-### P3-T02 — Create packet template files
+### P6-T02 — Implement adapter domain model
 - **Status:** done
-- **Description:** Add templates for `task.md`, `context.md`, `plan.md`, `deliverable_spec.md`, `results.md`, and `handoff.md`.
-- **Files:** `templates/tasks/task.md`, `templates/tasks/context.md`, `templates/tasks/plan.md`, `templates/tasks/deliverable_spec.md`, `templates/tasks/results.md`, `templates/tasks/handoff.md`
+- **Description:** Create `AdapterProfile` dataclass with required fields (`adapter_id`, `domain_type`, `applies_to`) and optional hint sections (`relevant_file_patterns`, `ignore_file_patterns`, `build_or_run_hints`, `test_or_validation_hints`, `review_focus_hints`, `context_priority_rules`, `default_model_bias`). Follow the same domain pattern as `ModelProfile`.
+- **Files:** `src/forge/domain/adapters.py` (new)
 - **Model:** open_model
+- **Dependencies:** P6-T01
+- **Ready:** after P6-T01
+
+### P6-T03 — Implement adapter profile loader
+- **Status:** done
+- **Description:** Parse `docs/runtime/adapter_profiles.md` into structured `AdapterProfile` domain objects. Follow the same loading pattern as the model profile loader (`src/forge/adapters/model_config.py`).
+- **Files:** `src/forge/adapters/adapter_config.py` (new)
+- **Model:** open_model
+- **Dependencies:** P6-T02
+- **Ready:** after P6-T02
+
+### P6-T04 — Add adapter metadata fields to task packet templates and parser
+- **Status:** done
+- **Description:** Add optional `primary_adapter` and `secondary_adapters` fields to `templates/tasks/task.md`. Update the packet metadata parser to read these fields from `task.md`. Fields are optional — absence must degrade safely (adapter-neutral behavior).
+- **Files:** `templates/tasks/task.md`, `src/forge/domain/packets.py`, `src/forge/validators/packet_validator.py`
+- **Model:** frontier_model
+- **Dependencies:** P6-T02, P6-T03
+- **Ready:** after P6-T03
+- **Note:** if packet schema change requires canonical update to `data_contracts.md`, capture as a change proposal (CP) before editing
+- **Test requirement:** include an integration test verifying that existing packets with no adapter fields still parse and validate cleanly after the schema change
+
+### P6-T05 — Wire adapter hints into context assembly
+- **Status:** done
+- **Description:** When a task packet declares a `primary_adapter`, bias context assembly toward the adapter's `relevant_file_patterns` and apply `context_priority_rules`. Adapter hints supplement existing doc-registry context selection — they do not replace it. No adapter = adapter-neutral, no behavior change.
+- **Files:** `src/forge/services/context_service.py`, `src/forge/domain/context.py`
+- **Model:** frontier_model
+- **Dependencies:** P6-T04
+- **Ready:** after P6-T04
+
+### P6-T06 — Surface adapter review and validation hints in context output
+- **Status:** done
+- **Description:** When an adapter is active, include adapter-specific `review_focus_hints` and `test_or_validation_hints` in the context bundle output (visible in `forge context build` and `forge context export`). These are advisory hints, not enforced rules.
+- **Files:** `src/forge/services/context_service.py`, `src/forge/domain/context.py`
+- **Model:** open_model
+- **Dependencies:** P6-T05
+- **Ready:** after P6-T05
+
+### P6-T07 — Add adapter system tests
+- **Status:** done
+- **Description:** Test adapter profile loading, domain model completeness, packet metadata parsing with and without adapter fields, context assembly with adapter hint wiring active and inactive.
+- **Files:** `tests/test_adapter_loading.py` (new), `tests/test_adapter_context.py` (new), `tests/fixtures/` (adapter profile fixtures)
+- **Model:** open_model
+- **Dependencies:** P6-T01 through P6-T06
+- **Ready:** after P6-T06
+
+---
+
+## 9. Phase 7 — New-Project Onboarding Flow
+
+> **Status:** in_progress — planning decisions locked in `P7-T01`. Next ready tasks: `P7-T02`, `P7-T03`.
+
+### P7 Planning Notes
+- Scope: guided `forge init` with adapter selection, starter packet generation, basic project scaffolding
+- Depends on: Phase 6 stable adapter contract ✓
+- Planning doc: `docs/working/v2_onboarding.md`
+- Start narrow: prove onboarding with `code_adapter` before generalizing
+
+### P7-T01 — Resolve onboarding planning decisions and lock the minimal new-project flow
+- **Status:** done
+- **Description:** Resolve `docs/working/v2_onboarding.md` open planning questions for the new-project path, lock the minimal phase scope, and explicitly defer existing-project adoption decisions that are out of this phase's first slice.
+- **Files:** `docs/working/v2_onboarding.md`, `docs/working/implementation_plan.md`, `docs/working/backlog.md`, `docs/working/current_focus.md`
+- **Model:** frontier_model
 - **Dependencies:** none
 - **Ready:** yes
 
-### P3-T03 — Implement packet directory creation
-- **Status:** done
-- **Description:** Create packet directories under `tasks/` using valid task IDs.
-- **Files:** `src/forge/services/task_service.py` (new), `src/forge/adapters/filesystem.py`
-- **Model:** open_model
-- **Dependencies:** P3-T01, P3-T02
-- **Ready:** after P3-T01 and P3-T02 implemented
-
-### P3-T04 — Implement `forge task create`
-- **Status:** done
-- **Description:** Generate a new packet from templates with initial metadata and required files.
-- **Files:** `src/forge/cli/task.py`, `src/forge/services/task_service.py`
+### P7-T02 — Add stable new-project onboarding prompt entrypoint
+- **Status:** ready
+- **Description:** Create a dedicated onboarding prompt entrypoint for new projects with a question-first flow and explicit adapter-selection inputs; keep `prompts/workflow.init.md` as compatibility guidance to the new flow.
+- **Files:** `prompts/workflow.onboard.new.md` (new), `prompts/workflow.init.md`, `README.md`
 - **Model:** frontier_model
-- **Dependencies:** P3-T01, P3-T02, P3-T03
-- **Ready:** after P3-T03 implemented
+- **Dependencies:** P7-T01
+- **Ready:** yes
 
-### P3-T05 — Implement `forge task list`
-- **Status:** done
-- **Description:** List existing task packets with basic metadata and status.
-- **Files:** `src/forge/cli/task.py`, `src/forge/services/task_service.py`
-- **Model:** open_model
-- **Dependencies:** P3-T03
-- **Ready:** after P3-T03 implemented
-
-### P3-T06 — Implement `forge task show`
-- **Status:** done
-- **Description:** Display packet metadata, required file presence, and current status.
-- **Files:** `src/forge/cli/task.py`, `src/forge/services/task_service.py`
-- **Model:** open_model
-- **Dependencies:** P3-T03, P3-T07
-- **Ready:** after P3-T07 implemented
-
-### P3-T07 — Implement packet status parser and updater
-- **Status:** done
-- **Description:** Read and update packet status using allowed canonical status values.
-- **Files:** `src/forge/domain/packets.py`, `src/forge/validators/packet_validator.py` (new)
+### P7-T03 — Expand `forge init` scaffolding to write baseline seed files from templates
+- **Status:** ready
+- **Description:** Update init scaffolding so missing baseline docs/runtime/task-template files are created from templates (not just directories), preserving additive-only behavior and dry-run correctness.
+- **Files:** `src/forge/services/init_service.py`, `src/forge/cli/init.py`, `tests/test_init_service.py`
 - **Model:** frontier_model
-- **Dependencies:** P3-T01
-- **Ready:** after P3-T01 implemented
+- **Dependencies:** P7-T01
+- **Ready:** yes
+- **Test requirement:** include coverage proving existing files are skipped and `--dry-run` reports without writing
 
-### P3-T08 — Implement `forge task status`
-- **Status:** done
-- **Description:** Expose packet status transitions through CLI with validation.
-- **Files:** `src/forge/cli/task.py`, `src/forge/services/task_service.py`
-- **Model:** open_model
-- **Dependencies:** P3-T07
-- **Ready:** after P3-T07 implemented
-
-### P3-T09 — Implement packet file validation
-- **Status:** done
-- **Description:** Validate required packet files and required metadata presence. Parse `ID`, `status`, and `phase` from `task.md` metadata block — no deeper parsing required in v1.
-- **Q4 decision:** parse ID, status, phase only — resolved 2026-04-02
-- **Files:** `src/forge/validators/packet_validator.py`
-- **Model:** open_model
-- **Dependencies:** P3-T01, P3-T07
-- **Ready:** after P3-T07 implemented
-
-### P3-T10 — Implement `forge task validate`
-- **Status:** done
-- **Description:** Validate one packet or all packets through CLI. Relies on parsed ID, status, and phase from P3-T09.
-- **Files:** `src/forge/cli/task.py`, `src/forge/services/task_service.py`
-- **Model:** open_model
-- **Dependencies:** P3-T09
-- **Ready:** after P3-T09 implemented
-
-### P3-T11 — Implement closure validation rules
-- **Status:** done
-- **Description:** Validate whether a packet meets closure requirements for `done`.
-- **Files:** `src/forge/validators/packet_validator.py`
+### P7-T04 — Add adapter-selection options to onboarding initialization
+- **Status:** draft
+- **Description:** Add `--primary-adapter` and repeatable `--secondary-adapter` init options, validate declared adapters against runtime adapter profiles when available, and surface selected adapters in scaffold/onboarding outputs.
+- **Files:** `src/forge/cli/init.py`, `src/forge/services/init_service.py`, `src/forge/adapters/adapter_config.py`, `tests/test_init_service.py`
 - **Model:** frontier_model
-- **Dependencies:** P3-T07, P3-T09
-- **Ready:** after P3-T09 implemented
+- **Dependencies:** P7-T03
+- **Ready:** after P7-T03
 
-### P3-T12 — Implement `forge task close`
-- **Status:** done
-- **Description:** Attempt packet closure after running required validation checks.
-- **Files:** `src/forge/cli/task.py`, `src/forge/services/task_service.py`
+### P7-T05 — Add starter task-packet bootstrap for the onboarding path
+- **Status:** draft
+- **Description:** Add an optional onboarding bootstrap step that creates one starter task packet after init and initializes `docs/working/current_task.md` as `ready`, using selected adapter defaults where applicable.
+- **Files:** `src/forge/services/init_service.py`, `src/forge/services/task_service.py`, `src/forge/cli/init.py`, `templates/tasks/task.md`, `tests/test_init_service.py`, `tests/test_task_create_cmd.py`
 - **Model:** frontier_model
-- **Dependencies:** P3-T11
-- **Ready:** after P3-T11 implemented
+- **Dependencies:** P7-T03, P7-T04
+- **Ready:** after P7-T04
+- **Note:** if starter packet metadata contract changes are required, route through `docs/working/change_proposals.md` before canonical edits
 
-### P3-T13 — Add packet lifecycle tests
-- **Status:** done
-- **Description:** Test packet creation, validation, and allowed/disallowed state transitions.
-- **Files:** `tests/test_task_create.py`, `tests/test_task_lifecycle.py`, `tests/test_task_validate.py`, `tests/fixtures/`
+### P7-T06 — Add onboarding integration tests and phase-level docs updates
+- **Status:** draft
+- **Description:** Add focused integration coverage for the new-project onboarding path (`init` scaffolding, adapter selection, starter packet bootstrap) and update user-facing docs to reflect the supported flow.
+- **Files:** `tests/test_phase7_integration.py` (new), `README.md`, `docs/working/current_focus.md`
 - **Model:** open_model
-- **Dependencies:** P3-T04 through P3-T12
-- **Ready:** after P3-T12 implemented
+- **Dependencies:** P7-T02, P7-T05
+- **Ready:** after P7-T05
 
----
-
-## 5. Phase 4 — Context Assembly and Model Routing
-
-### P4-T01 — Implement packet context source discovery
-- **Status:** done
-- **Description:** Resolve packet-local files and candidate doc sources for one packet into a structured source list. Foundation for all context assembly tasks.
-- **Files:** `src/forge/domain/context.py` (new), `src/forge/services/context_service.py` (new)
+### P7-T07 — Existing-project adoption prep boundary (deferred in this slice)
+- **Status:** blocked
+- **Description:** Keep FR-013 implementation out of the active execution loop until the new-project onboarding path is stable; record concrete entry criteria for when adoption flow work can start.
+- **Files:** `docs/working/v2_onboarding.md`, `docs/working/future_roadmap.md`, `docs/working/current_focus.md`
 - **Model:** open_model
-- **Dependencies:** none (Phase 3 done)
-- **Ready:** completed
-
-### P4-T02 — Implement canonical doc selection logic
-- **Status:** done
-- **Description:** Select relevant canonical docs for a packet without loading the full canonical set by default. Filter by `read_when` and task context signals; use manifest metadata from Phase 2 doc system.
-- **Files:** `src/forge/domain/context.py`, `src/forge/services/context_service.py`
-- **Model:** frontier_model
-- **Dependencies:** P4-T01, Phase 2 document registry (done)
-- **Ready:** completed
-
-### P4-T03 — Implement optional working-doc inclusion logic
-- **Status:** done
-- **Description:** Include working docs only when explicitly needed for sequencing or blockers. Default: excluded. Add opt-in selection logic to context service.
-- **Files:** `src/forge/domain/context.py`, `src/forge/services/context_service.py`
-- **Model:** open_model
-- **Dependencies:** P4-T01, P4-T02
-- **Ready:** completed
-
-### P4-T04 — Implement context bundle model
-- **Status:** done
-- **Description:** Create `ContextBundle` dataclass: packet files, selected canonical docs, optional working docs, export metadata. Structured output of assembly; input to export.
-- **Files:** `src/forge/domain/context.py`
-- **Model:** frontier_model
-- **Dependencies:** P4-T01, P4-T02, P4-T03
-- **Ready:** completed
-
-### P4-T05 — Implement `forge context build`
-- **Status:** done
-- **Description:** Build a packet-scoped context bundle for a given task ID. Text shows selected sources. JSON serializes bundle.
-- **Files:** `src/forge/cli/context.py`, `src/forge/services/context_service.py`
-- **Model:** open_model
-- **Dependencies:** P4-T04
-- **Ready:** completed
-
-### P4-T06 — Implement `forge context show`
-- **Status:** done
-- **Description:** Display assembled context sources for a packet (display-only, like `forge task show`). Runs after build or independently.
-- **Files:** `src/forge/cli/context.py`
-- **Model:** open_model
-- **Dependencies:** P4-T05
-- **Ready:** completed
-
-### P4-T07 — Implement `forge context export`
-- **Status:** done
-- **Description:** Export assembled context bundle to a portable file for external coding agents. v1 format: single assembled markdown file with metadata header listing sources; `--format json` emits structured source metadata.
-- **Files:** `src/forge/cli/context.py`, `src/forge/services/context_service.py`, `src/forge/adapters/export.py` (new)
-- **Model:** frontier_model
-- **Dependencies:** P4-T04, Q7 resolved
-- **Q7 decision:** single assembled markdown file with metadata header — resolved 2026-04-03
-- **Q11 decision:** no-tag invocation defaults to `running_tasks` — resolved 2026-04-05
-- **CP-006 decision:** command-specific JSON shapes are distinct by design — applied 2026-04-05
-- **Ready:** completed
-
-### P4-T08 — Implement model profile configuration loader
-- **Status:** done
-- **Description:** Load model class definitions from `docs/runtime/agent_profiles.md` (already exists, manifest-registered). Parse open_model, frontier_model, reviewer_model and escalation rules into structured domain objects. No new config file needed in v1.
-- **Files:** `src/forge/adapters/model_config.py` (new), `src/forge/domain/routing.py` (new)
-- **Model:** open_model
-- **Dependencies:** none
-- **Q8 decision:** parse existing `agent_profiles.md` as profile source — resolved 2026-04-03
-- **Ready:** completed
-
-### P4-T09 — Implement model selection logic
-- **Status:** done
-- **Description:** Given a workflow stage or task role, return the appropriate model class. Logic mirrors `agent_profiles.md` escalation rules without hardcoding vendor names.
-- **Files:** `src/forge/domain/routing.py`, `src/forge/services/model_service.py` (new)
-- **Model:** frontier_model
-- **Dependencies:** P4-T08
-- **Ready:** after P4-T08
-
-### P4-T10 — Implement `forge model show`
-- **Status:** done
-- **Description:** Display configured model classes and their capabilities. Text lists each class and use cases. JSON serializes profiles.
-- **Files:** `src/forge/cli/model.py`
-- **Model:** open_model
-- **Dependencies:** P4-T08
-- **Ready:** after P4-T08
-
-### P4-T11 — Implement `forge model select`
-- **Status:** done
-- **Description:** Resolve model class for a given workflow stage or explicit role. Returns model class name. Thin CLI over routing domain.
-- **Files:** `src/forge/cli/model.py`, `src/forge/services/model_service.py`
-- **Model:** open_model
-- **Dependencies:** P4-T09
-- **Ready:** after P4-T09
-
-### P4-T12 — Implement `forge model escalate`
-- **Status:** done
-- **Description:** Given current model class and reason, return the escalation target class. Covers open_model → frontier_model and * → reviewer_model escalation paths.
-- **Files:** `src/forge/cli/model.py`, `src/forge/services/model_service.py`
-- **Model:** open_model
-- **Dependencies:** P4-T09
-- **Ready:** after P4-T09
-
-### P4-T13 — Add context and routing tests
-- **Status:** done
-- **Description:** End-to-end tests: context source selection, bundle completeness, export output, model class resolution, escalation path coverage.
-- **Files:** `tests/test_context_build.py`, `tests/test_context_export.py`, `tests/test_model_routing.py`
-- **Model:** open_model
-- **Dependencies:** P4-T07, P4-T12
-- **Ready:** after P4-T12
-
----
-
-## 6. Phase 5 — Review, Handoff, and Hardening
-
-### P5-T01 — Implement review validation service
-- **Status:** done
-- **Description:** Validate packet completion readiness and review preconditions.
-
-### P5-T02 — Implement `forge review check`
-- **Status:** done
-- **Description:** Run review-oriented checks against a packet.
-
-### P5-T03 — Implement handoff artifact support
-- **Status:** done
-- **Description:** Create or validate handoff summary output for completed or review-ready packets.
-
-### P5-T04 — Implement `forge review handoff`
-- **Status:** done
-- **Description:** Expose handoff generation or validation through CLI.
-
-### P5-T05 — Implement `forge review summary`
-- **Status:** done
-- **Description:** Produce a structured summary of packet state, validation findings, and next actions.
-
-### P5-T06 — Expand integration tests across core flows
-- **Status:** done
-- **Description:** Add end-to-end tests covering init, docs validation, task creation, context export, and review flows.
-
-### P5-T07 — Add golden fixtures for manifests and packets
-- **Status:** done
-- **Description:** Create stable test fixtures for core repository and packet artifacts.
-
-### P5-T08 — Improve CLI help and ergonomics
-- **Status:** done
-- **Description:** Refine help text, common defaults, and output clarity for daily usage.
-
-### P5-T09 — Clean up error messages and failure reporting
-- **Status:** done
-- **Description:** Improve user-facing failure messages while preserving precise failure modes.
+- **Dependencies:** P7-T06
+- **Ready:** blocked — after new-project onboarding is reviewed and stable
 
 ---
 

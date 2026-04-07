@@ -1,8 +1,10 @@
 """Context service — packet context source discovery and assembly operations."""
 
 from datetime import datetime, timezone
+import fnmatch
 from pathlib import Path
 
+from forge.adapters.adapter_config import load_adapter_profiles
 from forge.adapters.manifest import load_manifest
 from forge.cli.output import CommandResult
 from forge.domain.context import (
@@ -12,9 +14,13 @@ from forge.domain.context import (
     select_canonical_docs,
     select_working_docs,
 )
+from forge.domain.adapters import AdapterProfile
 from forge.domain.documents import DocumentRecord, build_registry
 from forge.domain.errors import ForgeError
-from forge.domain.packets import find_packet_dir
+from forge.domain.packets import find_packet_dir, parse_task_metadata
+
+_NO_ADAPTER_VALUES: frozenset[str] = frozenset({"", "none", "null", "n/a"})
+_ADAPTER_SOURCE_LIMIT = 20
 
 
 def discover_packet_sources(
@@ -182,12 +188,33 @@ def build_context_bundle(
     )
 
     present_files = source_set.present_files()
-    sources = [
-        str(packet_file.path.relative_to(root))
-        for packet_file in present_files
-    ]
+    primary_adapter = _read_primary_adapter(source_set.packet_dir)
+    adapter_profile = _load_adapter_profile(root, primary_adapter)
+    adapter_sources = _select_adapter_source_paths(root, adapter_profile)
+
+    sources = [str(packet_file.path.relative_to(root)) for packet_file in present_files]
+    sources.extend(adapter_sources)
     sources.extend(record.path for record in canonical_docs)
     sources.extend(record.path for record in working_docs)
+    sources = _dedupe_preserve_order(sources)
+
+    adapter_context: dict[str, object] = {
+        "primary_adapter": primary_adapter or "none",
+        "applied": False,
+        "selected_sources": [],
+        "context_priority_rules": [],
+        "review_focus_hints": [],
+        "test_or_validation_hints": [],
+    }
+    if adapter_profile is not None:
+        adapter_context = {
+            "primary_adapter": adapter_profile.adapter_id,
+            "applied": bool(adapter_sources),
+            "selected_sources": adapter_sources,
+            "context_priority_rules": adapter_profile.context_priority_rules,
+            "review_focus_hints": adapter_profile.review_focus_hints,
+            "test_or_validation_hints": adapter_profile.test_or_validation_hints,
+        }
 
     bundle = ContextBundle(
         task_id=task_id,
@@ -198,6 +225,7 @@ def build_context_bundle(
         export_metadata={
             "generated_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
             "sources": sources,
+            "adapter_context": adapter_context,
         },
     )
 
@@ -238,3 +266,78 @@ def build_source_metadata(root: Path, bundle: ContextBundle) -> list[dict[str, o
         )
 
     return metadata
+
+
+def _read_primary_adapter(packet_dir: Path) -> str:
+    """Return packet primary_adapter value from task.md metadata."""
+    task_md = packet_dir / "task.md"
+    if not task_md.exists():
+        return ""
+    metadata = parse_task_metadata(task_md)
+    raw = metadata.get("primary_adapter", "").strip()
+    return "" if raw.lower() in _NO_ADAPTER_VALUES else raw
+
+
+def _load_adapter_profile(root: Path, adapter_id: str) -> AdapterProfile | None:
+    """Load one adapter profile by adapter_id, or None when unavailable."""
+    if not adapter_id:
+        return None
+    try:
+        profiles = load_adapter_profiles(root)
+    except ForgeError:
+        return None
+    for profile in profiles:
+        if profile.adapter_id == adapter_id:
+            return profile
+    return None
+
+
+def _select_adapter_source_paths(root: Path, profile: AdapterProfile | None) -> list[str]:
+    """Return repository-relative source files biased by adapter patterns."""
+    if profile is None or not profile.relevant_file_patterns:
+        return []
+
+    candidates: list[str] = []
+    for pattern in profile.relevant_file_patterns:
+        for matched_path in root.glob(pattern):
+            if not matched_path.is_file():
+                continue
+            relative = matched_path.relative_to(root).as_posix()
+            if _is_ignored_by_adapter(relative, profile.ignore_file_patterns):
+                continue
+            candidates.append(relative)
+
+    ordered = _dedupe_preserve_order(candidates)
+    ordered = _apply_context_priority_rules(ordered, profile.context_priority_rules)
+    return ordered[:_ADAPTER_SOURCE_LIMIT]
+
+
+def _is_ignored_by_adapter(path: str, ignore_patterns: list[str]) -> bool:
+    """Return True if path should be excluded by adapter ignore patterns."""
+    return any(fnmatch.fnmatch(path, pattern) for pattern in ignore_patterns)
+
+
+def _apply_context_priority_rules(paths: list[str], rules: list[str]) -> list[str]:
+    """Apply simple priority ordering from adapter context priority hints."""
+    rule_text = " ".join(rules).lower()
+    if "source files" in rule_text and "tests" in rule_text:
+        return sorted(paths, key=lambda path: (_is_test_path(path), path))
+    return sorted(paths)
+
+
+def _is_test_path(path: str) -> bool:
+    """Return True for common test-file path patterns."""
+    lowered = path.lower()
+    return lowered.startswith("tests/") or "/tests/" in lowered or lowered.endswith("_test.py")
+
+
+def _dedupe_preserve_order(items: list[str]) -> list[str]:
+    """Remove duplicates while preserving original order."""
+    seen: set[str] = set()
+    deduped: list[str] = []
+    for item in items:
+        if item in seen:
+            continue
+        seen.add(item)
+        deduped.append(item)
+    return deduped

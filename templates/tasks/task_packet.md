@@ -6,6 +6,8 @@
 - **Phase:** [phase name]
 - **Backlog:** [backlog item]
 - **Dependencies:** [none or TASK-IDs]
+- **Primary Adapter:** [none or adapter_id]
+- **Secondary Adapters:** [none or comma-separated adapter_ids]
 
 ## Objective
 [What must be built or done. One clear paragraph.]

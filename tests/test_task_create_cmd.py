@@ -62,6 +62,17 @@ def test_task_create_with_title(packet_repo):
     assert "[Title]" not in content
 
 
+def test_task_create_includes_adapter_metadata_fields(packet_repo):
+    runner = CliRunner()
+    runner.invoke(
+        main, ["--repo", str(packet_repo), "task", "create", "--phase", "3", "--task-num", "1"]
+    )
+    task_md = packet_repo / "tasks" / "P3-T01-TASK-0001" / "task.md"
+    content = task_md.read_text(encoding="utf-8")
+    assert "- **Primary Adapter:** none" in content
+    assert "- **Secondary Adapters:** none" in content
+
+
 def test_task_create_json_output(packet_repo):
     runner = CliRunner()
     result = runner.invoke(

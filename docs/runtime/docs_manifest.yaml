@@ -191,6 +191,16 @@ runtime:
       - selecting_model
       - escalating_work
 
+  - id: adapter_profiles
+    path: docs/runtime/adapter_profiles.md
+    purpose: Adapter contract and domain-specific execution/context/review hints
+    authority: high_runtime
+    editable_by_agents: true
+    read_when:
+      - planning_v2
+      - designing_adapters
+      - context_selection
+
 tasks:
   root: tasks/
   packet_files:

@@ -19,6 +19,10 @@ ALLOWED_TRANSITIONS: dict[str, frozenset[str]] = {
 
 _METADATA_LINE = re.compile(r"-\s+\*\*(.+?):\*\*\s*(.*)")
 _STATUS_LINE = re.compile(r"(-\s+\*\*Status:\*\*\s*)(\S+)")
+_METADATA_KEY_ALIASES: dict[str, str] = {
+    "primary adapter": "primary_adapter",
+    "secondary adapters": "secondary_adapters",
+}
 
 
 @dataclass
@@ -68,6 +72,7 @@ def parse_task_metadata(task_md_path: Path) -> dict[str, str]:
             match = _METADATA_LINE.match(line)
             if match:
                 key = match.group(1).strip().lower()
+                key = _METADATA_KEY_ALIASES.get(key, key)
                 value = match.group(2).strip()
                 metadata[key] = value
 

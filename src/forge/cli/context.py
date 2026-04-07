@@ -98,6 +98,18 @@ def context_build(ctx, task_id, include_working, context_tags):
     click.echo(f"  canonical_docs    {len(bundle.selected_canonical_docs)}")
     click.echo(f"  working_docs      {len(bundle.selected_working_docs)}")
     click.echo(f"  sources           {len(bundle.export_metadata.get('sources', []))}")
+    adapter_context = bundle.export_metadata.get("adapter_context", {})
+    click.echo(f"  primary_adapter   {adapter_context.get('primary_adapter', 'none')}")
+    review_hints = adapter_context.get("review_focus_hints", [])
+    validation_hints = adapter_context.get("test_or_validation_hints", [])
+    if review_hints:
+        click.echo(f"  review_hints      {len(review_hints)}")
+        for hint in review_hints:
+            click.echo(f"    - {hint}")
+    if validation_hints:
+        click.echo(f"  validation_hints  {len(validation_hints)}")
+        for hint in validation_hints:
+            click.echo(f"    - {hint}")
     for source in bundle.export_metadata.get("sources", []):
         click.echo(f"    - {source}")
 
@@ -235,6 +247,7 @@ def context_export(ctx, task_id, output_path, include_working, context_tags):
             "task_id": bundle.task_id,
             "generated_at": bundle.export_metadata.get("generated_at"),
             "sources": source_metadata,
+            "adapter_context": bundle.export_metadata.get("adapter_context", {}),
         }
         click.echo(json.dumps(data, indent=2))
         return
@@ -249,3 +262,11 @@ def context_export(ctx, task_id, output_path, include_working, context_tags):
     click.echo(f"  task_id           {bundle.task_id}")
     click.echo(f"  output            {export_path}")
     click.echo(f"  sources           {len(source_metadata)}")
+    adapter_context = bundle.export_metadata.get("adapter_context", {})
+    click.echo(f"  primary_adapter   {adapter_context.get('primary_adapter', 'none')}")
+    review_hints = adapter_context.get("review_focus_hints", [])
+    validation_hints = adapter_context.get("test_or_validation_hints", [])
+    if review_hints:
+        click.echo(f"  review_hints      {len(review_hints)}")
+    if validation_hints:
+        click.echo(f"  validation_hints  {len(validation_hints)}")

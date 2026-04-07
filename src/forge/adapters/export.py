@@ -9,15 +9,46 @@ def render_context_markdown_export(root: Path, bundle: ContextBundle) -> str:
     """Render a single assembled markdown export for a ContextBundle."""
     generated_at = bundle.export_metadata.get("generated_at", "")
     sources = bundle.export_metadata.get("sources", [])
+    adapter_context = bundle.export_metadata.get("adapter_context", {})
+    primary_adapter = str(adapter_context.get("primary_adapter", "none"))
+    review_hints = adapter_context.get("review_focus_hints", [])
+    validation_hints = adapter_context.get("test_or_validation_hints", [])
 
     lines: list[str] = [
         "# Context Export",
         "",
         f"Task ID: {bundle.task_id}",
         f"Generated At: {generated_at}",
+        f"Primary Adapter: {primary_adapter}",
+    ]
+
+    if primary_adapter != "none":
+        lines.extend(
+            [
+                "",
+                "## Adapter Hints",
+                "",
+                "### Review Focus Hints",
+            ]
+        )
+        if review_hints:
+            for hint in review_hints:
+                lines.append(f"- {hint}")
+        else:
+            lines.append("- (none)")
+        lines.extend(["", "### Test/Validation Hints"])
+        if validation_hints:
+            for hint in validation_hints:
+                lines.append(f"- {hint}")
+        else:
+            lines.append("- (none)")
+
+    lines.extend(
+        [
         "",
         "## Sources",
-    ]
+        ]
+    )
     for source in sources:
         lines.append(f"- `{source}`")
 

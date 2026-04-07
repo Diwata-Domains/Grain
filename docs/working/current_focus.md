@@ -1,38 +1,29 @@
 # Current Focus
 
 ## Current Phase
-Post-v1 Transition and V2 Planning
+Phase 7 — New-Project Onboarding Flow (seeded, execution-ready)
 
-## Phase 4 Status
-Complete. 13/13 tasks done. 349/349 tests passing at close.
+## V1 Status
+Complete. All 5 phases closed. 53 tasks done. 379 tests passing at v1 close.
 
-## Phase 5 Status
-- Complete. 9/9 tasks done.
-- V1 core workflow is closed and stable enough for v2 planning and promotion work.
-
-## Parallel Planning Track
-- v2 planning is active
-- first candidate implementation track is adapter system formalization
+## Phase 6 Status
+CLOSED. All 7 tasks done. 399/399 tests passing. Adapter contract proven with `code_adapter`. Phase closed 2026-04-06.
 
 ## Immediate Goals
-1. finalize the v2 adapter contract draft
-2. refine new-project and existing-project onboarding flows
-3. decide the first promotable v2 backlog slice
+1. review `P7-T01` and confirm Phase 7 planning decisions are locked
+2. execute `P7-T02` (prompt entrypoint) and `P7-T03` (`forge init` scaffolding) in sequence
+3. keep onboarding narrow: prove `code_adapter` flow first, then generalize
 
 ## Active Constraints
-- keep v2 work narrow and sequencing-driven
 - use local filesystem only
-- no database or background-service dependencies
 - preserve the stable v1 workflow as the core
+- do not start blocked/deferred Phase 7 items before dependency and readiness rules are met
+- scope onboarding narrowly: prove with one adapter before generalizing
+- keep provider handling model-agnostic in the first onboarding slice
 
 ## Do Not Work On Right Now
+- existing-project adoption flow implementation (Phase 7 — represented as blocked `P7-T07` until new-project flow is stable)
 - Sentinel (v2 — FR-005)
 - advisory/intelligence layer (v2)
 - telemetry automation (v2 — FR-011)
-
-## Definition of Progress for Transition
-Transition progress is real when:
-- v2 planning docs are specific enough to promote work into backlog
-- the first adapter slice is clearly scoped
-- onboarding planning is aligned to the adapter contract
-- v2 work does not destabilize the closed v1 loop
+- frontend_adapter onboarding expansion (defer until code_adapter onboarding path is proven)

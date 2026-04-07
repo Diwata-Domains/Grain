@@ -27,6 +27,20 @@ TASK_MD_CONTENT = """\
 Does something.
 """
 
+TASK_MD_WITH_ADAPTERS = """\
+# Task: Adapter Task
+
+## Metadata
+- **ID:** TASK-0043
+- **Status:** draft
+- **Phase:** Phase 6 — Adapter System Foundation (V2)
+- **Primary Adapter:** code_adapter
+- **Secondary Adapters:** frontend_adapter, docs_adapter
+
+## Objective
+Does adapter work.
+"""
+
 
 # --- parse_task_metadata ---
 
@@ -44,6 +58,14 @@ def test_parse_metadata_returns_empty_when_no_section(tmp_path):
     task_md = tmp_path / "task.md"
     task_md.write_text("# Task: No Metadata\n\nJust text.\n")
     assert parse_task_metadata(task_md) == {}
+
+
+def test_parse_metadata_extracts_adapter_fields_when_present(tmp_path):
+    task_md = tmp_path / "task.md"
+    task_md.write_text(TASK_MD_WITH_ADAPTERS)
+    metadata = parse_task_metadata(task_md)
+    assert metadata["primary_adapter"] == "code_adapter"
+    assert metadata["secondary_adapters"] == "frontend_adapter, docs_adapter"
 
 
 def test_parse_metadata_stops_at_next_section(tmp_path):

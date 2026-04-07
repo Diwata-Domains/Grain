@@ -74,3 +74,27 @@ def test_write_context_markdown_export_defaults_to_packet_directory(packet_repo)
     assert export_path == bundle.packet_dir / "context_export.md"
     assert export_path.exists()
     assert "Export body." in export_path.read_text(encoding="utf-8")
+
+
+def test_render_context_markdown_export_includes_adapter_hint_sections(packet_repo):
+    _write_manifest(packet_repo)
+    _write_doc(packet_repo, "docs/canonical/workflow_spec.md", "# Workflow Spec\nExport body.\n")
+    create_packet_directory(packet_repo, phase=4, task_num=13)
+
+    result, bundle = build_context_bundle(packet_repo, "TASK-0001")
+    assert result.ok is True
+    assert bundle is not None
+
+    bundle.export_metadata["adapter_context"] = {
+        "primary_adapter": "code_adapter",
+        "review_focus_hints": ["behavior regressions"],
+        "test_or_validation_hints": ["run focused tests before full suite"],
+    }
+
+    content = render_context_markdown_export(packet_repo, bundle)
+    assert "Primary Adapter: code_adapter" in content
+    assert "## Adapter Hints" in content
+    assert "### Review Focus Hints" in content
+    assert "### Test/Validation Hints" in content
+    assert "- behavior regressions" in content
+    assert "- run focused tests before full suite" in content
