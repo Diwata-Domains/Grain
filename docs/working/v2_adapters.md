@@ -125,11 +125,24 @@ Recommended first set:
 2. `frontend_adapter`
    - TypeScript, JavaScript, React, Storybook, Tauri UI
 3. `docs_adapter`
-   - Markdown/documentation systems
+   - Markdown/documentation systems, content repositories, knowledge bases
 4. `spreadsheet_adapter`
    - Excel/spreadsheet workflows
 
 These should share one contract shape even if some fields are unused in early versions.
+
+### 5.1 Current vs Future
+
+Current supported adapters:
+- `code_adapter`
+- `frontend_adapter`
+
+Planned adapters:
+- `docs_adapter`
+- `spreadsheet_adapter`
+
+Possible later adapters:
+- content-management variants for editorial systems, publishing pipelines, or knowledge bases
 
 ---
 

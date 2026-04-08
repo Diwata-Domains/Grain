@@ -6,7 +6,7 @@ Forge
 
 ---
 
-## Phase Metrics
+## V1 Metrics (Phases 1–5)
 
 ### Phase 1
 
@@ -176,6 +176,19 @@ Record the following in each task packet `results.md`:
 
 ---
 
+## V1 Aggregate
+
+* Total tasks completed: 53 (Phases 1–5)
+* Total blocked: 0
+* Tests at v1 close: 379
+* Open questions resolved during v1: Q1–Q11 (11 questions)
+* Canonical change proposals applied during v1: CP-001 through CP-008 (8 applied)
+* Major v1 additions: full CLI (init/docs/task/context/model/review), packet lifecycle, doc registry, context assembly, model routing, review/handoff/summary commands, integration tests, golden fixtures
+
+---
+
+## V2 Metrics (Phases 6–)
+
 ### Phase 6
 
 * Tasks completed: 7 (P6-T01 through P6-T07)
@@ -205,15 +218,54 @@ Record the following in each task packet `results.md`:
 
 ---
 
-## Aggregate
+### Phase 7
 
-* Total tasks completed: 60 (53 v1 + 7 Phase 6)
-* Total blocked: 0
-* Total tests at v1 close: 379; tests at Phase 6 close: 399
-* Open questions resolved total: Q1–Q11 (all 11 resolved; none raised in Phase 6)
-* Canonical change proposals applied total: CP-001 through CP-008 (all 8 applied; none raised in Phase 6)
-* V1 phases closed: 5 (all complete)
-* V2 phases closed: 1 (Phase 6)
-* Major v1 additions: full CLI (init/docs/task/context/model/review), packet lifecycle, doc registry, context assembly, model routing, review/handoff/summary commands, integration tests, golden fixtures
+* Tasks completed: 7 (P7-T01 through P7-T07)
+* Blocked tasks: 0
+* Prompt runs: 21 (7 execute × 1 each + 7 review × 1 each + 7 close × 1 each)
+* Avg prompt runs per completed task: 3.0
+* Manual interventions: 0
+* First-pass success rate: 7/7 implementation and review-ready handoffs
+* Rework count: 0
+* Drift incidents: 0
+* Phase duration: Session 7
+* Tests at phase close: 419 (+20 new tests from 399 at Phase 6 close)
+* Conversation model: multi-agent (separate executor / reviewer / closer conversations)
+* Token tracking: proxy metrics only
+
+### Phase 7 Notes
+
+* What felt efficient: the onboarding slice stayed bounded across prompt, init, bootstrap, integration, and boundary-doc work; no canonical drift surfaced
+* What created friction: recurring packet-template prefill noise in review/close fields persists across tasks, but it did not block closure
+* What to tighten next: remove or relabel reviewer/closer-only fields in packet templates to reduce repetitive correction work
+
+### Phase Retrospective Classification
+
+* **Fix now:** none
+* **Batch next phase:** packet-template prefill cleanup for review/close fields
+* **Ignore:** none
+
+---
+
+## V2 Aggregate (to date)
+
+* Total v2 tasks completed: 14 (Phase 6: 7, Phase 7: 7)
+* Total v2 blocked: 0
+* Tests at v2 Phase 6 close: 399; tests at v2 Phase 7 close: 419
+* Open questions resolved during v2 (to date): Q12–Q15 (4 questions)
+* Canonical change proposals raised during v2: none
 * Major Phase 6 additions: adapter profiles runtime doc, AdapterProfile domain model, adapter loader/parser, packet adapter metadata fields, adapter-aware context biasing, adapter hint surfacing in context outputs, adapter system tests
+* Major Phase 7 additions: stable new-project onboarding prompt, init seed-file scaffolding, adapter selection, starter packet bootstrap, onboarding integration tests, existing-project adoption boundary docs
+
+---
+
+## Combined Aggregate
+
+* Total tasks completed: 67 (53 v1 + 14 v2)
+* Total blocked (all phases): 0
+* Total tests at v1 close: 379; at Phase 6 close: 399; at Phase 7 close: 419
+* Open questions resolved total: Q1–Q15 (15 resolved)
+* Canonical change proposals applied total: CP-001 through CP-008 (8 applied; none raised in v2)
+* V1 phases closed: 5 (Phases 1–5)
+* V2 phases closed: 2 (Phase 6, Phase 7)
 * V2 planning docs created: v2_plan.md, v2_adapters.md, v2_onboarding.md

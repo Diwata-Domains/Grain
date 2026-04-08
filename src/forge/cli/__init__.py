@@ -12,7 +12,10 @@ from .docs import docs_group
 from .task import task_group
 from .context import context_group
 from .model import model_group
+from .phase import phase_group
+from .prompt import prompt_group
 from .review import review_group
+from .workflow import workflow_group
 from .error_handler import handle_error
 from forge.domain.errors import ForgeError
 
@@ -66,4 +69,7 @@ main.add_command(docs_group)
 main.add_command(task_group)
 main.add_command(context_group)
 main.add_command(model_group)
+main.add_command(phase_group)
+main.add_command(prompt_group)
 main.add_command(review_group)
+main.add_command(workflow_group)

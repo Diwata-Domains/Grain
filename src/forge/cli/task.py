@@ -1,5 +1,6 @@
 import dataclasses
 import json
+from pathlib import Path
 
 import click
 
@@ -61,6 +62,65 @@ def task_list(ctx):
         click.echo(f"  {r.id:<12}  {r.status:<12}  {r.path.name}")
 
 
+@task_group.command("next")
+@click.pass_context
+def task_next(ctx):
+    """Report the next actionable backlog task or planning requirement."""
+    from forge.services.workflow_service import evaluate_workflow_state
+
+    repo = ctx.obj.get("repo") if ctx.obj else None
+    fmt = ctx.obj.get("fmt", "text") if ctx.obj else "text"
+    root = resolve_repo_root(repo)
+
+    result, evaluation = evaluate_workflow_state(root)
+
+    if evaluation is None:
+        if fmt == "json":
+            click.echo(json.dumps(dataclasses.asdict(result), indent=2))
+        else:
+            print_result(result, fmt)
+        raise click.ClickException("task selection failed")
+
+    next_task = ""
+    if evaluation.next_action == "task_execute" and evaluation.candidate_tasks:
+        next_task = evaluation.candidate_tasks[0].task_ref
+
+    planning_required = (
+        evaluation.next_action == "task_planning"
+        or evaluation.stop_reason == "task_planning_required"
+    )
+
+    if fmt == "json":
+        data = dataclasses.asdict(result)
+        data["task_next"] = {
+            "next_task": next_task,
+            "next_action": evaluation.next_action,
+            "planning_required": planning_required,
+            "stop_reason": evaluation.stop_reason,
+            "blocking_reasons": evaluation.blocking_reasons,
+            "recommended_prompt": evaluation.recommended_prompt,
+            "affected_artifacts": evaluation.affected_artifacts,
+        }
+        click.echo(json.dumps(data, indent=2))
+        return
+
+    if next_task:
+        click.echo("task next: ok")
+        click.echo(f"  next_task         {next_task}")
+        click.echo(f"  next_action       {evaluation.next_action}")
+    elif planning_required:
+        click.echo("task next: planning_required")
+        click.echo("  reason            no ready task candidate; planning required first")
+        click.echo(f"  recommended_prompt  {evaluation.recommended_prompt}")
+    else:
+        click.echo("task next: stopped")
+        if evaluation.stop_reason:
+            click.echo(f"  stop_reason       {evaluation.stop_reason}")
+    click.echo(f"  blocking_reasons  {len(evaluation.blocking_reasons)}")
+    for reason in evaluation.blocking_reasons:
+        click.echo(f"    - {reason}")
+
+
 @task_group.command("show")
 @click.option("--id", "task_id", required=True, metavar="TASK-####", help="Packet ID to show.")
 @click.pass_context
@@ -98,6 +158,43 @@ def task_show(ctx, task_id):
     for name, present in inventory.items():
         state = "present" if present else "absent"
         click.echo(f"    {name:<24}  {state}")
+
+
+@task_group.command("prepare")
+@click.option("--id", "task_id", required=True, metavar="TASK-####", help="Packet ID to prepare.")
+@click.pass_context
+def task_prepare(ctx, task_id):
+    """Check packet/context/prompt prerequisites for one task."""
+    from forge.services.task_prepare_service import prepare_task_packet
+
+    repo = ctx.obj.get("repo") if ctx.obj else None
+    fmt = ctx.obj.get("fmt", "text") if ctx.obj else "text"
+    root = resolve_repo_root(repo)
+
+    result, payload = prepare_task_packet(root, task_id)
+
+    if payload is None:
+        if any("not found" in e for e in result.errors):
+            for err in result.errors:
+                click.echo(f"  error     {err}", err=True)
+            raise click.UsageError(f"packet '{task_id}' not found")
+        raise GeneralError("task prepare failed", detail="; ".join(result.errors))
+
+    if fmt == "json":
+        data = dataclasses.asdict(result)
+        data["prepare"] = payload
+        click.echo(json.dumps(data, indent=2))
+        return
+
+    label = "ok" if payload["ready"] else "missing_inputs"
+    click.echo(f"task prepare: {label}")
+    click.echo(f"  task_id           {payload['task_id']}")
+    click.echo(f"  packet_dir        {Path(payload['packet_dir']).name}")
+    click.echo(f"  task_status       {payload['task_status'] or '(missing)'}")
+    click.echo(f"  recommended_prompt  {payload['recommended_prompt']}")
+    click.echo(f"  missing_inputs    {len(payload['missing_inputs'])}")
+    for item in payload["missing_inputs"]:
+        click.echo(f"    - {item}")
 
 
 @task_group.command("status")

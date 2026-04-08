@@ -54,6 +54,7 @@ If an item is actively being executed, the working docs own the operational stat
   * the Forge workflow (build loop, task packets, model routing, context assembly) is fully language and domain agnostic — adapters are the translation layer that makes it work across any project type
   * without adapters, Forge is implicitly a Python/backend tool; with adapters it works across every domain the user operates in
   * target project types include: Rust, Python, TypeScript/JavaScript, React, Tauri, Storybook, Markdown documentation systems, and Excel/spreadsheet workflows
+  * content-management systems and markdown-first knowledge bases should fit the same docs-oriented adapter path
   * Sentinel must operate across these same domains
 * **Scope:**
 
@@ -65,6 +66,7 @@ If an item is actively being executed, the working docs own the operational stat
     * `frontend_adapter` — TypeScript, JavaScript, React, Storybook, Tauri (component-scoped tasks, build tool awareness, browser test runners)
     * `docs_adapter` — Markdown documentation systems, cross-reference validation
     * `spreadsheet_adapter` — Excel/spreadsheet workflows, formula validation, workbook operation specs
+    * later content-management variants — editorial systems, docs sites, knowledge bases, publishing pipelines
   * adapter selection during onboarding (FR-012, FR-013) — agent asks project type and sets adapter profile at project init time
 * **Why not now:**
 
@@ -220,6 +222,8 @@ If an item is actively being executed, the working docs own the operational stat
   * automate the next valid step, not hidden planning
   * keep all workflow state in files already used by Forge
   * phase boundaries should be valid stop points for the automation runner
+  * should land before TUI/GUI work so later interfaces wrap stable command/state primitives
+  * automation-relevant commands should expose machine-readable JSON for agent and operator use
 
 ---
 
@@ -239,8 +243,10 @@ If an item is actively being executed, the working docs own the operational stat
   * bug and issue ingestion pipeline
   * reproducible artifact generation
   * screenshot and artifact capture (logs, repro steps, visual state)
+  * frontend capture flow for user-triggered bug reports with screenshots, relevant app state, and optional human comment
   * sandbox/container execution for isolated verification
   * structured issue output fed back into Forge as `candidate_task` proposal objects
+  * structured verification artifact model covering screenshots, logs, traces, captured state, repro steps, and human annotations
   * human approval workflow for issue → work conversion
   * observability and workflow intelligence layer
 * **Why not now:**
@@ -256,6 +262,7 @@ If an item is actively being executed, the working docs own the operational stat
 * **Notes:**
 
   * Sentinel feeds verified issues back into Forge as structured proposal objects — not raw bug reports
+  * user feedback during product use should be captured as structured verification or feedback artifacts, not loose comments only
   * building Sentinel with Forge is the intended v1 real-world validation
   * Sentinel monetization is based on verification, reproducibility, and observability — not on limiting Forge core
 
@@ -272,6 +279,7 @@ If an item is actively being executed, the working docs own the operational stat
 * **Scope:**
 
   * advisory intelligence layer — candidate task generation, roadmap suggestions, efficiency analysis, determinism/ambiguity insights
+  * self-improvement proposal flow for workflow friction, prompt drift, repeated manual fixes, and automation opportunities discovered while using Forge
   * multi-project coordination and cross-project backlog visibility
   * advanced workflow metrics and observability dashboards
   * team-level workflow features
@@ -288,6 +296,7 @@ If an item is actively being executed, the working docs own the operational stat
 
   * Forge Core must remain fully functional without Pro
   * Pro should never gate basic execution, packet management, or core adapter functionality
+  * Forge self-improvement should stay proposal-driven; verification evidence still belongs primarily to Sentinel
 
 ---
 
@@ -317,26 +326,33 @@ If an item is actively being executed, the working docs own the operational stat
 
 ### FR-007 — Lightweight UI / Dashboard
 
-* **Status:** idea
+* **Status:** planned
 * **Suggested Target:** v3
 * **Why it matters:**
 
   * improves visibility of workflow state
+  * broadens the eventual surface beyond terminal-native operators
+  * remains useful even if CLI + prompts are sufficient for power users
 * **Scope:**
 
   * phase view
   * backlog viewer
   * open questions panel
   * metrics dashboard
+  * verification and review visibility on top of Forge + Sentinel state
 * **Why not now:**
 
   * CLI + agent workflow is sufficient for v1
+  * workflow runner and Sentinel bridge primitives should exist first
 * **Dependencies:**
 
   * stable workflow + metrics
+  * FR-004c (Workflow Automation Runner)
+  * FR-005 / FR-006 verification surface maturity
 * **Notes:**
 
   * must not replace file-based system
+  * GUI is an expected future surface, but not a substitute for the command/state model
 
 ---
 
@@ -360,9 +376,11 @@ If an item is actively being executed, the working docs own the operational stat
 
   * adapter and onboarding work should stabilize first
   * the workflow model is more important than the interface layer at the current stage
+  * the workflow automation runner should exist first so the TUI shells stable primitives instead of inventing its own
 * **Dependencies:**
 
   * stable Forge core
+  * FR-004c (Workflow Automation Runner)
   * stable task and phase prompt surfaces
   * stable file-backed workflow contracts
 * **Notes:**
@@ -482,7 +500,9 @@ If an item is actively being executed, the working docs own the operational stat
 * **Notes:**
 
   * token efficiency should be treated as a first-class workflow quality metric, not just a side effect
+  * one of Forge's core product claims is that structured workflow should increase useful work completed before model usage limits or context ceilings are hit
   * future work may include model-routing decisions based partly on token or cost budgets
+  * **tree-sitter pattern (2026-04-07):** structural extraction via tree-sitter (import/call graph parsing, local, zero LLM tokens) is the preferred direction for adapter context selection improvements across multiple adapters. Instead of loading all files matching broad glob patterns, parse the dependency graph of what the task actually touches and load only those files. Applicable adapters: `code_adapter` (Python, Rust, Go, Java), `frontend_adapter` (TypeScript, JavaScript, TSX, CSS), `docs_adapter` (Markdown link/cross-reference graphs), `devops_adapter` (Bash, Dockerfile, HCL, YAML). Not applicable to `spreadsheet_adapter` (formula dependencies require different tooling). Observed reference: Graphify project (MIT) demonstrates this pattern at scale with 19-language tree-sitter support. Implementation deferred until adapter context selection is the proven bottleneck.
 
 ---
 
@@ -551,6 +571,12 @@ If an item is actively being executed, the working docs own the operational stat
   * scan must be additive — never overwrite files that already exist
   * the goal is a usable first draft in one pass, not a perfect canonical set
   * frontend codebases are a primary target use case alongside backend and full-stack projects
+  * `P7-T07` entry-criteria boundary recorded on 2026-04-07:
+    * new-project onboarding slice must be complete and reviewed (`P7-T02` through `P7-T06`)
+    * onboarding prompt/init surfaces must remain stable without unresolved drift
+    * onboarding integration coverage must remain passing
+    * first adoption packet must stay planning/scaffold-first (no deep scan tuning or provider-specific branching)
+  * promotion trigger: move FR-013 from `planned` to `promoted` only when the above criteria are satisfied and a concrete starter packet is queued in backlog/current focus
 
 ---
 

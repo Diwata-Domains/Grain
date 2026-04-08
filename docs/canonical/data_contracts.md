@@ -496,7 +496,90 @@ To keep v1 practical while allowing evolution:
 
 ---
 
-## 17. Deferred Contract Complexity
+## 17. Adapter Profile Contract
+
+Adapter profiles are declarative, filesystem-visible domain bridges. They live in runtime docs — not in canonical docs or task packets — and are loaded by the adapter system at execution time.
+
+### 17.1 Standard Location
+
+```text
+docs/runtime/adapter_profiles.md
+```
+
+One file may contain multiple adapter profiles as distinct sections. Custom adapters must be declared in the manifest alongside official ones if they are to be discovered by the adapter loader.
+
+### 17.2 Adapter Profile Schema
+
+Each adapter profile must define:
+
+```yaml
+adapter_id: <string>          # stable identifier, e.g. code_adapter, devops_adapter
+domain_type: <string>         # broad class, e.g. code, frontend, devops, docs, local_ops
+applies_to: <list[string]>    # languages, frameworks, or domain signals, at least one required
+```
+
+At least one of the following hint sections must be present:
+
+```yaml
+context_priority_rules: <list[string]>
+test_or_validation_hints: <list[string]>
+```
+
+Optional hint fields:
+
+```yaml
+relevant_file_patterns: <list[string]>
+ignore_file_patterns: <list[string]>
+build_or_run_hints: <list[string]>
+review_focus_hints: <list[string]>
+default_model_bias: <string | mapping>
+```
+
+### 17.3 Official vs Custom Adapters
+
+**Official adapters** are maintained by the Forge project and distributed in the core adapter profiles file. They are subject to the same canonical change process as other runtime docs.
+
+**Custom adapters** are defined locally by users for repo-specific or private domain needs. They must conform to the same schema as official adapters. Custom adapters may be added to `docs/runtime/adapter_profiles.md` alongside official ones, or declared in a separate file referenced by the manifest.
+
+Custom adapter `adapter_id` values must not shadow official adapter IDs.
+
+### 17.4 Packet-Level Adapter Fields
+
+Task packets may declare adapters in `task.md` metadata:
+
+```markdown
+- Primary Adapter: <adapter_id>
+- Secondary Adapters: <adapter_id>, <adapter_id>   # optional
+```
+
+Field rules:
+- `primary_adapter` is optional; absence means adapter-neutral behavior
+- `secondary_adapters` is optional; may be a comma-separated list
+- declared adapter IDs must resolve to a known profile at validation time
+
+### 17.5 Adapter Contract Validation Minimums
+
+A contract validator must be able to check:
+- `adapter_id` is present and non-empty
+- `domain_type` is present and non-empty
+- `applies_to` contains at least one entry
+- at least one of `context_priority_rules` or `test_or_validation_hints` is present
+- packet-level adapter fields reference known `adapter_id` values when declared
+
+### 17.6 Adapter Contract Invariants
+
+Adapters must not define fields that attempt to override:
+- packet lifecycle status values
+- state transition rules
+- closure requirements
+- authority hierarchy
+- canonical change policy
+
+A validator may reject or warn on adapter profiles that contain unrecognized fields that could be interpreted as overriding these invariants.
+
+---
+
+## 18. Deferred Contract Complexity
 
 The following are deferred:
 
@@ -511,9 +594,9 @@ v1 should prefer simple deterministic checks over heavy schema systems.
 
 ---
 
-## 18. Decision Boundaries
+## 19. Decision Boundaries
 
-### 18.1 Decisions This Document Controls
+### 19.1 Decisions This Document Controls
 
 - required artifact names and structures
 - manifest schema expectations
@@ -521,8 +604,9 @@ v1 should prefer simple deterministic checks over heavy schema systems.
 - allowed status value strings
 - machine-checkable transition contract
 - minimum validator targets
+- adapter profile schema and validation minimums
 
-### 18.2 Decisions This Document Does Not Control
+### 19.2 Decisions This Document Does Not Control
 
 - why the product exists
 - component/module boundaries

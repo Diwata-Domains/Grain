@@ -453,6 +453,41 @@ Support acceptance, handoff, and completion workflows.
 
 ---
 
+### 6.7 `adapter`
+
+#### Purpose
+
+Inspect the available adapter profiles and their configured domain contracts.
+
+#### v1/v2 Commands
+
+**`forge adapter list`** — list all available adapter profiles (official and custom).
+
+**`forge adapter show`** — display the full contract for one adapter profile.
+
+#### Responsibilities
+
+- load and display adapter profiles from `docs/runtime/adapter_profiles.md` (or manifest-declared path)
+- surface adapter fields: `adapter_id`, `domain_type`, `applies_to`, hint sections
+- distinguish official from custom adapters where that information is available in the profile
+
+#### Must not
+
+- modify adapter profiles
+- alter packet state
+- load adapter contract data into a packet without explicit task creation or context command
+
+#### Recommended options
+
+- `--id <adapter-id>`
+- `--format text|json`
+
+#### Deferral note
+
+`forge adapter list` and `forge adapter show` are defined here as the stable command surface for adapter inspection. Full implementation is deferred to the phase where adapter validation is automated. The command surface should be registered early so it appears in `forge --help` output and validates cleanly.
+
+---
+
 ## 7. Required Command Behaviors
 
 ### 7.1 Idempotence Expectations
@@ -586,7 +621,7 @@ The following are explicitly deferred unless needed later:
 - live watch mode
 - background job orchestration
 - multi-user collaboration commands
-- plugin marketplace commands
+- adapter authoring or publishing commands (the contract is declarative and file-based; no CLI scaffolding is required to create one)
 
 ---
 
@@ -613,9 +648,11 @@ forge model escalate
 forge review check
 forge review handoff
 forge review summary
+forge adapter list
+forge adapter show
 ```
 
-Additional commands may be added later, but v1 should keep the surface disciplined.
+Additional commands may be added later, but the surface should remain disciplined.
 
 ---
 

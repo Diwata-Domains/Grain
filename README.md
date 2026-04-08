@@ -8,9 +8,11 @@ It gives you:
 - task packets as the execution unit
 - explicit review and close loops
 - minimal-context execution instead of broad repo dumping
+- more useful work per agent context window by reducing drift, retries, and unnecessary rereads
 
 Forge is not a coding model by itself.
 It is the workflow and file system that external agent CLIs operate against.
+It exists in part to help agent-CLI users avoid burning through token windows on broad, repetitive, underspecified conversations.
 
 ---
 
@@ -21,6 +23,7 @@ Forge is for developers and technical operators who:
 - want inspectable markdown files instead of opaque orchestration
 - want scoped task execution, review, and closure
 - want less context drift and lower token waste than ad hoc prompting
+- regularly hit context or usage limits before useful work is complete
 
 ---
 
@@ -38,6 +41,65 @@ Forge separates work into layers:
   - one packet per task
 - `prompts/`
   - stable workflow entrypoints for agent CLIs
+
+---
+
+## Adapter Inventory
+
+Forge uses a contract-driven adapter model to tune workflow behavior for different domains.
+
+The workflow loop is the same for every domain. Adapters change context selection, validation hints, and review focus — not workflow law.
+
+### Official Adapters (Supported Today)
+
+- `code_adapter`
+  - Python, Rust, backend services, CLI tooling
+- `frontend_adapter`
+  - TypeScript, JavaScript, React, Storybook, Tauri UI
+
+### Official Adapters (Planned)
+
+- `docs_adapter`
+  - Markdown documentation systems, content repositories, knowledge bases
+- `spreadsheet_adapter`
+  - Excel and spreadsheet workflows
+
+### Custom Adapters
+
+Users may define custom adapter profiles locally for any domain.
+
+Examples of valid custom adapter domains:
+- DevOps workflows — VPS provisioning, deployment setup, service configuration
+- System administration — reverse-proxy setup, firewall and SSH hardening, backup planning, monitoring
+- Local ops — machine-admin repos, dotfile management, workstation automation
+- Containerization — Docker/Compose setup, rollback procedures
+- Content pipelines — editorial systems, publishing workflows
+- Any operational domain expressible through repo artifacts and task packets
+
+Custom adapters follow the same contract as official adapters. Add them to `docs/runtime/adapter_profiles.md` and declare them in the manifest. No plugin system or marketplace is required.
+
+### Future Possibilities
+
+- shareable community adapter profiles
+- adapter-aware template sets per domain
+
+If you are managing content with Forge, `docs_adapter` is the natural direction because it fits markdown-first editorial, knowledge-base, and documentation workflows. If you are managing infrastructure or operations work, define a `devops_adapter` or `local_ops_adapter` with the file patterns and validation hints relevant to your domain.
+
+---
+
+## Recursive Build Principle
+
+Forge is intended to be used to build Forge itself, then to build Sentinel on top of it.
+
+That recursive use is deliberate.
+It is one of the main ways the product is validated in real work:
+
+- if Forge cannot manage its own build cleanly, its workflow claims are weak
+- if Forge reduces token waste, drift, and retries while building itself, that is stronger evidence than a synthetic demo
+- if Sentinel can later verify work produced through Forge, the loop becomes: structure the work, execute the work, verify the result
+
+Recursive building is validation, not proof of universal fit.
+Forge still needs to work outside its own repo shape and outside its creator's habits.
 
 ---
 
@@ -69,6 +131,11 @@ Current state:
 - supported now: local editable install
 - not yet productized: PyPI, Homebrew, standalone installer, global bootstrap flow
 
+Install and repo-state behavior:
+- once `forge` is installed into your active environment, you can invoke it from any directory
+- `forge init` is the entrypoint for folders that are not yet Forge-managed repos
+- commands that inspect or mutate Forge workflow state expect the current folder (or `--repo` target) to contain Forge docs/runtime files already
+
 If you are using an agent CLI, install Forge first, then run the onboarding/start prompts from `prompts/`.
 
 ---
@@ -81,6 +148,7 @@ Good use cases:
 - managing dotfiles or local automation as a project
 - maintaining workstation setup scripts
 - organizing home-lab, local tooling, or machine-admin workflows
+- managing content repositories, docs sites, and markdown-first knowledge bases
 - treating your local environment as an inspectable system with tasks, review, and change history
 
 Bad default:
@@ -114,11 +182,24 @@ There are two starting modes:
 
 1. create or enter the project repo
 2. run `forge init`
-3. open [`prompts/workflow.init.md`](/Users/barbaricum/ai-build-toolkit/prompts/workflow.init.md)
+3. open [`prompts/workflow.onboard.new.md`](/Users/barbaricum/ai-build-toolkit/prompts/workflow.onboard.new.md)
 4. fill in the `Project Context`
 5. paste that prompt into your agent CLI
 6. let the agent generate the initial docs, manifest, backlog, and open questions
 7. review those generated docs before treating canonical content as approved
+
+Optional onboarding-aware init flags:
+
+```bash
+forge init --primary-adapter code_adapter --secondary-adapter frontend_adapter --bootstrap
+```
+
+- `--primary-adapter` sets the default adapter context for onboarding.
+- `--secondary-adapter` can be repeated for additional adapters.
+- `--bootstrap` creates a starter task packet and initializes `docs/working/current_task.md`.
+
+Compatibility note:
+- [`prompts/workflow.init.md`](/Users/barbaricum/ai-build-toolkit/prompts/workflow.init.md) is kept as an alias for users who still invoke the old onboarding name.
 
 After onboarding, use the normal loop:
 
@@ -139,7 +220,7 @@ Current practical path:
 4. treat generated canonical docs as draft until confirmed
 
 Planned dedicated path:
-- Phase 7 onboarding flow for existing project adoption
+- FR-013 (Existing Project Adoption) — deferred until new-project onboarding is stable; entry criteria recorded in `docs/working/v2_onboarding.md §10`
 
 ---
 
@@ -169,7 +250,8 @@ Task planning and execution:
 - [`prompts/task.close.md`](/Users/barbaricum/ai-build-toolkit/prompts/task.close.md)
 
 Project bootstrap:
-- [`prompts/workflow.init.md`](/Users/barbaricum/ai-build-toolkit/prompts/workflow.init.md)
+- [`prompts/workflow.onboard.new.md`](/Users/barbaricum/ai-build-toolkit/prompts/workflow.onboard.new.md)
+- [`prompts/workflow.init.md`](/Users/barbaricum/ai-build-toolkit/prompts/workflow.init.md) (compatibility alias)
 
 ### Recommended Daily Loop
 
@@ -264,9 +346,11 @@ See:
 ## Current Product State
 
 Current repo status:
-- v1 core workflow is complete
-- current active work is v2 Phase 6: adapter system foundation
-- onboarding for new and existing projects is planned as a later v2 phase
+- v1 core workflow is complete (Phases 1–5 closed)
+- v2 Phase 6 (Adapter System Foundation) closed
+- v2 Phase 7 (New-Project Onboarding Flow) complete — `forge init` supports adapter selection and starter-packet bootstrap
+- v2 Phase 8 (Workflow Automation Runner Foundation) active — planning and CLI-first runner primitives
+- existing-project adoption remains deferred behind FR-013 entry criteria
 
 See:
 - [`docs/working/current_focus.md`](/Users/barbaricum/ai-build-toolkit/docs/working/current_focus.md)

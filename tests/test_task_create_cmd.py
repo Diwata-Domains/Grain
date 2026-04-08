@@ -104,3 +104,26 @@ def test_task_create_missing_phase_exits_two(packet_repo):
         main, ["--repo", str(packet_repo), "task", "create", "--task-num", "1"]
     )
     assert result.exit_code == 2
+
+
+def test_init_bootstrap_cli_creates_packet_and_current_task(tmp_path):
+    runner = CliRunner()
+    result = runner.invoke(
+        main, ["--repo", str(tmp_path), "init", "--bootstrap"]
+    )
+    assert result.exit_code == 0, result.output
+    assert (tmp_path / "tasks" / "P1-T01-TASK-0001").is_dir()
+    current_task = tmp_path / "docs" / "working" / "current_task.md"
+    assert current_task.exists()
+    assert "TASK-0001" in current_task.read_text(encoding="utf-8")
+
+
+def test_init_bootstrap_with_adapter_cli(tmp_path):
+    runner = CliRunner()
+    result = runner.invoke(
+        main, ["--repo", str(tmp_path), "init", "--bootstrap", "--primary-adapter", "code_adapter"]
+    )
+    assert result.exit_code == 0, result.output
+    assert "bootstrap" in result.output
+    task_md = tmp_path / "tasks" / "P1-T01-TASK-0001" / "task.md"
+    assert "code_adapter" in task_md.read_text(encoding="utf-8")

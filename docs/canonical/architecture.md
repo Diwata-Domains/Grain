@@ -77,6 +77,7 @@ The architecture is further organized around these internal concerns:
 7. **external agent integration**
 8. **validation**
 9. **template/scaffolding support**
+10. **domain adapter system**
 
 The architecture must keep orchestration logic separate from external execution tools.
 
@@ -356,6 +357,42 @@ Record, aggregate, and surface workflow quality signals. Provides the data input
 
 ---
 
+### 4.13 Domain Adapter Layer
+
+#### Responsibility
+Bridge domain-specific execution hints, context selection priorities, validation patterns, and review focus into the Forge workflow without modifying the Runtime Core or workflow law.
+
+#### Adapter categories
+
+**Official adapters** — maintained by the Forge project; distributed as part of the core system. Examples: `code_adapter`, `frontend_adapter`, `docs_adapter`, `spreadsheet_adapter`.
+
+**Custom adapters** — defined locally within a repo for domain-specific or private use cases. Examples: a `devops_adapter` for VPS provisioning tasks, a `local_ops_adapter` for machine-admin repos, or a domain-specific adapter for any operational workflow expressible through repo artifacts. Custom adapters must conform to the same contract as official adapters.
+
+#### Adapter contract expectations
+- each adapter is a declarative, filesystem-visible profile, not runtime code
+- adapters specify context selection hints, validation focus, review patterns, deliverable guidance, and optional model-routing hints
+- adapters must declare a stable `adapter_id`, a `domain_type`, and at least one context or validation hint
+- adapter definitions live in `docs/runtime/adapter_profiles.md` (or a custom location declared in the manifest)
+
+#### Must do
+- extend workflow behavior through hints and guidance
+- remain declarative and inspectable in repo files
+- degrade safely when no adapter is declared (adapter-neutral behavior)
+- conform to the Runtime Core validation contract
+
+#### Must not do
+- override workflow stages, packet lifecycle states, or closure semantics
+- bypass the Review/Gate Layer
+- introduce hidden state outside repo-visible files
+- directly commit advisory proposals or canonical changes
+- depend on opaque environment state as the source of truth
+- require a different build loop per domain
+
+#### Adapter boundary rule
+If an adapter appears to require changing core workflow semantics, the adapter's boundary is wrong. The workflow is invariant; adapters supply hints within it.
+
+---
+
 ### 4.12 Review / Gate Layer
 
 #### Responsibility
@@ -447,11 +484,19 @@ Core domain models and pure logic, such as:
 
 ### 6.4 `adapters/`
 
-Provider-specific bridges, such as:
+Two distinct adapter types live here:
 
+**Provider adapters** — bridges to external tools and services:
 - filesystem adapter
-- external CLI adapters
+- external CLI adapters (Codex, Claude, etc.)
 - config adapter
+
+**Domain adapters** — bridges to domain-specific execution behavior:
+- adapter profile loader (parses `docs/runtime/adapter_profiles.md`)
+- domain model (`AdapterProfile`) definitions
+- context selection integration (applies adapter hints to context assembly)
+
+These must not collapse. Provider adapters isolate external dependencies. Domain adapters extend workflow behavior for specific execution domains. Neither should carry the other's responsibilities.
 
 ### 6.5 `validators/`
 
@@ -526,7 +571,27 @@ Deferred to a later phase:
 
 These deferred fields were part of the original aspirational schema but are not present in `agent_profiles.md` or the v1 implementation. They may be added when the routing domain is extended.
 
-### 7.5 Proposal Object
+### 7.5 AdapterProfile
+
+Represents one domain adapter's contract definition. Loaded from `docs/runtime/adapter_profiles.md` (or a custom manifest-declared path).
+
+Required fields:
+- `adapter_id` — stable identifier (e.g. `code_adapter`, `devops_adapter`)
+- `domain_type` — broad class (e.g. `code`, `frontend`, `devops`, `docs`, `spreadsheet`, `local_ops`)
+- `applies_to` — list of languages, frameworks, project types, or operational domains the adapter governs
+
+Required hint presence (at least one of):
+- `context_priority_rules`
+- `test_or_validation_hints`
+
+Optional hint fields:
+- `relevant_file_patterns`
+- `ignore_file_patterns`
+- `build_or_run_hints`
+- `review_focus_hints`
+- `default_model_bias`
+
+### 7.6 Proposal Object
 
 Represents an advisory output before it has been validated and committed. Proposal objects are first-class artifacts — they are inspectable, rejectable, and deferrable.
 
@@ -631,6 +696,17 @@ Architecture must preserve targeted context assembly.
 ### 9.6 No Unvalidated Advisory Mutation
 
 Advisory and intelligence layer outputs must not directly alter canonical docs, task packets, backlog, or system state. All advisory outputs must pass through the Review/Gate Layer and receive explicit human approval before committing to canonical-impacting artifacts.
+
+### 9.8 Adapter Boundary Rule
+
+Domain adapters may extend workflow behavior through hints, context selection priorities, validation focus, and review guidance. Adapters must not:
+- override packet lifecycle states or state transition rules
+- bypass the Review/Gate Layer
+- introduce hidden state outside repo-visible files
+- require different canonical authority rules per domain
+- directly alter canonical docs, backlog, or task packets without passing through the normal workflow
+
+A custom adapter that requires breaking these rules must be redesigned.
 
 ### 9.7 Constrained Autonomy Boundary
 

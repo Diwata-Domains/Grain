@@ -312,7 +312,7 @@ After this phase, Forge can operate with adapter-awareness:
 
 ---
 
-## Phase 7 — New-Project Onboarding Flow
+## Phase 7 — New-Project Onboarding Flow ✓ CLOSED
 
 ### Objective
 Implement the minimal onboarding flow for new projects: guided `forge init` with adapter selection, starter packet generation, and basic project scaffolding that uses the stable adapter contract from Phase 6.
@@ -342,6 +342,12 @@ After this phase, a new project can be initialized with adapter-awareness from t
 - keep existing-project adoption flow implementation deferred until new-project onboarding is stable
 - route any required canonical contract changes through `docs/working/change_proposals.md` before canonical edits
 
+### Notes
+- Phase 7 complete: 7/7 tasks done
+- 419/419 tests passing at phase close (+20 new tests since Phase 6 close)
+- New-project onboarding is proven with `code_adapter`; existing-project adoption remains deferred to future phase planning
+- No canonical change proposals were required
+
 ---
 
 ## 10. Post-v1 Transition Planning
@@ -356,6 +362,8 @@ Rules:
 - do not begin with broad onboarding automation
 - do not run multiple major v2 workstreams in parallel until the adapter contract is proven
 - continue routing canonical or runtime contract changes through change proposals when needed
+- prefer CLI/state-runner primitives and machine-readable command outputs before interface-layer work
+- do not begin TUI/GUI work before workflow automation runner primitives exist
 
 Primary planning docs:
 - `docs/working/v2_plan.md`

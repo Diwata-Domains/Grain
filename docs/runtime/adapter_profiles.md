@@ -9,6 +9,20 @@ Adapter profiles guide:
 - execution and validation hints
 - review focus hints
 
+## 1.1 Supported Adapter Inventory
+
+Supported today:
+- `code_adapter`
+- `frontend_adapter`
+
+Planned:
+- `docs_adapter`
+- `spreadsheet_adapter`
+
+Possible later:
+- content-specific variants for editorial or knowledge-base systems
+- additional project-specific adapters where reuse is justified
+
 Adapter profiles must not change:
 - packet lifecycle states
 - review/close semantics
@@ -106,6 +120,7 @@ Each profile should follow this section structure:
 - `context_priority_rules`:
   - prioritize touched source files, then nearby tests
   - include only canonical/runtime docs needed for the current command family
+  - **planned enhancement:** use tree-sitter import/call graph to select only structurally connected files rather than broad glob patterns — reduces context size and token cost without LLM overhead (applies across code_adapter, frontend_adapter, docs_adapter, devops_adapter; not applicable to spreadsheet_adapter)
 - `default_model_bias`:
   - `open_model` for narrow edits
   - `frontier_model` for ambiguous or structural work

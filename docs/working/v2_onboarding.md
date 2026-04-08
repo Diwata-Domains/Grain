@@ -168,10 +168,34 @@ Exit criteria for this slice:
 
 ## 9. Current Planning State
 
-Phase 7 is seeded and execution-ready with planning decisions locked.
+Phase 7 is closed.
 
 Current state:
-- new-project onboarding is the active v2 execution track
-- `P7-T01` resolves planning ambiguity and locks execution boundaries
-- next implementation tasks proceed from ready backlog items only
-- existing-project adoption remains deferred until the new-project path is stable
+- new-project onboarding slice is complete (P7-T01 through P7-T07, 7/7 tasks done)
+- 419 tests passing at Phase 7 close
+- `P7-T07` boundary doc for existing-project adoption is recorded in §10 below
+- full existing-project adoption implementation remains deferred until FR-013 entry criteria are satisfied
+- active execution has moved to Phase 8 (Workflow Automation Runner Foundation)
+
+---
+
+## 10. Existing-Project Adoption Entry Criteria (P7-T07, 2026-04-07)
+
+Existing-project adoption work may be promoted from deferred planning into active implementation only when all criteria below are true:
+
+1. the new-project onboarding slice (`P7-T02` through `P7-T06`) is completed, reviewed, and considered stable in working docs
+2. onboarding prompt surface remains stable (`workflow.onboard.new` + `workflow.init` compatibility path) without unresolved drift
+3. init scaffolding, adapter capture, and optional bootstrap behavior are covered by integration tests and passing in CI/local runs
+4. existing-project adoption scope is explicitly additive:
+   - no overwriting existing project files
+   - generated canonical docs remain draft until human review
+5. first existing-project slice is planning/scaffold-only:
+   - no deep scan heuristics tuning in the first packet
+   - no provider-specific branching
+   - no frontend-specific expansion before baseline `code_adapter` path is validated for adoption
+
+Boundary rule:
+- before the above criteria are met, `FR-013` remains planning-only and no execution packets should implement existing-project adoption behavior.
+
+When criteria are met:
+- promote a scoped existing-project adoption starter task from roadmap/backlog planning into active execution (next phase boundary).

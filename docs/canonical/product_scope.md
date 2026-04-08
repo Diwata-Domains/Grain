@@ -43,7 +43,15 @@ Forge is the **build and execution system**. Its role is to structure software d
 - model-agnostic execution paths
 - reviewable, human-controlled canonical change flow
 
-Forge is not a coding agent. It does not replace external coding tools. It prepares, structures, and governs work so external tools can execute tasks with clearer boundaries and less unnecessary context.
+Forge is not a coding agent. It does not replace external coding tools. It prepares, structures, and governs work so external tools can execute tasks with clearer boundaries, less unnecessary context, and less token waste across repeated agent conversations.
+
+Forge exists in part because agent-CLI users often lose throughput to broad context dumps, repeated planning, stale-context drift, and avoidable retries before usage limits refresh. Forge should improve the amount of useful work completed per context window by making execution state explicit and task-scoped.
+
+Forge is also suitable for content-management workflows when the content lives in structured local files, especially markdown-first repositories such as documentation systems, knowledge bases, editorial systems, and site content collections.
+
+Forge extends to any domain whose work can be expressed through repo artifacts, task packets, and explicit review — including DevOps, VPS provisioning, deployment automation, system administration, reverse-proxy configuration, firewall and SSH hardening, service management, backup planning, containerization, rollback procedures, and local-ops repositories.
+
+Forge supports domain-specific execution through a **contract-driven adapter model**. Adapters are structured, repo-visible domain bridges that tune context selection, validation hints, and review focus for a specific execution domain without changing core workflow semantics. Official adapters are maintained by the Forge project. Custom adapters may be defined locally by users for any domain.
 
 Forge evolves toward an **assistant-guided system** while preserving precision and reliability. Intelligence and advisory behavior are supported but are explicitly separated from execution authority and contract enforcement. Forge should not be characterized as a purely dumb executor — advisory capability is part of its design — but all advisory outputs are proposals until validated, never direct mutations.
 
@@ -62,6 +70,42 @@ Together, Forge and Sentinel form a complete AI-assisted development system:
 - **Forge** — build, execution, workflow orchestration
 - **Sentinel** — verification, reproducibility, issue detection and ingestion
 
+### 2.3a Improvement Boundary
+
+Forge and Sentinel improve the overall system through different loops.
+
+Forge owns workflow improvement:
+- detect repeated friction in planning, packetization, review, and closure
+- surface token waste, context drift, retry churn, and automation candidates
+- turn those findings into proposals, backlog items, or scoped task packets
+
+Sentinel owns verification improvement:
+- run automated tests and validation
+- search for bugs or failure states
+- capture reproducible artifacts from runtime behavior
+- turn those findings into structured verification outputs and candidate follow-up work
+
+Neither system should silently rewrite canonical rules.
+Improvement remains proposal-driven and gated by explicit review.
+
+### 2.4 Recursive Validation Principle
+
+Forge is intended to be used recursively:
+
+1. to build Forge itself
+2. to build Sentinel on top of Forge
+3. later, to build additional workflow and verification capabilities using the same disciplined loop
+
+This is a product validation strategy, not just a development preference.
+
+Reason:
+- it tests whether Forge's workflow survives real iterative use
+- it exposes token waste, context drift, retry churn, and workflow friction early
+- it proves whether task packets, review gates, and minimal-context execution hold up under actual product development
+
+Recursive validation is strong evidence, but it is not sufficient on its own.
+Forge must also work for projects that were not shaped around Forge from the start.
+
 ---
 
 ## 3. Product Goals
@@ -77,8 +121,11 @@ Together, Forge and Sentinel form a complete AI-assisted development system:
 3. Generate and manage **task packets** as the primary unit of execution.
 4. Support **model-agnostic** workflows across multiple coding-agent ecosystems.
 5. Minimize context passed into task execution.
-6. Preserve human control over canonical project changes.
-7. Remain lightweight enough for daily CLI usage.
+6. Reduce token waste, retry churn, and stale-context drift in agent-driven execution.
+7. Preserve human control over canonical project changes.
+8. Remain lightweight enough for daily CLI usage.
+9. Support content-management workflows that rely on inspectable local files and explicit review.
+10. Support domain-specific execution across software, docs, content, DevOps, and operational domains through a contract-driven adapter model.
 
 ### 3.2 Secondary Goals
 
@@ -86,6 +133,8 @@ Together, Forge and Sentinel form a complete AI-assisted development system:
 2. Reduce prompt sprawl and broad, underspecified build requests.
 3. Make project state inspectable through files on disk.
 4. Support reuse across multiple projects with similar workflow needs.
+5. Increase useful work completed per agent context window.
+6. Make markdown-first content workflows easier to structure, review, and close.
 
 ---
 
@@ -98,6 +147,8 @@ The toolkit does not directly design, write, or refactor production code as its 
 
 ### 4.2 Not a Project Management Suite
 It is not a general PM platform, issue tracker, kanban system, or collaboration workspace.
+
+Forge does manage execution structure through phases, backlog items, task packets, review gates, and closure state. However, that workflow management exists to support agent-driven build execution, not to become a generic team planning product.
 
 ### 4.3 Not a Multi-User Coordination System
 It does not manage permissions, teams, approvals, or multi-user workflow state.
@@ -126,6 +177,7 @@ Typical characteristics:
 - wants stronger structure than ad hoc prompting
 - values inspectable files over opaque orchestration
 - is willing to review and approve canonical changes manually
+- cares about reducing wasted tokens, retries, and context reloads during agent-driven work
 
 ### 5.2 User Capabilities Assumed
 The primary user can:
@@ -169,7 +221,15 @@ Abstract execution roles:
 
 These are workflow roles, not vendor bindings.
 
-### 6.6 Proposal Objects
+### 6.6 AdapterProfile
+
+A structured, repo-visible domain bridge that extends Forge workflow behavior for a specific execution domain. An adapter profile specifies context selection hints, validation patterns, review focus, deliverable expectations, and optional model-routing guidance. Adapters extend the workflow; they do not override it.
+
+Two categories of adapter are supported:
+- **official adapters** — maintained by the Forge project; shipped as part of the core distribution
+- **custom adapters** — defined locally within a repo for domain-specific or private use cases
+
+### 6.7 Proposal Objects
 First-class objects representing advisory outputs before they are validated and committed. Proposal objects are distinct from committed work and may not directly alter canonical state.
 
 Types:
@@ -202,6 +262,15 @@ A user assigns drafting, reasoning, or review work to different model classes wi
 ### 7.6 Review and Close Task Work
 A user verifies that outputs match the requested deliverable and records results in a consistent structure.
 
+### 7.7 Manage Content Repositories
+A user organizes markdown-first content systems, documentation sites, editorial repositories, or knowledge bases with explicit review and change flow.
+
+### 7.8 Manage DevOps and System Operations Workflows
+A user manages VPS provisioning, deployment setup, reverse-proxy configuration, service management, firewall and SSH hardening, backup planning, monitoring setup, and rollback procedures through repo-local task packets. An adapter profile tunes context selection and validation hints for operational work while preserving the same workflow loop used for software tasks.
+
+### 7.9 Improve Workflow From Real Usage
+A user captures workflow friction, token waste, repeated failure patterns, and verification findings so the system can generate better follow-up work without bypassing review.
+
 ---
 
 ## 8. v1 Scope
@@ -213,6 +282,7 @@ A user verifies that outputs match the requested deliverable and records results
 - clear authority separation
 - explicit canonical docs
 - task packet templates and lifecycle support
+- content repositories, documentation sites, and knowledge bases
 
 #### CLI Workflows
 - repository initialization
@@ -229,6 +299,13 @@ A user verifies that outputs match the requested deliverable and records results
 #### Model-Agnostic Routing
 - model classes supported through configuration and workflow logic
 - external tool integration through adapter-style boundaries
+
+#### Domain Adapter System
+- official core adapters for supported domains (`code_adapter`, `frontend_adapter`, `docs_adapter`, `spreadsheet_adapter`)
+- custom user-defined adapters for repo-local or private domains
+- adapter-informed context selection, validation hints, and review focus
+- adapter contract validation through the manifest and doc system
+- DevOps, VPS provisioning, system administration, and local-ops workflows are valid adapter domains
 
 ### 8.2 Conditionally In Scope
 Only if lightweight and practical:
@@ -306,6 +383,11 @@ v1 should favor explicit files and simple flows over abstract orchestration mach
    - Forge core functionality should be genuinely useful without artificial limitation
    - paid capabilities derive value from verification, reproducibility, intelligence, and multi-project coordination — not from withholding basic execution capability
 
+10. **Domain-adaptable, workflow-invariant**
+    - the workflow loop, packet lifecycle, and review gates remain the same across every domain
+    - adapters change execution hints, context selection, and validation focus — not workflow law
+    - an adapter that requires changing core workflow semantics has the wrong boundary
+
 ---
 
 ## 11. Product Ladder
@@ -318,7 +400,8 @@ The core Forge system is open and generous. It includes:
 - context assembly and export
 - model routing
 - documentation registry and validation
-- core adapters: `frontend_adapter`, `backend_adapter`, `docs_adapter`, `spreadsheet_adapter`
+- official core adapters: `code_adapter`, `frontend_adapter`, `docs_adapter`, `spreadsheet_adapter`
+- custom adapter support: users may define repo-local adapter profiles for any domain (DevOps, VPS, local ops, content, or any domain expressible through repo artifacts and task packets)
 - prompt library and templates
 
 Forge Core should be fully usable for individual developers and small teams without payment.

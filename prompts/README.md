@@ -17,8 +17,13 @@ Higher-authority rules still live in:
 ### Project Bootstrap
 
 [`workflow.init.md`](/Users/barbaricum/ai-build-toolkit/prompts/workflow.init.md)
-- use for new-project initialization
-- asks for project context and generates the initial doc system
+- compatibility alias that routes to the stable new-project onboarding prompt
+- keep only for legacy command habits
+- recommended model class: `frontier_model`
+
+[`workflow.onboard.new.md`](/Users/barbaricum/ai-build-toolkit/prompts/workflow.onboard.new.md)
+- use for stable new-project onboarding
+- question-first intake with explicit adapter-selection inputs
 - recommended model class: `frontier_model`
 
 [`project.health.md`](/Users/barbaricum/ai-build-toolkit/prompts/project.health.md)
@@ -118,3 +123,16 @@ Higher-authority rules still live in:
 - `prompts/task.*.md` and `prompts/phase.*.md` are the preferred stable names.
 - Older `tasks.*` and short alias prompts remain for compatibility in some cases, but they are not the preferred human-facing surface.
 - If prompt or workflow-contract docs change mid-conversation, restart the relevant agent conversation before continuing.
+
+---
+
+## Machine-Readable Prompt Surface
+
+`forge prompt show` surfaces the recommended prompt entrypoint for the current repo state without making prompts the source of truth.
+
+```bash
+forge prompt show
+forge --format json prompt show
+```
+
+Output includes: `recommended_prompt`, `model_class`, `scope`, `stage`, `next_action`, `stop_reason`, `blocking_reasons`. Prompts remain execution aids — the canonical workflow contract lives in `docs/canonical/workflow_spec.md`.

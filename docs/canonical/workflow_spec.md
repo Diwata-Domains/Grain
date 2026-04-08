@@ -447,17 +447,52 @@ If a packet grows beyond one coherent unit of work, it should be split into mult
 
 ---
 
-## 13. Decision Boundaries
+## 13. Adapter Interaction with the Workflow
 
-### 13.1 Decisions This Document Controls
+Domain adapters may inform task execution without altering the workflow itself.
+
+### 13.1 What Adapters May Do
+
+An active adapter may:
+- bias context selection toward domain-relevant files and patterns
+- surface domain-specific validation hints in context output
+- provide review focus guidance (e.g. UI regression, exit code semantics, VPS rollback risk)
+- suggest model-routing preference for domain-typical task types
+- supply deliverable pattern guidance for tasks in its domain
+
+### 13.2 What Adapters Must Not Do
+
+An adapter must not:
+- alter lifecycle states (`draft`, `ready`, `in_progress`, `blocked`, `review`, `done`) or their semantics
+- change closure requirements
+- bypass or defer the Review/Gate stage
+- override canonical authority rules
+- redefine what counts as a valid packet or a complete task
+
+### 13.3 Adapter-Neutral Behavior
+
+When no adapter is declared for a task packet, Forge operates adapter-neutrally. No domain hints are applied. No context biasing occurs. All workflow rules remain identical.
+
+Adapter presence is always explicit — declared in packet metadata. Forge never infers an adapter from file patterns or project type alone.
+
+### 13.4 Workflow Invariance Rule
+
+The workflow loop (select → packetize → prepare context → execute → review → record → close) is the same for every domain. Only the hints, patterns, and validation focus change when an adapter is active. A domain that requires changing the loop itself is not a candidate for adapter-based extension.
+
+---
+
+## 14. Decision Boundaries
+
+### 14.1 Decisions This Document Controls
 - workflow stages
 - build loop sequence
 - packet lifecycle states and transitions
 - context loading behavior at workflow level
 - model class usage by stage
 - closure requirements
+- adapter interaction boundaries with the workflow
 
-### 13.2 Decisions This Document Does Not Control
+### 14.2 Decisions This Document Does Not Control
 - product feature scope
 - system component boundaries
 - exact module structure

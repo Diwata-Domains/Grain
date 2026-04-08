@@ -48,135 +48,128 @@ Default status for new backlog items in this file: `draft`
 ---
 
 ## 8. Phase 6 — Adapter System Foundation (V2) ✓ CLOSED
-7 tasks done
-
-### P6-T01 — Resolve adapter contract open questions and create adapter_profiles.md
-- **Status:** done
-- **Description:** Resolve open planning questions from v2_adapters.md §9 (minimal schema, multi-adapter context selection, no-adapter fallback, shared profile file structure). Create `docs/runtime/adapter_profiles.md` with the contract and initial `code_adapter` and `frontend_adapter` profiles.
-- **Files:** `docs/runtime/adapter_profiles.md`, `docs/runtime/docs_manifest.yaml` (register new runtime doc), `docs/working/v2_adapters.md` (mark questions resolved)
-- **Model:** frontier_model
-- **Dependencies:** none
-- **Ready:** yes
-
-### P6-T02 — Implement adapter domain model
-- **Status:** done
-- **Description:** Create `AdapterProfile` dataclass with required fields (`adapter_id`, `domain_type`, `applies_to`) and optional hint sections (`relevant_file_patterns`, `ignore_file_patterns`, `build_or_run_hints`, `test_or_validation_hints`, `review_focus_hints`, `context_priority_rules`, `default_model_bias`). Follow the same domain pattern as `ModelProfile`.
-- **Files:** `src/forge/domain/adapters.py` (new)
-- **Model:** open_model
-- **Dependencies:** P6-T01
-- **Ready:** after P6-T01
-
-### P6-T03 — Implement adapter profile loader
-- **Status:** done
-- **Description:** Parse `docs/runtime/adapter_profiles.md` into structured `AdapterProfile` domain objects. Follow the same loading pattern as the model profile loader (`src/forge/adapters/model_config.py`).
-- **Files:** `src/forge/adapters/adapter_config.py` (new)
-- **Model:** open_model
-- **Dependencies:** P6-T02
-- **Ready:** after P6-T02
-
-### P6-T04 — Add adapter metadata fields to task packet templates and parser
-- **Status:** done
-- **Description:** Add optional `primary_adapter` and `secondary_adapters` fields to `templates/tasks/task.md`. Update the packet metadata parser to read these fields from `task.md`. Fields are optional — absence must degrade safely (adapter-neutral behavior).
-- **Files:** `templates/tasks/task.md`, `src/forge/domain/packets.py`, `src/forge/validators/packet_validator.py`
-- **Model:** frontier_model
-- **Dependencies:** P6-T02, P6-T03
-- **Ready:** after P6-T03
-- **Note:** if packet schema change requires canonical update to `data_contracts.md`, capture as a change proposal (CP) before editing
-- **Test requirement:** include an integration test verifying that existing packets with no adapter fields still parse and validate cleanly after the schema change
-
-### P6-T05 — Wire adapter hints into context assembly
-- **Status:** done
-- **Description:** When a task packet declares a `primary_adapter`, bias context assembly toward the adapter's `relevant_file_patterns` and apply `context_priority_rules`. Adapter hints supplement existing doc-registry context selection — they do not replace it. No adapter = adapter-neutral, no behavior change.
-- **Files:** `src/forge/services/context_service.py`, `src/forge/domain/context.py`
-- **Model:** frontier_model
-- **Dependencies:** P6-T04
-- **Ready:** after P6-T04
-
-### P6-T06 — Surface adapter review and validation hints in context output
-- **Status:** done
-- **Description:** When an adapter is active, include adapter-specific `review_focus_hints` and `test_or_validation_hints` in the context bundle output (visible in `forge context build` and `forge context export`). These are advisory hints, not enforced rules.
-- **Files:** `src/forge/services/context_service.py`, `src/forge/domain/context.py`
-- **Model:** open_model
-- **Dependencies:** P6-T05
-- **Ready:** after P6-T05
-
-### P6-T07 — Add adapter system tests
-- **Status:** done
-- **Description:** Test adapter profile loading, domain model completeness, packet metadata parsing with and without adapter fields, context assembly with adapter hint wiring active and inactive.
-- **Files:** `tests/test_adapter_loading.py` (new), `tests/test_adapter_context.py` (new), `tests/fixtures/` (adapter profile fixtures)
-- **Model:** open_model
-- **Dependencies:** P6-T01 through P6-T06
-- **Ready:** after P6-T06
+7 tasks done — archived to `tasks/archive/phase-6/`
 
 ---
 
-## 9. Phase 7 — New-Project Onboarding Flow
+## 9. Phase 7 — New-Project Onboarding Flow ✓ CLOSED
+7 tasks done — archived to `tasks/archive/phase-7/`
 
-> **Status:** in_progress — planning decisions locked in `P7-T01`. Next ready tasks: `P7-T02`, `P7-T03`.
+---
 
-### P7 Planning Notes
-- Scope: guided `forge init` with adapter selection, starter packet generation, basic project scaffolding
-- Depends on: Phase 6 stable adapter contract ✓
-- Planning doc: `docs/working/v2_onboarding.md`
-- Start narrow: prove onboarding with `code_adapter` before generalizing
+## 10. Phase 8 — Workflow Automation Runner Foundation
 
-### P7-T01 — Resolve onboarding planning decisions and lock the minimal new-project flow
+> **Status:** in_progress — P8-T01 through P8-T08 done; `workflow run` implemented. P8-T09 (harden outputs + integration tests) in review; P8-T10 blocked; P8-T11 draft.
+
+### P8 Planning Notes
+- Scope: state-driven workflow guidance and automation primitives for agents and operators
+- Depends on: stable new-project onboarding artifacts and prompt surfaces from Phase 7
+- Planning doc: `docs/working/v2_plan.md`
+- Keep the first slice CLI-first and machine-readable; do not start TUI/GUI work in this phase
+
+### P8-T01 — Lock minimal workflow automation slice and stop-condition rules
 - **Status:** done
-- **Description:** Resolve `docs/working/v2_onboarding.md` open planning questions for the new-project path, lock the minimal phase scope, and explicitly defer existing-project adoption decisions that are out of this phase's first slice.
-- **Files:** `docs/working/v2_onboarding.md`, `docs/working/implementation_plan.md`, `docs/working/backlog.md`, `docs/working/current_focus.md`
+- **Description:** Resolve the first runner slice boundaries: what counts as the next legal step, where the runner must stop, how review and verification gates are surfaced, and which commands must return machine-readable outputs for agents/operators.
+- **Files:** `docs/working/v2_plan.md`, `docs/working/backlog.md`, `docs/working/current_focus.md`, `docs/working/open_questions.md`
 - **Model:** frontier_model
-- **Dependencies:** none
-- **Ready:** yes
-
-### P7-T02 — Add stable new-project onboarding prompt entrypoint
-- **Status:** ready
-- **Description:** Create a dedicated onboarding prompt entrypoint for new projects with a question-first flow and explicit adapter-selection inputs; keep `prompts/workflow.init.md` as compatibility guidance to the new flow.
-- **Files:** `prompts/workflow.onboard.new.md` (new), `prompts/workflow.init.md`, `README.md`
-- **Model:** frontier_model
-- **Dependencies:** P7-T01
-- **Ready:** yes
-
-### P7-T03 — Expand `forge init` scaffolding to write baseline seed files from templates
-- **Status:** ready
-- **Description:** Update init scaffolding so missing baseline docs/runtime/task-template files are created from templates (not just directories), preserving additive-only behavior and dry-run correctness.
-- **Files:** `src/forge/services/init_service.py`, `src/forge/cli/init.py`, `tests/test_init_service.py`
-- **Model:** frontier_model
-- **Dependencies:** P7-T01
-- **Ready:** yes
-- **Test requirement:** include coverage proving existing files are skipped and `--dry-run` reports without writing
-
-### P7-T04 — Add adapter-selection options to onboarding initialization
-- **Status:** draft
-- **Description:** Add `--primary-adapter` and repeatable `--secondary-adapter` init options, validate declared adapters against runtime adapter profiles when available, and surface selected adapters in scaffold/onboarding outputs.
-- **Files:** `src/forge/cli/init.py`, `src/forge/services/init_service.py`, `src/forge/adapters/adapter_config.py`, `tests/test_init_service.py`
-- **Model:** frontier_model
-- **Dependencies:** P7-T03
-- **Ready:** after P7-T03
-
-### P7-T05 — Add starter task-packet bootstrap for the onboarding path
-- **Status:** draft
-- **Description:** Add an optional onboarding bootstrap step that creates one starter task packet after init and initializes `docs/working/current_task.md` as `ready`, using selected adapter defaults where applicable.
-- **Files:** `src/forge/services/init_service.py`, `src/forge/services/task_service.py`, `src/forge/cli/init.py`, `templates/tasks/task.md`, `tests/test_init_service.py`, `tests/test_task_create_cmd.py`
-- **Model:** frontier_model
-- **Dependencies:** P7-T03, P7-T04
-- **Ready:** after P7-T04
-- **Note:** if starter packet metadata contract changes are required, route through `docs/working/change_proposals.md` before canonical edits
-
-### P7-T06 — Add onboarding integration tests and phase-level docs updates
-- **Status:** draft
-- **Description:** Add focused integration coverage for the new-project onboarding path (`init` scaffolding, adapter selection, starter packet bootstrap) and update user-facing docs to reflect the supported flow.
-- **Files:** `tests/test_phase7_integration.py` (new), `README.md`, `docs/working/current_focus.md`
-- **Model:** open_model
-- **Dependencies:** P7-T02, P7-T05
-- **Ready:** after P7-T05
-
-### P7-T07 — Existing-project adoption prep boundary (deferred in this slice)
-- **Status:** blocked
-- **Description:** Keep FR-013 implementation out of the active execution loop until the new-project onboarding path is stable; record concrete entry criteria for when adoption flow work can start.
-- **Files:** `docs/working/v2_onboarding.md`, `docs/working/future_roadmap.md`, `docs/working/current_focus.md`
-- **Model:** open_model
 - **Dependencies:** P7-T06
-- **Ready:** blocked — after new-project onboarding is reviewed and stable
+- **Ready:** yes
+
+### P8-T02 — Implement workflow state evaluator service
+- **Status:** done
+- **Description:** Add a service/domain layer that inspects repo state and determines the next legal workflow action, blockers, and stop conditions without mutating state.
+- **Files:** `src/forge/services/` (new workflow service), `src/forge/domain/` (runner/state types), `tests/` (new service tests)
+- **Model:** frontier_model
+- **Dependencies:** P8-T01
+- **Ready:** yes
+
+### P8-T03 — Add `forge workflow next`
+- **Status:** done
+- **Description:** Add a CLI command that reports the next legal workflow step, current blockers, and the minimal follow-up action in both text and JSON forms.
+- **Files:** `src/forge/cli/` (new workflow group), `src/forge/services/`, `tests/`
+- **Model:** frontier_model
+- **Dependencies:** P8-T02
+- **Ready:** yes
+
+### P8-T04 — Add `forge task next`
+- **Status:** done
+- **Description:** Add a task-selection command that identifies the next actionable task packet candidate or reports that planning/splitting is required first.
+- **Files:** `src/forge/cli/task.py`, `src/forge/services/`, `docs/working/backlog.md` (if task selection rules need clarification), `tests/`
+- **Model:** frontier_model
+- **Dependencies:** P8-T02
+- **Ready:** yes
+
+### P8-T05 — Add `forge phase next`
+- **Status:** done
+- **Description:** Add a phase-level command that reports whether phase planning, review, close, or no phase action is currently appropriate.
+- **Files:** `src/forge/cli/` (workflow or phase surface), `src/forge/services/`, `tests/`
+- **Model:** frontier_model
+- **Dependencies:** P8-T02
+- **Ready:** yes
+
+### P8-T06 — Add `forge task prepare`
+- **Status:** done
+- **Description:** Add a command that ensures packet/context/prompt prerequisites are assembled for one task and reports missing inputs without making hidden decisions.
+- **Files:** `src/forge/cli/task.py` or `src/forge/cli/context.py`, `src/forge/services/`, `tests/`
+- **Model:** frontier_model
+- **Dependencies:** P8-T02
+- **Ready:** yes
+
+### P8-T07 — Add `forge prompt show`
+- **Status:** done
+- **Description:** Add a command that surfaces the recommended stable prompt entrypoint for the current state plus required inputs, without making prompts the source of truth.
+- **Files:** `src/forge/cli/` (prompt or workflow surface), `src/forge/services/`, `prompts/README.md`, `tests/`
+- **Model:** frontier_model
+- **Dependencies:** P8-T01, P8-T02
+- **Ready:** yes
+
+### P8-T08 — Add `forge workflow run`
+- **Status:** done
+- **Description:** Add a guarded one-step runner that can execute one legal workflow action or stop with an explicit gate reason when human review, planning, or verification is required.
+- **Files:** `src/forge/cli/` (workflow group), `src/forge/services/`, `tests/`
+- **Model:** frontier_model
+- **Dependencies:** P8-T03, P8-T04, P8-T05, P8-T06, P8-T07
+- **Ready:** yes
+
+### P8-T09 — Harden machine-readable automation outputs and runner integration tests
+- **Status:** done
+- **Description:** Ensure automation-relevant commands emit stable JSON and add integration coverage across `workflow next`, `task next`, `phase next`, `task prepare`, and `workflow run`.
+- **Files:** `src/forge/cli/output.py`, `tests/` (new runner integration coverage), `docs/working/current_focus.md`
+- **Model:** open_model
+- **Dependencies:** P8-T03 through P8-T08
+- **Ready:** after P8-T08
+
+### P8-T10 — Define Forge-side verification bridge contract for Sentinel handoff
+- **Status:** blocked
+- **Description:** Define the minimal Forge command contract for verification submission/status/result ingestion so Sentinel can plug into the workflow runner once its surface exists.
+- **Files:** `docs/working/v2_plan.md`, `docs/working/future_roadmap.md`, `docs/working/open_questions.md`
+- **Model:** frontier_model
+- **Dependencies:** P8-T01, FR-005 planning maturity
+- **Ready:** blocked — after runner stop conditions and Sentinel bootstrap expectations are clearer
+
+### P8-T11 — Add working-doc reconciliation checks for state drift
+- **Status:** draft
+- **Description:** Add a three-layer reconciliation approach for working-doc state so task/phase readiness, deferral notes, and current-focus guidance do not drift after task closeout or planning updates. The intended layers are: (1) manual close/review checklist expectations, (2) an explicit `forge workflow reconcile` command for detection and repair, and (3) runner-level validation that blocks or warns on inconsistent state before drift spreads.
+- **Files:** `docs/working/backlog.md`, `docs/working/current_focus.md`, `docs/working/v2_plan.md`, `docs/working/open_questions.md`, `docs/working/workflow_metrics.md`
+- **Model:** open_model
+- **Dependencies:** P8-T01
+- **Ready:** after P8-T01
+
+---
+
+## 11. Future — Adapter Context Selection (Post-Phase 8)
+
+> **Status:** draft — not yet scoped into a phase. Record only; do not execute until adapter context selection is confirmed as the token bottleneck.
+
+### FA-T01 — Tree-sitter dependency graph for adapter context selection
+
+- **Status:** draft
+- **Description:** Replace static glob-pattern context selection in adapters with a tree-sitter import/call graph pass. Parse the dependency graph of task-touched files locally (zero LLM tokens), then pass only structurally connected files into context assembly. Expected outcome: smaller context bundles, fewer tokens per execute stage, more precise file selection. Applicable to: `code_adapter` (Python, Rust, Go, Java), `frontend_adapter` (TypeScript, JavaScript, TSX, CSS), `docs_adapter` (Markdown link/reference graphs), `devops_adapter` (Bash, Dockerfile, HCL, YAML). Not applicable to `spreadsheet_adapter`.
+- **Files:** `src/forge/adapters/adapter_config.py`, `src/forge/services/context_service.py`, `docs/runtime/adapter_profiles.md`
+- **Model:** frontier_model
+- **Dependencies:** stable Phase 8 context service, tree-sitter Python binding
+- **Ready:** after Phase 8 context/workflow primitives are stable and adapter context selection is confirmed as the bottleneck
+- **Reference:** Graphify (MIT) — tree-sitter + parallel subagent pattern; FR-011 (Token Efficiency)
 
 ---
 
