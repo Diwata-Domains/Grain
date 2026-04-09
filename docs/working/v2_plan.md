@@ -194,6 +194,23 @@ Feedback and self-improvement guidance:
 
 Reconciliation strategy for working-doc state:
 
+Three-layer approach:
+1. **Manual checklist** — apply at every task close and phase close
+2. **Explicit command** — `forge workflow reconcile` detects and repairs drift on demand
+3. **Runner validation** — workflow runner warns or stops before drift spreads
+
+**Manual reconciliation checklist (apply at task close):**
+- [ ] `backlog.md` status for the closed task matches its actual final state (`done`)
+- [ ] `current_focus.md` Phase N Progress reflects all completed, active, and blocked tasks
+- [ ] `current_focus.md` Immediate Goals matches `current_task.md` and `backlog.md` status
+- [ ] `docs/working/current_task.md` points to the correct active task (or `none` if no active task)
+- [ ] `workflow_metrics.md` updated if phase milestone or test count changed
+- [ ] `open_questions.md` has no stale resolved items that should be archived
+
+**CLI command spec (planned follow-up — not implemented in this packet):**
+- `forge workflow reconcile` — detect inconsistencies across working docs and report them; optionally repair with `--fix`
+- tracked as a follow-up to Phase 8 (see open_questions.md)
+
 - keep a manual reconciliation checklist in review/close flow so dependent working docs are updated at the point of change
 - add an explicit `forge workflow reconcile` command for humans and agents to detect or repair drift after the fact
 - enforce the same consistency rules inside the workflow runner so it can warn or stop before drift spreads
@@ -269,3 +286,73 @@ Each should include at minimum:
 With this boundary locked:
 - `P8-T02` is unblocked and ready to implement the workflow state evaluator service
 - later P8 tasks must conform to the one-step and stop-condition contract above
+
+---
+
+## 11. Sentinel Bridge Contract (P8-T10, 2026-04-09)
+
+This section defines the minimal Forge-side contract for Sentinel integration. No Sentinel implementation is required to satisfy this contract. FR-006 (Sentinel Integration Layer) implements against this contract when Sentinel is built.
+
+### 11.1 Command Surface
+
+The `forge verify` command group is the Forge-side bridge surface. Full definition in `docs/canonical/cli_spec.md §6.9`.
+
+Summary of commands:
+- `forge verify submit --id <task-id>` — submit task artifacts to Sentinel; returns `verification_id`
+- `forge verify status --verification-id <id>` — check status of a pending verification
+- `forge verify ingest --verification-id <id> --payload <path>` — ingest a completed Sentinel result; resolves the verification gate
+
+All three commands are deferred stubs until FR-006 is implemented. They must return a not-implemented error per `cli_spec.md §5.1`.
+
+### 11.2 Sentinel Result Payload Schema
+
+The minimal payload schema Forge expects to receive from Sentinel (via `forge verify ingest`):
+
+**Required fields:**
+- `verification_id` — string; stable ID assigned by Sentinel at submission
+- `task_id` — string; the Forge task packet ID being verified (e.g. `TASK-0070`)
+- `issue_type` — enum; one of: `test_failure`, `bug_finding`, `screenshot_evidence`, `trace_capture`, `human_annotation`
+- `severity` — enum; one of: `info`, `warning`, `error`, `critical`
+- `outcome` — enum; one of: `pass`, `fail`, `inconclusive`
+- `summary` — string; human-readable description of the verification finding
+
+**Optional fields:**
+- `artifact_refs` — list of strings; paths or URIs to Sentinel-captured artifacts (screenshots, log files, trace exports, repro steps)
+- `followup_candidates` — list of objects; each has `title` (string) and `description` (string); these are candidate follow-up work items, not committed packets
+- `verified_at` — ISO 8601 datetime string; when Sentinel completed the verification run
+
+**Payload delivery:** Sentinel writes the payload as a JSON file to a Forge-visible location or passes the path via `--payload <path>`. Forge does not pull from Sentinel directly. Sentinel pushes; Forge ingests.
+
+### 11.3 Verification Gate Stop Condition
+
+The workflow runner (Phase 8) must stop at a verification gate when:
+
+- a `forge verify submit` has been called and returned a `verification_id`, AND
+- `forge verify ingest` has not yet been called with a completed payload for that `verification_id`
+
+Stop condition behavior:
+- `forge workflow run` returns a gate stop with `stop_reason: "verification_pending"` and `verification_id` in the JSON output
+- `forge workflow next` reports the gate as a blocker in `blocking_reasons`
+- The runner resumes only after `forge verify ingest` successfully records a completed result
+
+Outcome routing after ingestion:
+- `outcome: pass` — runner proceeds to the next legal step (review or close)
+- `outcome: fail` — runner surfaces the finding; task moves to `blocked`; `followup_candidates` are surfaced for operator review
+- `outcome: inconclusive` — runner surfaces the finding; human decision required before continuing
+
+**Implementation note:** The P8-T02 workflow state evaluator service should reserve a hook for the verification gate stop condition. The hook does not need to be wired until FR-006 is built, but the stop condition enum value (`verification_pending`) should be reserved to avoid future naming conflicts.
+
+### 11.4 Bridge Contract Terms
+
+1. Forge defines the command surface and payload schema. Sentinel must conform to the schema.
+2. Sentinel does not write directly to Forge canonical docs, task packets, or backlog. It sends payloads; Forge ingests them.
+3. `followup_candidates` in the payload are proposals. They do not automatically create task packets. The operator reviews and decides.
+4. The verification gate is a runner stop condition — it does not replace the human Review/Gate stage. After verification, a human review step may still be required before closure.
+5. This contract may be extended by future change proposals as FR-006 implementation progresses.
+
+### 11.5 Sequencing Effect
+
+With this contract locked:
+- FR-006 (Sentinel Integration Layer) has a stable target to implement against
+- The P8-T02 workflow state evaluator should reserve `verification_pending` as a stop condition hook
+- Phase 8 close can proceed without requiring FR-006 implementation

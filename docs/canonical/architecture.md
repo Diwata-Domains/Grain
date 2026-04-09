@@ -78,6 +78,7 @@ The architecture is further organized around these internal concerns:
 8. **validation**
 9. **template/scaffolding support**
 10. **domain adapter system**
+11. **orchestration service**
 
 The architecture must keep orchestration logic separate from external execution tools.
 
@@ -161,6 +162,7 @@ Implement the toolkit's core use cases.
 - model routing service
 - validation service
 - review/handoff service
+- orchestration service
 
 #### Must do
 - orchestrate file reads/writes
@@ -388,8 +390,81 @@ Bridge domain-specific execution hints, context selection priorities, validation
 - depend on opaque environment state as the source of truth
 - require a different build loop per domain
 
+#### Adapter capability surface
+
+Adapters may optionally expose structured capabilities that the orchestration service can query. These capabilities are advisory inputs — the orchestration service may use them to inform planning proposals but they do not produce direct state changes.
+
+Optional adapter capabilities:
+- `detect_scope` — identify which file patterns, services, or operational areas are relevant to a described work item
+- `collect_context` — provide domain-specific context selection hints for a task in this domain
+- `analyze_impact` — surface likely dependencies, affected files, or downstream areas given a set of touched files
+- `validate_changes` — report domain-specific validation requirements for outputs in this domain
+- `export_artifacts` — describe expected deliverable patterns for tasks in this domain
+- `suggest_followups` — identify likely follow-up work in this domain given an execution outcome
+
+Adapters that do not implement capability functions remain fully valid. Orchestration degrades gracefully when capabilities are absent. Capabilities do not alter how adapters are selected for task packets — that remains explicit and operator-declared.
+
+A structural analysis tool (such as a tree-sitter-based dependency parser) may be used to implement `detect_scope` and `analyze_impact` locally and without LLM overhead. Tree-sitter is an implementation option for these capabilities, not a workflow authority.
+
 #### Adapter boundary rule
 If an adapter appears to require changing core workflow semantics, the adapter's boundary is wrong. The workflow is invariant; adapters supply hints within it.
+
+---
+
+### 4.14 Orchestration Service
+
+#### Responsibility
+Coordinate work across multiple adapters and workflow surfaces to produce structured planning artifacts. The orchestration service operates above individual adapters, uses adapter capabilities as inputs, and produces packet sequence plans, split recommendations, phase shape proposals, and cross-domain dependency maps.
+
+All orchestration outputs are proposals. They pass through the Review/Gate Layer before affecting system state. No orchestration output directly creates or mutates task packets.
+
+#### Orchestration levels
+
+**Task-level orchestration**
+- determine which adapters and domains are relevant to a described work item
+- recommend whether work should be one packet or split into multiple packets
+- detect cross-domain dependencies and likely follow-up packets
+- propose a sequenced set of packet candidates
+
+**Phase-level orchestration**
+- assist with phase shaping and task sequencing within a phase
+- identify dependency chains across packets in a phase
+- detect when a phase boundary should be reconsidered (split, expand, replan)
+- produce candidate phase structures as proposals for human review
+
+**Project-level orchestration**
+- provide a project-wide coordination surface above individual adapters
+- support multi-surface planning without collapsing domain boundaries
+- ensure all outputs remain inspectable and file-backed
+
+#### Outputs
+
+All orchestration outputs are typed proposal objects:
+- `PacketSequencePlan` — ordered set of packet candidates with dependency links
+- `split_recommendation` — advisory recommendation to decompose one work item into multiple packets
+- `phase_shape_proposal` — draft phase structure for human review and acceptance
+- `cross_domain_dependency` — identified dependency between work spanning separate adapters or domains
+
+#### Must do
+- produce structured, inspectable, file-backed outputs
+- pass all outputs to the Review/Gate Layer before any system-state change
+- accept adapter capability inputs without requiring any specific capability
+- degrade gracefully when no adapter is active
+- respect the packet lifecycle — candidates must be converted to packets through the normal packet creation flow
+
+#### Must not do
+- directly create or mutate task packets without explicit operator action
+- bypass the packet lifecycle or packet creation commands
+- directly alter canonical docs, the backlog, or the phase plan without passing through review
+- replace the task packet as the execution unit
+- subsume the Runtime Core or the Review/Gate Layer
+- execute a multi-step plan autonomously without an explicit human gate at each step
+
+#### Relationship to other components
+
+The orchestration service is a sibling of other application services (context assembly, packet service, validation service). It is not a replacement for any of them. It coordinates across them — querying adapters for scope signals, recommending packet splits, proposing phase shapes — but it does not own their responsibilities.
+
+The Advisory/Intelligence Layer may feed inputs to the orchestration service. The orchestration service outputs proposals which then pass to the Review/Gate Layer. The orchestrator is not itself an advisory layer — it is a coordination service whose outputs happen to be proposals.
 
 ---
 
@@ -470,7 +545,7 @@ Command parsing and user-facing command handlers.
 
 ### 6.2 `services/`
 
-Use-case orchestration.
+Use-case orchestration. Includes the orchestration service, which produces PacketSequencePlan and related proposal objects. The orchestration service lives here alongside other application services and does not receive its own top-level module.
 
 ### 6.3 `domain/`
 
@@ -603,6 +678,21 @@ Minimum fields:
 - `affected_artifacts` — what canonical docs, packets, or backlog items would be changed if accepted
 - `validation_notes` — gate layer findings
 
+### 7.7 OrchestratorPlan
+
+Represents a structured planning artifact produced by the orchestration service. An OrchestratorPlan is a proposal — it must pass through the Review/Gate Layer before affecting system state. Accepted candidates within a plan are converted to task packets through the normal packet creation flow.
+
+Minimum fields:
+- `plan_id` — stable identifier for this plan instance
+- `scope_summary` — human-readable description of the work being planned
+- `active_adapters` — list of adapter IDs whose capabilities were queried
+- `packet_candidates` — ordered list of proposed packets with titles, scope, and adapter assignments
+- `dependency_links` — identified dependencies between packet candidates
+- `cross_domain_flags` — domains or surfaces that span more than one adapter
+- `split_recommendations` — any candidate packets flagged for further decomposition before acceptance
+- `status` — one of: `draft`, `under_review`, `accepted`, `rejected`, `deferred`
+- `produced_by` — which service or agent produced this plan
+
 ---
 
 ## 8. Architectural Flows
@@ -661,6 +751,18 @@ The general flow for all advisory outputs follows a strict propose → validate 
 
 At no point does an advisory output directly mutate system state. The operator is the final commit authority for canonical-impacting proposals.
 
+### 8.8 Orchestration Flow
+
+1. operator describes a work item, a phase, or a cross-domain scope to be orchestrated
+2. orchestration service queries active adapters using declared capability functions (`detect_scope`, `analyze_impact`, `suggest_followups`) where available
+3. adapter capability outputs are collected as input signals — no state changes occur
+4. orchestration service produces an `OrchestratorPlan` containing packet candidates, dependency links, cross-domain flags, and split recommendations
+5. `OrchestratorPlan` passes to the Review/Gate Layer as a proposal
+6. gate validates plan against canonical rules and packet contracts
+7. operator reviews and accepts, modifies, or rejects the plan
+8. accepted candidates are converted to task packets through the normal packet creation flow (`forge task create`)
+9. no packets are created or mutated before step 8
+
 ### 8.7 Telemetry Collection Flow
 
 1. workflow events are emitted during task execution, review, and close
@@ -707,6 +809,18 @@ Domain adapters may extend workflow behavior through hints, context selection pr
 - directly alter canonical docs, backlog, or task packets without passing through the normal workflow
 
 A custom adapter that requires breaking these rules must be redesigned.
+
+### 9.9 Orchestration Boundary Rule
+
+The orchestration service may coordinate planning across adapters and produce structured proposals. It must not:
+- execute workflow stages autonomously without explicit operator approval at each gate
+- bypass the packet lifecycle or treat packet candidates as pre-created packets
+- mutate canonical docs, backlog, or task packets directly
+- require a different workflow loop per domain or per plan type
+- collapse adapter boundaries into a unified execution surface
+- operate without passing all outputs through the Review/Gate Layer
+
+An orchestration plan that requires bypassing the packet model or the Review/Gate Layer exceeds the orchestration service's boundary. Break the plan into smaller, separately proposed pieces.
 
 ### 9.7 Constrained Autonomy Boundary
 

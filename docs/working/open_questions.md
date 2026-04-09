@@ -231,4 +231,10 @@ If a question affects canonical rules, architecture, contracts, or workflow sema
 
 ## 5. Deferred Questions
 
-None currently deferred.
+### QD-01 — Where should `forge workflow reconcile` command spec land?
+
+* **Status:** deferred
+* **Context:** P8-T11 defined the three-layer reconciliation approach (manual checklist, reconcile command, runner validation) and documented the manual checklist. The `forge workflow reconcile` command spec and implementation are deferred until Phase 8 close or Phase 9 planning.
+* **Planned Resolution:** Define the command in `docs/canonical/cli_spec.md` as a deferred surface (like the verify commands in P8-T10) during Phase 8 close or early Phase 9, then implement in a future task.
+* **Blocking:** No current work is blocked.
+* **Related Tasks:** P8-T11 (TASK-0071), P8-T10 (Sentinel bridge contract), future Phase 9 planning

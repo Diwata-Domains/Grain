@@ -350,6 +350,36 @@ After this phase, a new project can be initialized with adapter-awareness from t
 
 ---
 
+## Phase 8 — Workflow Automation Runner Foundation ✓ CLOSED
+
+### Objective
+Implement a state-driven CLI layer that tells agents and operators the next legal workflow step, executes one guarded step per invocation, stops cleanly at review and verification gates, and emits stable machine-readable JSON for automation.
+
+### Major Deliverables
+- Workflow state evaluator service (`workflow_state_service.py`) ✓
+- `forge workflow next` — next legal step + blockers ✓
+- `forge workflow run` — guarded one-step runner ✓
+- `forge task next` — deterministic task-selection surface ✓
+- `forge task prepare` — packet/context prerequisite check ✓
+- `forge phase next` — phase-level action surface ✓
+- `forge prompt show` — recommended prompt for current state ✓
+- Runner integration tests across all six automation commands ✓
+- Sentinel bridge contract: `forge verify` command group in `cli_spec.md §6.9`, result payload schema + verification gate in `v2_plan.md §11` ✓
+- Working-doc reconciliation approach: manual checklist + `forge workflow reconcile` spec (QD-01) ✓
+
+### Notes
+- Phase 8 complete: 11/11 tasks done
+- 494/494 tests passing at phase close (+75 new tests from Phase 7 close)
+- Machine-readable JSON contract stable across all six automation commands
+- Sentinel bridge contract defined; FR-006 implementation target established
+- No canonical change proposals raised except the explicitly scoped `cli_spec.md §6.9` addition (P8-T10)
+- Phase closed 2026-04-09
+
+### Dependencies
+- Phase 7 stable new-project onboarding ✓
+
+---
+
 ## 10. Post-v1 Transition Planning
 
 With Phase 5 closed, v2 items may now be promoted into active implementation when they are:

@@ -486,6 +486,83 @@ Inspect the available adapter profiles and their configured domain contracts.
 
 `forge adapter list` and `forge adapter show` are defined here as the stable command surface for adapter inspection. Full implementation is deferred to the phase where adapter validation is automated. The command surface should be registered early so it appears in `forge --help` output and validates cleanly.
 
+### 6.8 `orchestrate`
+
+#### Purpose
+
+Invoke the orchestration service to produce structured planning proposals for multi-domain or multi-packet work.
+
+#### v2 Commands
+
+**`forge orchestrate scope`** — analyze a described work item and identify relevant adapters, domains, and likely cross-domain dependencies.
+
+**`forge orchestrate plan`** — produce a draft `OrchestratorPlan` containing packet candidates, dependency links, and split recommendations for a described phase or work scope.
+
+#### Responsibilities
+
+- query active adapters for scope and impact signals
+- produce `OrchestratorPlan` proposal objects
+- surface split recommendations and cross-domain dependency maps
+- surface results for operator review — do not auto-accept or auto-create packets
+
+#### Must not
+
+- create task packets directly
+- mutate the backlog or phase plan without operator action
+- bypass the Review/Gate Layer
+- alter canonical docs or workflow authority rules
+
+#### Recommended options
+
+- `--scope <text>` — describe the work item or phase to be planned
+- `--adapter <adapter-id>` — restrict scope analysis to one or more adapters (repeatable)
+- `--format text|json`
+
+#### Deferral note
+
+`forge orchestrate` commands are defined here as the stable CLI surface for orchestration. Implementation is deferred until the orchestration service is built in a future phase. The command group should be registered early so it appears in `forge --help` with a not-implemented message.
+
+### 6.9 `verify`
+
+#### Purpose
+
+Bridge command surface for Sentinel verification integration. Allows operators and agents to submit task artifacts for external verification, poll for verification status, and ingest completed Sentinel results into Forge workflow state. The verification gate in the workflow runner stops execution until a pending verification is resolved.
+
+#### v2/deferred Commands
+
+**`forge verify submit`** — submit a set of task artifacts to Sentinel for verification; returns a `verification_id` for subsequent status checks.
+
+**`forge verify status`** — check the status of a pending verification by `verification_id`; returns current state (`pending`, `complete`, `failed`) and any available outcome fields.
+
+**`forge verify ingest`** — ingest a completed Sentinel result payload into Forge workflow state; triggers resolution of the verification gate stop condition in the runner.
+
+#### Responsibilities
+
+- accept verification requests referencing a specific task packet and its artifacts
+- track the returned `verification_id` so status checks and ingestion can reference it
+- surface the verification gate stop signal to the workflow runner when a result is pending
+- upon ingestion, record the verification outcome in the packet's working artifacts
+- surface `followup_candidates` from the result payload for operator review — do not auto-create packets
+
+#### Must not
+
+- implement Sentinel internals or verification logic
+- auto-close, auto-approve, or auto-create work based on verification outcomes
+- bypass the Review/Gate Layer when surfacing verification findings
+- treat a Sentinel result payload as a canonical-level mutation without operator action
+- silently succeed when a `verification_id` is unknown or a result is malformed
+
+#### Recommended options
+
+- `--id <task-id>` — task packet to submit for verification (for `submit`)
+- `--verification-id <id>` — reference to a pending verification (for `status` and `ingest`)
+- `--payload <path>` — path to a Sentinel result payload JSON file (for `ingest`)
+- `--format text|json`
+
+#### Deferral note
+
+`forge verify` commands are defined here as the stable CLI surface for Sentinel integration. Implementation is deferred until the Sentinel Integration Layer (FR-006) is built. The command group should be registered as deferred stubs per §5.1 — returning a not-implemented error with a non-zero exit code — so it appears in `forge --help` and fails explicitly before implementation.
+
 ---
 
 ## 7. Required Command Behaviors
@@ -650,7 +727,16 @@ forge review handoff
 forge review summary
 forge adapter list
 forge adapter show
+forge orchestrate scope
+forge orchestrate plan
+forge verify submit
+forge verify status
+forge verify ingest
 ```
+
+`forge orchestrate` commands are defined but deferred. They must be registered with a not-implemented message until the orchestration service is implemented.
+
+`forge verify` commands are defined but deferred. They must be registered with a not-implemented message until the Sentinel Integration Layer (FR-006) is implemented.
 
 Additional commands may be added later, but the surface should remain disciplined.
 

@@ -247,25 +247,55 @@ Record the following in each task packet `results.md`:
 
 ---
 
+### Phase 8
+
+* Tasks completed: 11 (P8-T01 through P8-T11)
+* Tasks blocked: 0 (P8-T10 was unblocked and completed)
+* Prompt runs: ~33 (11 execute × 1 + 11 review × 1 + 11 close × 1)
+* Avg prompt runs per completed task: 3.0
+* Manual interventions: 0
+* First-pass success rate: 11/11
+* Rework count: 0
+* Drift incidents: 1 (working-doc drift after P8-T09 — repaired by P8-T11)
+* Phase duration: Sessions 8–9
+* Tests at phase close: 494 (+75 new tests from Phase 7 close)
+* Conversation model: multi-agent (separate executor / reviewer / closer conversations)
+* Token tracking: proxy metrics only
+
+### Phase 8 Notes
+
+* What felt efficient: workflow state evaluator, runner, and command surfaces composed cleanly on top of the Phase 4 context assembly service; machine-readable JSON contract established early (P8-T01) kept later tasks aligned; P8-T10 unblocked cleanly once runner stop conditions were defined
+* What created friction: working-doc drift between backlog.md and current_focus.md after P8-T09 close — P8-T09 marked done in backlog but current_focus.md kept it as in_progress; required explicit reconciliation task (P8-T11) to fix
+* What to tighten next: apply the manual reconciliation checklist (v2_plan.md §9) at every task close to prevent this class of drift from recurring; `forge workflow reconcile` CLI implementation deferred to Phase 9+ (QD-01)
+
+### Phase Retrospective Classification
+
+* **Fix now:** none
+* **Batch next phase:** `forge workflow reconcile` CLI implementation (QD-01); packet template cleanup for review/close prefill fields (carries over from Phase 7); `_find_packet_dir_for_ref` prefix-match robustness if task_ref format changes
+* **Ignore:** exit code wording imprecision in P8-T08 deliverable_spec acceptance criterion 5 (functional behavior correct)
+
+---
+
 ## V2 Aggregate (to date)
 
-* Total v2 tasks completed: 14 (Phase 6: 7, Phase 7: 7)
+* Total v2 tasks completed: 34 (Phase 6: 7, Phase 7: 7, Phase 8: 11, Phase 9: 0)
 * Total v2 blocked: 0
-* Tests at v2 Phase 6 close: 399; tests at v2 Phase 7 close: 419
-* Open questions resolved during v2 (to date): Q12–Q15 (4 questions)
-* Canonical change proposals raised during v2: none
+* Tests at v2 Phase 6 close: 399; at Phase 7 close: 419; at Phase 8 close: 494
+* Open questions resolved during v2 (to date): Q12–Q16 (5 questions); QD-01 deferred
+* Canonical change proposals raised during v2: 1 (P8-T10 `cli_spec.md §6.9` addition — explicitly scoped, no separate CP raised)
 * Major Phase 6 additions: adapter profiles runtime doc, AdapterProfile domain model, adapter loader/parser, packet adapter metadata fields, adapter-aware context biasing, adapter hint surfacing in context outputs, adapter system tests
 * Major Phase 7 additions: stable new-project onboarding prompt, init seed-file scaffolding, adapter selection, starter packet bootstrap, onboarding integration tests, existing-project adoption boundary docs
+* Major Phase 8 additions: workflow state evaluator, forge workflow next/run, forge task next/prepare, forge phase next, forge prompt show, machine-readable JSON contract for automation commands, runner integration tests, Sentinel bridge contract (`cli_spec.md §6.9` + `v2_plan.md §11`), working-doc reconciliation approach
 
 ---
 
 ## Combined Aggregate
 
-* Total tasks completed: 67 (53 v1 + 14 v2)
+* Total tasks completed: 87 (53 v1 + 34 v2)
 * Total blocked (all phases): 0
-* Total tests at v1 close: 379; at Phase 6 close: 399; at Phase 7 close: 419
-* Open questions resolved total: Q1–Q15 (15 resolved)
-* Canonical change proposals applied total: CP-001 through CP-008 (8 applied; none raised in v2)
+* Total tests at v1 close: 379; at Phase 6 close: 399; at Phase 7 close: 419; at Phase 8 close: 494
+* Open questions resolved total: Q1–Q16 (16 resolved); QD-01 deferred
+* Canonical change proposals applied total: CP-001 through CP-008 (8 applied in v1); 1 scoped addition in v2 (P8-T10 `cli_spec.md §6.9`)
 * V1 phases closed: 5 (Phases 1–5)
-* V2 phases closed: 2 (Phase 6, Phase 7)
+* V2 phases closed: 3 (Phase 6, Phase 7, Phase 8)
 * V2 planning docs created: v2_plan.md, v2_adapters.md, v2_onboarding.md

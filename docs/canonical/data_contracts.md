@@ -579,7 +579,64 @@ A validator may reject or warn on adapter profiles that contain unrecognized fie
 
 ---
 
-## 18. Deferred Contract Complexity
+## 18. OrchestratorPlan Contract
+
+An `OrchestratorPlan` is a structured planning proposal produced by the orchestration service. It lives in the working or working-proposals layer — never in canonical docs or task packets directly. It is a first-class proposal artifact and must pass through the Review/Gate Layer before any accepted candidates are converted to task packets.
+
+### 18.1 Standard Location
+
+OrchestratorPlan artifacts may live in:
+
+```text
+docs/working/proposals/
+```
+
+or be co-located with a relevant task packet when scoped to a single planning event.
+
+### 18.2 OrchestratorPlan Schema
+
+Minimum fields:
+
+```yaml
+plan_id: <string>           # stable identifier, e.g. OP-001
+scope_summary: <string>     # human-readable description of the work being planned
+produced_by: <string>       # which service, agent, or operator produced this plan
+status: <string>            # one of: draft, under_review, accepted, rejected, deferred
+active_adapters: <list[string]>  # adapter IDs queried during planning (may be empty)
+packet_candidates: <list>   # ordered proposed packet items (see below)
+dependency_links: <list>    # dependencies between packet candidates (may be empty)
+cross_domain_flags: <list[string]>  # adapter domains that span this plan
+split_recommendations: <list[string]>  # candidate packet IDs flagged for decomposition
+```
+
+Each `packet_candidates` entry should include:
+```yaml
+- candidate_id: <string>
+  title: <string>
+  scope_summary: <string>
+  primary_adapter: <string|null>
+  depends_on: <list[string]>    # other candidate_ids this depends on
+```
+
+### 18.3 OrchestratorPlan Validation Minimums
+
+A validator must be able to check:
+- `plan_id` is present and non-empty
+- `status` is one of the allowed values
+- `packet_candidates` is a list (may be empty)
+- each candidate entry contains `candidate_id` and `title`
+- `active_adapters` entries resolve to known adapter IDs when populated
+
+### 18.4 OrchestratorPlan Lifecycle Rules
+
+- an OrchestratorPlan with status `draft` or `under_review` must not trigger task packet creation
+- an OrchestratorPlan with status `accepted` indicates operator approval; packet creation follows through `forge task create`, not automatically
+- an OrchestratorPlan with status `rejected` or `deferred` is retained for audit but has no effect on workflow state
+- OrchestratorPlans must not modify canonical docs, the backlog, or the phase plan directly
+
+---
+
+## 19. Deferred Contract Complexity
 
 The following are deferred:
 
@@ -594,9 +651,9 @@ v1 should prefer simple deterministic checks over heavy schema systems.
 
 ---
 
-## 19. Decision Boundaries
+## 20. Decision Boundaries
 
-### 19.1 Decisions This Document Controls
+### 20.1 Decisions This Document Controls
 
 - required artifact names and structures
 - manifest schema expectations
@@ -605,8 +662,9 @@ v1 should prefer simple deterministic checks over heavy schema systems.
 - machine-checkable transition contract
 - minimum validator targets
 - adapter profile schema and validation minimums
+- OrchestratorPlan schema and validation minimums
 
-### 19.2 Decisions This Document Does Not Control
+### 20.2 Decisions This Document Does Not Control
 
 - why the product exists
 - component/module boundaries

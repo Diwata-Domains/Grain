@@ -47,6 +47,8 @@ Those belong in product scope and architecture.
 The Building Workflow organizes project progress.
 The Build Loop executes one scoped task packet at a time.
 
+The orchestration service operates across both structures. It assists with phase shaping, cross-domain dependency detection, and packet sequencing at the planning level (Building Workflow), and with split-vs-single decisions and adapter scope analysis at the task level (Build Loop). Orchestration outputs are proposals — they do not bypass or replace either structure.
+
 ---
 
 ## 3. Building Workflow
@@ -82,6 +84,13 @@ Outputs may include:
 - priority sequencing
 - identified dependencies
 
+The orchestration service may assist at this stage by:
+- querying adapters for scope signals across multiple domains
+- producing a `PacketSequencePlan` or `phase_shape_proposal` as draft candidates
+- surfacing cross-domain dependencies that should inform sequencing
+
+All orchestration assistance at this stage produces proposals. The operator reviews and accepts them into the backlog or phase plan — they do not automatically become committed work.
+
 Entry conditions:
 - canonical direction exists
 - actionable work needs to be planned
@@ -98,6 +107,13 @@ Outputs must include:
 - task-local context
 - execution plan
 - deliverable definition
+
+The orchestration service may assist at this stage by:
+- recommending whether the selected work item should be one packet or split into multiple packets
+- identifying which adapter(s) are relevant to this task
+- surfacing likely follow-up packets or cross-domain dependencies for the operator's awareness
+
+Split recommendations are proposals. The operator decides whether to split before creating packets. The orchestration service does not create packets directly.
 
 Entry conditions:
 - one task is selected
@@ -481,6 +497,42 @@ The workflow loop (select → packetize → prepare context → execute → revi
 
 ---
 
+## 15. Orchestrator Interaction with the Workflow
+
+The orchestration service assists planning without altering the workflow itself.
+
+### 15.1 What the Orchestrator May Do
+
+The orchestration service may:
+- query active adapters for scope signals, impact analysis, and follow-up suggestions
+- produce `OrchestratorPlan` objects containing packet candidates, dependency links, phase shape drafts, and split recommendations
+- surface cross-domain dependencies and sequencing proposals to the operator
+- assist at Stage 2 (Execution Planning) with phase shaping and dependency detection
+- assist at Stage 3 (Task Packet Generation) with split-vs-single recommendations and adapter identification
+- produce proposals for future work items based on known adapter outputs
+
+### 15.2 What the Orchestrator Must Not Do
+
+The orchestration service must not:
+- execute workflow stages autonomously without an explicit operator gate
+- create or mutate task packets without operator action
+- bypass Stage 5 (Review and Reconciliation) or Stage 6 (Closure and Handoff)
+- alter lifecycle states, closure requirements, or canonical authority rules
+- redefine what counts as a valid packet or a complete task
+- require a different workflow loop for cross-domain or multi-surface work
+
+### 15.3 Orchestrator-Neutral Behavior
+
+When no orchestration is invoked, Forge operates without orchestration involvement. The workflow loop is identical. Adapters may still be active, but adapter hints are applied per-packet without cross-domain coordination.
+
+Orchestration is always explicit — invoked by the operator when planning multi-domain or multi-packet work. Forge does not automatically orchestrate in the background.
+
+### 15.4 Workflow Invariance Rule (Orchestration)
+
+The workflow loop is the same with or without orchestration active. Orchestration shapes planning proposals at Stages 2 and 3; it does not alter the stages themselves, their entry/exit conditions, or their sequencing. Cross-domain work that requires changing the loop does not qualify for orchestration-based handling — it requires a canonical workflow update.
+
+---
+
 ## 14. Decision Boundaries
 
 ### 14.1 Decisions This Document Controls
@@ -491,6 +543,7 @@ The workflow loop (select → packetize → prepare context → execute → revi
 - model class usage by stage
 - closure requirements
 - adapter interaction boundaries with the workflow
+- orchestrator interaction boundaries with the workflow
 
 ### 14.2 Decisions This Document Does Not Control
 - product feature scope

@@ -53,6 +53,8 @@ Forge extends to any domain whose work can be expressed through repo artifacts, 
 
 Forge supports domain-specific execution through a **contract-driven adapter model**. Adapters are structured, repo-visible domain bridges that tune context selection, validation hints, and review focus for a specific execution domain without changing core workflow semantics. Official adapters are maintained by the Forge project. Custom adapters may be defined locally by users for any domain.
 
+Forge includes an **orchestration service** that coordinates work across multiple adapters and domains at the task, phase, and project levels. The orchestration service produces structured planning proposals — packet sequence plans, split recommendations, phase shape drafts, and cross-domain dependency maps — which pass through the Review/Gate Layer before affecting system state. Task packets remain the execution unit. Orchestration proposes; the operator approves; the packet system executes.
+
 Forge evolves toward an **assistant-guided system** while preserving precision and reliability. Intelligence and advisory behavior are supported but are explicitly separated from execution authority and contract enforcement. Forge should not be characterized as a purely dumb executor — advisory capability is part of its design — but all advisory outputs are proposals until validated, never direct mutations.
 
 ### 2.2 Sentinel
@@ -229,6 +231,10 @@ Two categories of adapter are supported:
 - **official adapters** — maintained by the Forge project; shipped as part of the core distribution
 - **custom adapters** — defined locally within a repo for domain-specific or private use cases
 
+### 6.8 OrchestratorPlan
+
+A structured planning artifact produced by the orchestration service. An OrchestratorPlan is a proposal — it is inspectable, rejectable, and deferrable. It contains packet candidates, dependency links, cross-domain flags, and split recommendations. Accepted candidates become task packets through the normal packet creation flow; they do not automatically create packets.
+
 ### 6.7 Proposal Objects
 First-class objects representing advisory outputs before they are validated and committed. Proposal objects are distinct from committed work and may not directly alter canonical state.
 
@@ -306,6 +312,14 @@ A user captures workflow friction, token waste, repeated failure patterns, and v
 - adapter-informed context selection, validation hints, and review focus
 - adapter contract validation through the manifest and doc system
 - DevOps, VPS provisioning, system administration, and local-ops workflows are valid adapter domains
+- optional adapter capability surface (`detect_scope`, `collect_context`, `analyze_impact`, `validate_changes`, `export_artifacts`, `suggest_followups`) used by the orchestration service
+
+#### Orchestration Service
+- task-level orchestration: adapter selection, split vs single packet decisions, dependency detection, packet sequencing proposals
+- phase-level orchestration: phase shaping assistance, dependency chain identification, phase replan proposals
+- project-level orchestration: multi-surface planning above individual adapters, cross-domain dependency mapping
+- all outputs are proposals (`OrchestratorPlan`) that pass through Review/Gate before affecting system state
+- task packets remain the execution unit; orchestration produces candidates, not mutations
 
 ### 8.2 Conditionally In Scope
 Only if lightweight and practical:
@@ -387,6 +401,12 @@ v1 should favor explicit files and simple flows over abstract orchestration mach
     - the workflow loop, packet lifecycle, and review gates remain the same across every domain
     - adapters change execution hints, context selection, and validation focus — not workflow law
     - an adapter that requires changing core workflow semantics has the wrong boundary
+
+11. **Orchestrate planning, not execution**
+    - the orchestration service coordinates planning proposals across adapters and domains
+    - it proposes packet candidates, sequences, dependencies, and phase shapes
+    - it does not execute, auto-approve, or bypass the packet lifecycle or the Review/Gate Layer
+    - task packets remain the execution unit at every level of orchestration
 
 ---
 

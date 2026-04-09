@@ -47,7 +47,7 @@ If an item is actively being executed, the working docs own the operational stat
 
 ### FR-001 — Adapter System Formalization
 
-* **Status:** promoted
+* **Status:** graduated — delivered through Phase 6 (closed)
 * **Suggested Target:** v2
 * **Why it matters:**
 
@@ -82,6 +82,7 @@ If an item is actively being executed, the working docs own the operational stat
   * adapter design must not require changes to canonical packet or workflow contracts
   * a project may have multiple adapters active (e.g. a Tauri project has both `frontend_adapter` and `code_adapter`)
   * promoted into active work through Phase 6 and follow-on v2 planning
+  * **Delivered:** `code_adapter` and `frontend_adapter` profiles live in `docs/runtime/adapter_profiles.md`; `AdapterProfile` domain model in `src/forge/domain/adapters.py`; adapter-aware `forge init` with `--primary-adapter` and `--secondary-adapter` flags; full canonical contract formalized across `architecture.md §4.13`, `data_contracts.md §17`, `workflow_spec.md §13`, `cli_spec.md §6.7`; `docs_adapter` and `spreadsheet_adapter` remain planned-not-yet-implemented; extended by FR-014 (adapter capability surface)
 
 ---
 
@@ -138,7 +139,7 @@ If an item is actively being executed, the working docs own the operational stat
 
 ### FR-004 — Forge CLI (Unified Command Layer)
 
-* **Status:** planned
+* **Status:** graduated — substantially delivered through Phase 8
 * **Suggested Target:** v2
 * **Why it matters:**
 
@@ -159,6 +160,7 @@ If an item is actively being executed, the working docs own the operational stat
 * **Notes:**
 
   * should remain thin wrapper, not heavy abstraction
+  * **Delivered:** `forge task next`, `forge phase next`, `forge workflow next`, `forge workflow run`, `forge prompt show`, `forge task prepare` all delivered in Phase 8; `forge run <prompt>` concept was superseded by `forge workflow run` which is more precise and gate-aware; context assembly automation covered by `forge context build/show/export`
 
 ---
 
@@ -508,7 +510,7 @@ If an item is actively being executed, the working docs own the operational stat
 
 ### FR-012 — New Project Onboarding Flow
 
-* **Status:** promoted
+* **Status:** graduated — delivered through Phase 7 (closed)
 * **Suggested Target:** v2
 * **Why it matters:**
 
@@ -537,6 +539,7 @@ If an item is actively being executed, the working docs own the operational stat
   * open questions generated at onboarding should be marked `decision_needed` by default
   * this is the required path for Sentinel bootstrap
   * promoted into active work through Phase 7 planning and backlog seeding
+  * **Delivered:** `prompts/workflow.onboard.new.md` with conversational agent-driven flow; `forge init` extended with `--primary-adapter`, `--secondary-adapter`, `--bootstrap` flags; `workflow.init.md` kept as compatibility alias; adapter-aware starter packet creation; `docs/working/v2_onboarding.md` as the living onboarding design doc
 
 ---
 
@@ -577,6 +580,78 @@ If an item is actively being executed, the working docs own the operational stat
     * onboarding integration coverage must remain passing
     * first adoption packet must stay planning/scaffold-first (no deep scan tuning or provider-specific branching)
   * promotion trigger: move FR-013 from `planned` to `promoted` only when the above criteria are satisfied and a concrete starter packet is queued in backlog/current focus
+
+---
+
+### FR-014 — Orchestration Service and Adapter Capability Surface
+
+* **Status:** candidate — seeded in backlog as Phase 9 (`backlog.md §12`)
+* **Suggested Target:** v2 (post-Phase 8)
+* **Why it matters:**
+
+  * Forge currently sequences tasks within a single domain with no cross-domain coordination — as projects grow to span backend, frontend, DevOps, and docs work, the planning overhead becomes manual and error-prone
+  * an orchestration service turns cross-domain planning into a structured, inspectable, proposal-driven activity rather than freeform operator reasoning
+  * the adapter capability surface gives adapters a formal way to contribute scope, impact, and follow-up signals that the orchestrator can use — making adapters active participants in planning, not just passive hint containers
+* **Scope:**
+
+  * orchestration service in `src/forge/services/` — task-level (split decisions, adapter selection, dependency detection), phase-level (phase shaping, dependency chains, replan proposals), project-level (multi-surface coordination)
+  * adapter capability surface — optional adapter methods: `detect_scope`, `collect_context`, `analyze_impact`, `validate_changes`, `export_artifacts`, `suggest_followups`; graceful degradation when absent
+  * `OrchestratorPlan` domain model — packet candidates, dependency links, cross-domain flags, split recommendations; status lifecycle (draft → under_review → accepted/rejected/deferred)
+  * `forge orchestrate scope` and `forge orchestrate plan` CLI commands
+  * `forge adapter list` and `forge adapter show` CLI commands
+  * `docs/working/proposals/` convention for OrchestratorPlan artifacts on disk
+* **Why not now:**
+
+  * Phase 8 (Workflow Automation Runner) must close first
+  * the orchestration service depends on stable context assembly and workflow state primitives that Phase 8 is building
+  * tree-sitter structural analysis (FR-011) is a natural input to `detect_scope` and `analyze_impact` — both should be scoped together if possible
+* **Dependencies:**
+
+  * stable Phase 8 workflow runner primitives
+  * stable adapter profiles and context assembly service
+  * FA-T01 tree-sitter work (FR-011) — feeds `detect_scope` and `analyze_impact`
+* **Notes:**
+
+  * all orchestration outputs are proposals — they pass through Review/Gate; task packets are never created automatically
+  * canonical doc design is complete (architecture.md §4.14, workflow_spec.md §15, product_scope.md §2.1, data_contracts.md §18, cli_spec.md §6.8)
+  * implementation should start with the domain model (`OrchestratorPlan`) and `forge orchestrate` CLI stubs, then add the service
+
+---
+
+### FR-015 — Code Intelligence and Graph Layer
+
+* **Status:** candidate — seeded in backlog as Phases 10–12 (`backlog.md §13–15`)
+* **Suggested Target:** v3
+* **Why it matters:**
+
+  * static glob-pattern context selection (current approach) loads too broadly — it includes files that are not structurally connected to the task
+  * as projects grow, imprecise context selection becomes the primary source of token waste, unnecessary retries, and stale-context drift
+  * a graph-based intelligence system answers questions static patterns cannot: what files does this function actually call, which docs reference this module, which tasks have touched this code area
+* **Scope:**
+
+  * **Layer 1 — Deterministic Structural** (tree-sitter + markdown/yaml parsers): extract functions, classes, imports, calls, file relationships, task packet metadata, doc structure into normalized structural entities; no LLM usage here
+  * **Layer 2 — Semantic Enrichment** (embeddings, controlled LLM summaries): similar task detection, doc-to-task matching, duplicate/overlap detection; outputs labeled as inferred, not authoritative
+  * **Layer 3 — Graph Layer** (NetworkX, JSON on disk): knowledge graph with typed, confidence-labeled edges (EXTRACTED: defines/imports/calls/depends_on; INFERRED: references/related_to; AMBIGUOUS: ambiguous_link); nodes include files, modules, classes, functions, packets, docs, adapters, proposals; graph is rebuildable from source, inspectable, versionable
+  * **Layer 4 — Graph-Assisted Context Selection**: replace glob-pattern context loading with graph traversal — prefer packet-local files, then include only structurally connected files via graph distance; enforce minimal context rule and traceable selection
+  * **Layer 7 — Ranking/Decision Layer**: deterministic scoring across graph distance, semantic similarity, authority level, packet-local priority, telemetry signals; used for context selection, next-task suggestions, and impacted-file identification
+  * optional: language-native analyzers (Python ast/mypy/ruff, TypeScript ts-morph), LSP integration, git-aware hotspot analysis
+* **Why not now:**
+
+  * requires stable Phase 8 workflow primitives and FA-T01 tree-sitter proof-of-concept first
+  * embeddings (Layer 2) introduce external or local model infrastructure decisions that need proper evaluation — this is not a simple local-only addition
+  * should be phased: Layer 1 + Layer 3 (structural graph) first, Layer 2 (semantic enrichment) second, Layer 7 (ranking) third
+* **Dependencies:**
+
+  * FR-014 (Orchestration Service) — `detect_scope` and `analyze_impact` feed from the graph layer
+  * FA-T01 (Tree-sitter, FR-011) — Layer 1 implementation
+  * stable Phase 8 context assembly service
+* **Constraints** (must not violate):
+
+  * graph must not replace task packets
+  * advisory outputs must not mutate state directly
+  * all inferred relationships must be labeled with confidence and source
+  * all artifacts must be file-backed and inspectable
+  * context must remain minimal and bounded — the graph enables precision, not expansion
 
 ---
 
