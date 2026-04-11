@@ -5,10 +5,10 @@ Covers: select_canonical_docs, select_canonical_docs_for_packet.
 
 import yaml
 
-from forge.domain.context import select_canonical_docs
-from forge.domain.documents import build_registry, DocumentRecord
-from forge.services.context_service import select_canonical_docs_for_packet
-from forge.services.task_service import create_packet_directory
+from grain.domain.context import select_canonical_docs
+from grain.domain.documents import build_registry, DocumentRecord
+from grain.services.context_service import select_canonical_docs_for_packet
+from grain.services.task_service import create_packet_directory
 
 
 # ---------------------------------------------------------------------------

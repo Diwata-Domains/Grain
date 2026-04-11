@@ -2,7 +2,7 @@
 
 import pytest
 
-from forge.domain.documents import DocumentRecord, DocumentRegistry, build_registry
+from grain.domain.documents import DocumentRecord, DocumentRegistry, build_registry
 
 
 def _manifest_with_entries() -> dict:

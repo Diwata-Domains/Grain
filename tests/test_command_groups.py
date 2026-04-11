@@ -1,17 +1,33 @@
 import pytest
 from click.testing import CliRunner
-from forge.cli import main
+from grain.cli import main
 
 runner = CliRunner()
 
-GROUPS = ["docs", "task", "context", "model", "review"]
+GROUPS = [
+    "docs",
+    "task",
+    "adapter",
+    "orchestrate",
+    "context",
+    "model",
+    "review",
+    "phase",
+    "prompt",
+    "workflow",
+]
 
 SUBCOMMANDS = {
     "docs": ["validate", "index", "show"],
     "task": ["create", "list", "show", "status", "validate", "close"],
+    "adapter": ["list", "show"],
+    "orchestrate": ["scope", "plan"],
     "context": ["build", "show", "export"],
     "model": ["show", "select", "escalate"],
     "review": ["check", "handoff", "summary"],
+    "phase": ["next"],
+    "prompt": ["show"],
+    "workflow": ["next", "run"],
 }
 
 

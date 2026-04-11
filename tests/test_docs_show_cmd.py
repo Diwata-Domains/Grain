@@ -4,7 +4,7 @@ import json
 
 from click.testing import CliRunner
 
-from forge.cli import main
+from grain.cli import main
 
 
 def test_docs_show_known_doc_exits_zero(valid_repo):

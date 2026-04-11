@@ -1,20 +1,20 @@
-import forge
-import forge.cli
-import forge.services
-import forge.domain
-import forge.adapters
-import forge.validators
-import forge.templates
+import grain
+import grain.cli
+import grain.services
+import grain.domain
+import grain.adapters
+import grain.validators
+import grain.templates
 
 
 def test_package_importable():
-    assert forge is not None
+    assert grain is not None
 
 
 def test_submodules_importable():
-    assert forge.cli is not None
-    assert forge.services is not None
-    assert forge.domain is not None
-    assert forge.adapters is not None
-    assert forge.validators is not None
-    assert forge.templates is not None
+    assert grain.cli is not None
+    assert grain.services is not None
+    assert grain.domain is not None
+    assert grain.adapters is not None
+    assert grain.validators is not None
+    assert grain.templates is not None

@@ -4,7 +4,7 @@ import json
 
 from click.testing import CliRunner
 
-from forge.cli import main
+from grain.cli import main
 
 
 def _create_packet(packet_repo, phase=3, task_num=1, title="Test Task"):

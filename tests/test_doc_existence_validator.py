@@ -2,8 +2,8 @@
 
 from pathlib import Path
 
-from forge.domain.documents import build_registry
-from forge.validators.doc_existence_validator import validate_doc_existence
+from grain.domain.documents import build_registry
+from grain.validators.doc_existence_validator import validate_doc_existence
 
 
 def _make_registry(entries: list[dict], layer: str = "canonical"):

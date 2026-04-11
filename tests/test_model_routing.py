@@ -1,7 +1,7 @@
 """Tests for model selection and escalation routing."""
 
-from forge.adapters.model_config import parse_agent_profiles_markdown
-from forge.domain.routing import get_escalation_target, select_model_class
+from grain.adapters.model_config import parse_agent_profiles_markdown
+from grain.domain.routing import get_escalation_target, select_model_class
 
 
 SAMPLE_AGENT_PROFILES = """# Agent Profiles

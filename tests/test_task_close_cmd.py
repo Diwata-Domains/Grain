@@ -7,10 +7,10 @@ from pathlib import Path
 
 from click.testing import CliRunner
 
-from forge.cli import main
-from forge.domain.packets import parse_task_metadata
+from grain.cli import main
+from grain.domain.packets import parse_task_metadata
 
-_ABT = str(Path(sys.executable).parent / "forge")
+_ABT = str(Path(sys.executable).parent / "grain")
 
 
 def _run_forge(*args) -> subprocess.CompletedProcess:

@@ -89,6 +89,130 @@ Explain why the proposal was approved, rejected, or deferred.
 
 ---
 
+## CP-009 — Rename product identities: Forge → Grain, Sentinel → Assay
+
+### Affected Canonical Docs
+- `docs/canonical/product_scope.md`
+- `docs/canonical/architecture.md`
+- `docs/canonical/cli_spec.md`
+- `docs/canonical/workflow_spec.md`
+- `docs/canonical/data_contracts.md`
+
+### Reason
+Both "Forge" and "Sentinel" are heavily saturated names in the tech and AI tooling space. The products have not yet been publicly released, making this the optimal time to rebrand. The new names are "Grain" (formerly Forge) and "Assay" (formerly Sentinel), chosen for distinctiveness in the AI tools landscape.
+
+### Proposed Change Summary
+Rename all references to the product identity "Forge" to "Grain" and "Sentinel" to "Assay" across canonical docs, working docs, runtime docs, prompts, source code, tests, and configuration. The Python package, CLI entry point, and console script will all be updated to reflect the new name.
+
+### Impact
+- implementation: Python package renamed from `forge` to `grain`; CLI script renamed from `forge` to `grain`; all imports updated
+- existing docs: all canonical, working, and runtime docs updated to use new names
+- task packets: active task packets updated; archive packets retained as historical records
+- validation behavior: no functional change — same validation logic under new name
+- workflow behavior: no workflow change — same behavior under new name
+
+### Urgency
+high
+
+### Suggested Follow-Up
+- Update any external references, documentation, or notes outside this repo.
+
+---
+
+## Decision
+
+### Status
+applied
+
+---
+
+### Decision By
+`Shaznay`
+
+### Decision Date
+`2026-04-11`
+
+### Decision Notes
+Names Forge and Sentinel are too saturated in tech and AI tooling. Rebranding before public release. New names: Grain (product CLI tool) and Assay (verification system).
+
+---
+
+## Application
+
+### Applied By
+`Claude`
+
+### Applied Date
+`2026-04-11`
+
+### Notes
+- Python package renamed from `forge` to `grain`
+- CLI entry point updated from `forge` to `grain`
+- All source imports updated from `forge.*` to `grain.*`
+- All canonical, working, runtime, and prompt docs updated
+- Active task packets updated; archive packets preserved as historical records
+- `pyproject.toml` updated with new package name and script
+
+---
+
+## CP-010 — Document forge→grain package and CLI rename
+
+### Affected Canonical Docs
+- `docs/canonical/product_scope.md`
+- `docs/canonical/architecture.md`
+- `docs/canonical/cli_spec.md`
+- `docs/canonical/workflow_spec.md`
+- `docs/canonical/data_contracts.md`
+
+### Reason
+Phase 9 closer raised this as a structural inconsistency — new Phase 9 code in `src/grain/` while earlier code appeared to still reference `src/forge/`. Raised before the closer had visibility into CP-009, which had already applied the full rename in the same session.
+
+### Proposed Change Summary
+N/A — superseded by CP-009, which applied option (a) in full before this proposal was written.
+
+### Impact
+None — fully resolved by CP-009.
+
+### Urgency
+resolved
+
+### Suggested Follow-Up
+None — CP-009 is the canonical record of this rename.
+
+---
+
+## Decision
+
+### Status
+applied
+
+---
+
+### Decision By
+`Shaznay`
+
+### Decision Date
+`2026-04-11`
+
+### Decision Notes
+Superseded by CP-009. The full rename (src/forge → src/grain, pyproject.toml, all imports, all docs) was applied earlier the same day. No further action required.
+
+---
+
+## Application
+
+### Applied By
+`Claude`
+
+### Applied Date
+`2026-04-11`
+
+### Notes
+- No changes required — CP-009 already applied the complete rename.
+- This entry renumbered from CP-009 (duplicate) to CP-010 to avoid numbering conflict.
+
+---
+
 ## CP-008 — Align architecture.md §7.4 ModelProfile fields with v1 implementation
 
 ### Affected Canonical Docs

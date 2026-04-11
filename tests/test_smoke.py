@@ -8,7 +8,7 @@ import sys
 from pathlib import Path
 
 # Resolve the forge executable from the same environment running pytest
-_ABT = str(Path(sys.executable).parent / "forge")
+_ABT = str(Path(sys.executable).parent / "grain")
 
 GROUPS = ["init", "docs", "task", "context", "model", "review"]
 

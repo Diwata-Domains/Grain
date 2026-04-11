@@ -1,6 +1,6 @@
 import pytest
 from pathlib import Path
-from forge.templates.loader import get_template
+from grain.templates.loader import get_template
 
 
 def test_known_template_returns_content(tmp_path):

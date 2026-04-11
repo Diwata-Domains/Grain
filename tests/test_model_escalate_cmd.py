@@ -4,7 +4,7 @@ import json
 
 from click.testing import CliRunner
 
-from forge.cli import main
+from grain.cli import main
 
 
 SAMPLE_AGENT_PROFILES = """# Agent Profiles

@@ -2,7 +2,7 @@
 
 from click.testing import CliRunner
 
-from forge.cli import main
+from grain.cli import main
 
 
 def test_main_help_shows_format_default():

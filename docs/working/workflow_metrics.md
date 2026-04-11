@@ -276,26 +276,56 @@ Record the following in each task packet `results.md`:
 
 ---
 
+### Phase 9
+
+* Tasks completed: 7 (P9-T01 through P9-T07)
+* Blocked tasks: 0
+* Prompt runs: ~21 (7 execute × 1 + 7 review × 1 + 7 close × 1)
+* Avg prompt runs per completed task: 3.0
+* Manual interventions: 0
+* First-pass success rate: 7/7 implementation; systematic handoff.md Recommended Next Status pre-fill error on all 7 tasks (corrected inline by reviewer)
+* Rework count: 0 (implementation rework); 7 inline review corrections (systematic executor pre-fill of handoff.md Recommended Next Status)
+* Drift incidents: 1 (forge→grain package rename applied to T03-T07 without a change proposal — tracked as CP-009)
+* Phase duration: Sessions 10–11
+* Tests at phase close: 561 (+67 new tests from Phase 8 close)
+* Conversation model: multi-agent (separate executor / reviewer / closer conversations)
+* Token tracking: proxy metrics only
+
+### Phase 9 Notes
+
+* What felt efficient: domain model (T01) and capability protocol (T02) composed cleanly as pure domain tasks; service (T03-T04) built directly on the typed surface; CLI (T05-T06) thin wiring over existing services; validator + integration tests (T07) narrow and command-surface aligned; all 7 tasks ran 1 prompt per stage with no restarts
+* What created friction: package rename (forge→grain) was applied incrementally starting at T03 without a formal change proposal; T01-T02 still reference `src/forge/` while T03-T07 reference `src/grain/`; this split needs resolution before Phase 10 to avoid compounding the divergence
+* What to tighten next: resolve CP-009 (forge→grain) at start of Phase 10; packet-template prefill cleanup for review/close fields (carries over from Phases 7-8); `forge workflow reconcile` CLI (QD-01, carries over from Phase 8)
+
+### Phase Retrospective Classification
+
+* **Fix now:** CP-009 (forge→grain rename) should be decided before Phase 10 execution begins — new Phase 10 code will compound the split if not resolved
+* **Batch next phase:** packet-template prefill cleanup for handoff.md Recommended Next Status (carries over from Phases 7, 8); `forge workflow reconcile` CLI (QD-01)
+* **Ignore:** phase-vs-task planner keyword heuristics (simple and intentional; refinement is Phase 10+ scope)
+
+---
+
 ## V2 Aggregate (to date)
 
-* Total v2 tasks completed: 34 (Phase 6: 7, Phase 7: 7, Phase 8: 11, Phase 9: 0)
+* Total v2 tasks completed: 41 (Phase 6: 7, Phase 7: 7, Phase 8: 11, Phase 9: 7)
 * Total v2 blocked: 0
-* Tests at v2 Phase 6 close: 399; at Phase 7 close: 419; at Phase 8 close: 494
-* Open questions resolved during v2 (to date): Q12–Q16 (5 questions); QD-01 deferred
-* Canonical change proposals raised during v2: 1 (P8-T10 `cli_spec.md §6.9` addition — explicitly scoped, no separate CP raised)
+* Tests at v2 Phase 6 close: 399; at Phase 7 close: 419; at Phase 8 close: 494; at Phase 9 close: 561
+* Open questions resolved during v2 (to date): Q12–Q16 (5 questions); QD-01 deferred; no new questions opened in Phase 9
+* Canonical change proposals raised during v2: 1 (P8-T10 `cli_spec.md §6.9` addition); CP-009 pending (forge→grain rename, no canonical doc changes applied yet)
 * Major Phase 6 additions: adapter profiles runtime doc, AdapterProfile domain model, adapter loader/parser, packet adapter metadata fields, adapter-aware context biasing, adapter hint surfacing in context outputs, adapter system tests
 * Major Phase 7 additions: stable new-project onboarding prompt, init seed-file scaffolding, adapter selection, starter packet bootstrap, onboarding integration tests, existing-project adoption boundary docs
 * Major Phase 8 additions: workflow state evaluator, forge workflow next/run, forge task next/prepare, forge phase next, forge prompt show, machine-readable JSON contract for automation commands, runner integration tests, Sentinel bridge contract (`cli_spec.md §6.9` + `v2_plan.md §11`), working-doc reconciliation approach
+* Major Phase 9 additions: OrchestratorPlan domain model (PacketCandidate, CrossDomainDependency), AdapterCapabilityProtocol + NullAdapterCapability + 6 result types, orchestration service (task-level + phase-level), grain adapter list/show, grain orchestrate scope/plan, OrchestratorPlan validator, orchestration integration tests, proposal artifacts in `docs/working/proposals/`
 
 ---
 
 ## Combined Aggregate
 
-* Total tasks completed: 87 (53 v1 + 34 v2)
+* Total tasks completed: 94 (53 v1 + 41 v2)
 * Total blocked (all phases): 0
-* Total tests at v1 close: 379; at Phase 6 close: 399; at Phase 7 close: 419; at Phase 8 close: 494
-* Open questions resolved total: Q1–Q16 (16 resolved); QD-01 deferred
-* Canonical change proposals applied total: CP-001 through CP-008 (8 applied in v1); 1 scoped addition in v2 (P8-T10 `cli_spec.md §6.9`)
+* Total tests at v1 close: 379; at Phase 6 close: 399; at Phase 7 close: 419; at Phase 8 close: 494; at Phase 9 close: 561
+* Open questions resolved total: Q1–Q16 (16 resolved); QD-01 deferred; no new questions in Phase 9
+* Canonical change proposals applied total: CP-001 through CP-008 (8 applied in v1); 1 scoped addition in v2 (P8-T10 `cli_spec.md §6.9`); CP-009 pending (forge→grain rename)
 * V1 phases closed: 5 (Phases 1–5)
-* V2 phases closed: 3 (Phase 6, Phase 7, Phase 8)
+* V2 phases closed: 4 (Phase 6, Phase 7, Phase 8, Phase 9)
 * V2 planning docs created: v2_plan.md, v2_adapters.md, v2_onboarding.md

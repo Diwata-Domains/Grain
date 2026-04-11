@@ -4,8 +4,8 @@ from pathlib import Path
 
 import pytest
 
-from forge.adapters.manifest import MANIFEST_PATH, load_manifest
-from forge.domain.errors import ConfigError, MissingPathError
+from grain.adapters.manifest import MANIFEST_PATH, load_manifest
+from grain.domain.errors import ConfigError, MissingPathError
 
 
 def test_load_manifest_returns_dict(tmp_path):

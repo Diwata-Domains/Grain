@@ -7,7 +7,7 @@ from pathlib import Path
 import yaml
 from click.testing import CliRunner
 
-from forge.cli import main
+from grain.cli import main
 
 
 def test_docs_validate_passes_on_valid_repo(valid_repo):
@@ -56,7 +56,7 @@ def test_docs_validate_json_format(valid_repo):
 
 def test_docs_validate_exit_code_3_on_failure(tmp_path):
     """Exit code 3 requires the cli() wrapper — use subprocess like smoke tests."""
-    forge = str(Path(sys.executable).parent / "forge")
+    forge = str(Path(sys.executable).parent / "grain")
     (tmp_path / "docs" / "runtime").mkdir(parents=True)
     (tmp_path / "docs" / "runtime" / "docs_manifest.yaml").write_text("version: 1\n")
 

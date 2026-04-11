@@ -2,9 +2,9 @@
 
 import yaml
 
-from forge.adapters.export import render_context_markdown_export, write_context_markdown_export
-from forge.services.context_service import build_context_bundle
-from forge.services.task_service import create_packet_directory
+from grain.adapters.export import render_context_markdown_export, write_context_markdown_export
+from grain.services.context_service import build_context_bundle
+from grain.services.task_service import create_packet_directory
 
 
 def _write_manifest(repo_root):

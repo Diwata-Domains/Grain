@@ -5,8 +5,8 @@ import json
 import pytest
 from click.testing import CliRunner
 
-from forge.cli import main
-from forge.services.prompt_service import _parse_prompt_metadata, show_prompt
+from grain.cli import main
+from grain.services.prompt_service import _parse_prompt_metadata, show_prompt
 
 
 def _write(path, text):

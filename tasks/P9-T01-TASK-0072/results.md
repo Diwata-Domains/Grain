@@ -1,7 +1,7 @@
 # Results: TASK-0072
 
 ## Packet State
-- **Current Task Status:** review
+- **Current Task Status:** done
 - **Review Readiness:** [reviewer fills]
 - **Recommended Next Status:** [reviewer fills]
 
@@ -30,14 +30,14 @@ No service logic, CLI changes, or canonical doc modifications.
 - **Notes:** Schema was fully specified in data_contracts.md §18.2 — no ambiguity. Implementation was mechanical once context was loaded. Test count increased from 494 to 506 (+12 new).
 
 ### Review
-- **Prompt Runs:** [reviewer fills]
-- **Conversation Restarts:** [reviewer fills]
-- **Notes:** [reviewer fills]
+- **Prompt Runs:** 1
+- **Conversation Restarts:** 0
+- **Notes:** Trivial fix applied inline: task.md status updated from `in_progress` to `review`. All other checks passed.
 
 ### Close
-- **Prompt Runs:** [reviewer fills]
-- **Conversation Restarts:** [reviewer fills]
-- **Notes:** [reviewer fills]
+- **Prompt Runs:** 1
+- **Conversation Restarts:** 0
+- **Notes:** Clean close. open_questions_to_log = None, proposal_candidates_to_log = None, follow-up P9-T02 already captured in handoff.md. No working-doc updates required.
 
 ## Review Notes
 - Verify all 9 `OrchestratorPlan` fields match `data_contracts.md §18.2` exactly (no extras, no omissions)
@@ -49,24 +49,24 @@ No service logic, CLI changes, or canonical doc modifications.
 
 ## Review Intake
 <!-- reviewer fills this section — executor must leave all fields below as-is -->
-- **Review Decision:** [reviewer fills]
-- **Definition of Done Met:** [reviewer fills]
-- **Recommended Next Status:** [reviewer fills]
+- **Review Decision:** ready
+- **Definition of Done Met:** yes
+- **Recommended Next Status:** done
 
 ### Required Fixes
-[reviewer fills]
+- None
 
 ### Open Questions To Log
-[reviewer fills]
+- None
 
 ### Proposal Candidates To Log
-[reviewer fills]
+- None
 
 ### Follow-Ups To Log
-[reviewer fills]
+- P9-T02 (adapter capability surface) is unblocked; `OrchestratorPlan` is the stable type it builds against
 
 ### Residual Risks
-[reviewer fills]
+- `plan_id` non-empty validation is not enforced at the domain layer (only status is validated). This is intentional — `§18.3` validation minimums are the responsibility of the validator service (P9-T07), not the domain model. No risk for this task's scope.
 
 ## Deliverable Checklist
 - [x] `src/forge/domain/orchestrator.py` exists with `PacketCandidate`, `CrossDomainDependency`, `OrchestratorPlan`

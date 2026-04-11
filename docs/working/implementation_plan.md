@@ -380,6 +380,102 @@ Implement a state-driven CLI layer that tells agents and operators the next lega
 
 ---
 
+## Phase 9 — Orchestration Service Foundation ✓ CLOSED
+
+### Objective
+Implement the orchestration service (task and phase-level), adapter capability surface protocol, `OrchestratorPlan` domain model, and `orchestrate`/`adapter` CLI commands.
+
+### Major Deliverables
+- `OrchestratorPlan` domain model with `PacketCandidate` and `CrossDomainDependency` types
+- Adapter capability surface protocol (`detect_scope`, `collect_context`, `analyze_impact`, `validate_changes`, `export_artifacts`, `suggest_followups`) with graceful degradation
+- `orchestration_service.py` — task-level orchestration (scope detection, split recommendation, dependency identification)
+- `orchestration_service.py` — phase-level orchestration (phase shape proposals, dependency chains, replan candidates)
+- `grain adapter list` and `grain adapter show` commands
+- `grain orchestrate scope` and `grain orchestrate plan` commands
+- `OrchestratorPlan` validator and full integration tests
+
+### Notes
+- Phase 9 complete: 7/7 tasks done
+- 561/561 tests passing at phase close (+67 new tests from Phase 8 close)
+- OrchestratorPlan domain model and adapter capability surface in `src/forge/domain/`; orchestration service, adapter CLI, orchestrate CLI, and validator in `src/grain/` (see CP-009 for package rename tracking)
+- Proposal artifacts written to `docs/working/proposals/` as inspectable JSON
+- CP-009 applied: full product rename Forge → Grain, Sentinel → Assay (package, CLI, all docs, all source)
+- CP-010 raised by closer and resolved: superseded by CP-009, no action required
+- Phase closed 2026-04-11
+- Roadmap reference: FR-014
+
+### Dependencies
+- requires Phase 8 workflow runner primitives ✓
+- requires Phase 8 context assembly service ✓
+
+---
+
+## Phase 10 — Structural Intelligence: Tree-sitter + Knowledge Graph
+
+### Objective
+Add deterministic structural intelligence: tree-sitter entity extraction, a JSON knowledge graph, and graph-assisted context selection to replace glob-pattern loading.
+
+### Major Deliverables
+- Tree-sitter structural entity extraction (functions, classes, imports, call sites) for code, frontend, docs, and devops adapters
+- NetworkX knowledge graph builder — nodes for files, modules, classes, functions, packets, docs, adapters; typed edges; persisted as inspectable JSON artifact
+- Graph-assisted context selection in `context_service.py` replacing glob patterns
+- Graph wired into orchestration adapter capabilities (`detect_scope`, `analyze_impact`)
+- Integration tests across full path: tree-sitter extraction → graph build → context selection → orchestration scope
+
+### Notes
+- Seeded — not yet started. Depends on Phase 9 close.
+- Absorbs FA-T01 (tree-sitter proof-of-concept)
+- Roadmap reference: FR-015, FR-011
+
+### Dependencies
+- requires Phase 9 orchestration service and adapter capability surface
+
+---
+
+## Phase 11 — Distribution and Global Install
+
+### Objective
+Make Grain installable globally by anyone. This is the public usability gate.
+
+### Major Deliverables
+- Finalized `pyproject.toml` packaging metadata (classifiers, license, homepage, keywords)
+- PyPI publish workflow (`pip install grain` works from PyPI)
+- `uv tool install grain` verified and documented
+- Install verification and troubleshooting docs
+- Homebrew formula for macOS (`brew install grain`)
+
+### Notes
+- Seeded — not yet started. Depends on Phase 10 close.
+- Roadmap reference: FR-004b
+
+### Dependencies
+- requires Phase 10 close (stable CLI surface, no further breaking changes expected)
+
+---
+
+## Phase 12 — Automated Workflow Loop
+
+### Objective
+Eliminate manual conversation handoffs by automating the execute→review→close cycle. Allow per-stage configuration of which external agent and model to use.
+
+### Major Deliverables
+- Per-stage agent/model config (`workflow_loop.yaml` + CLI flag overrides)
+- `grain workflow loop` command — drives full cycle using Phase 8 runner primitives, stops cleanly at human-decision gates
+- `--dry-run` mode, max step limit, structured per-step logging
+- Loop safety guardrails and documentation (explicitly noting this is unverified automation — Assay is the future verification layer)
+
+### Notes
+- Seeded — not yet started. Depends on Phase 11 close.
+- No new safety infrastructure required — Phase 8 workflow gates are the stop points
+- Named shortcuts (`claude`, `codex`) expand to known CLI invocation patterns; raw `command` field accepts any shell command for custom or third-party agents
+- Example config: executor=codex/o3, reviewer=claude, closer=claude — or any agent via `command: "/path/to/my-agent --prompt {prompt_path}"`
+
+### Dependencies
+- requires Phase 11 close (stable public install — loop is a user-facing feature)
+- requires Phase 8 workflow runner primitives ✓
+
+---
+
 ## 10. Post-v1 Transition Planning
 
 With Phase 5 closed, v2 items may now be promoted into active implementation when they are:

@@ -1,6 +1,6 @@
 """Tests for the adapter profile domain model."""
 
-from forge.domain.adapters import AdapterProfile
+from grain.domain.adapters import AdapterProfile
 
 
 def test_adapter_profile_preserves_required_fields():

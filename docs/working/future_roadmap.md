@@ -164,29 +164,26 @@ If an item is actively being executed, the working docs own the operational stat
 
 ---
 
-### FR-004b — Forge Distribution and Installation Paths
+### FR-004b — Grain Distribution and Installation Paths
 
-* **Status:** candidate
+* **Status:** planned — slotted as Phase 11 (after Phase 10 close)
 * **Suggested Target:** v2
 * **Why it matters:**
 
-  * future users need a simple install path before Forge can be adopted broadly
+  * future users need a simple install path before Grain can be adopted broadly
   * local editable install is fine for current development, but not a sufficient distribution story for general use
 * **Scope:**
 
-  * PyPI publishing for `pip install forge`
-  * `uv tool install` compatibility and documentation
-  * optional Homebrew distribution for macOS users
+  * PyPI publishing for `pip install grain`
+  * `uv tool install grain` compatibility and documentation
+  * Homebrew distribution for macOS users (`brew install grain`)
   * clear versioned install and upgrade instructions
   * installation verification and troubleshooting docs
-* **Why not now:**
-
-  * adapter and onboarding work should stabilize before wider distribution
-  * packaging and support overhead should follow a clearer public user path
 * **Dependencies:**
 
-  * stable core CLI surface
-  * stable onboarding entrypoint
+  * stable Phase 10 close (tree-sitter + knowledge graph — no further breaking CLI surface changes expected after this)
+  * stable core CLI surface ✓
+  * stable onboarding entrypoint ✓
   * stable packaging metadata and release process
 * **Notes:**
 

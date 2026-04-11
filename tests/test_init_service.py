@@ -1,4 +1,4 @@
-from forge.services.init_service import init_repo
+from grain.services.init_service import init_repo
 
 EXPECTED_DIRS = {
     "docs/canonical",

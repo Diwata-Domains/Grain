@@ -1,10 +1,10 @@
 """Tests for the review validation service."""
 
-from forge.services.review_service import (
+from grain.services.review_service import (
     build_packet_review_summary,
     check_packet_review_readiness,
 )
-from forge.services.task_service import create_packet_directory
+from grain.services.task_service import create_packet_directory
 
 
 def _create_review_packet(packet_repo, phase=5, task_num=1):

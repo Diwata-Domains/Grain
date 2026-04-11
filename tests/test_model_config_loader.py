@@ -4,8 +4,8 @@ from pathlib import Path
 
 import pytest
 
-from forge.adapters.model_config import load_model_profiles, parse_agent_profiles_markdown
-from forge.domain.errors import ConfigError, MissingPathError
+from grain.adapters.model_config import load_model_profiles, parse_agent_profiles_markdown
+from grain.domain.errors import ConfigError, MissingPathError
 
 
 SAMPLE_AGENT_PROFILES = """# Agent Profiles

@@ -2,8 +2,8 @@
 
 from pathlib import Path
 
-from forge.adapters.adapter_config import load_adapter_profiles
-from forge.domain.packets import parse_task_metadata
+from grain.adapters.adapter_config import load_adapter_profiles
+from grain.domain.packets import parse_task_metadata
 
 
 def test_load_adapter_profiles_populates_expected_fields(tmp_path: Path):

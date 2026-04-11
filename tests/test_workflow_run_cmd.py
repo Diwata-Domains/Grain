@@ -5,7 +5,7 @@ from pathlib import Path
 
 from click.testing import CliRunner
 
-from forge.cli import main
+from grain.cli import main
 
 
 def _write(path: Path, text: str) -> None:

@@ -4,8 +4,8 @@ from pathlib import Path
 
 import pytest
 
-from forge.adapters.adapter_config import load_adapter_profiles, parse_adapter_profiles_markdown
-from forge.domain.errors import ConfigError, MissingPathError
+from grain.adapters.adapter_config import load_adapter_profiles, parse_adapter_profiles_markdown
+from grain.domain.errors import ConfigError, MissingPathError
 
 
 SAMPLE_ADAPTER_PROFILES = """# Adapter Profiles

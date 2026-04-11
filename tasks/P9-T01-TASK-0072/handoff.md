@@ -8,12 +8,13 @@ OrchestratorPlan domain model defined. P9-T02 (adapter capability surface) now h
 ### Packet Identity
 - **Task ID:** TASK-0072
 - **Phase:** Phase 9 — Orchestration Service Foundation
-- **Status:** review
+- **Status:** done
 
 ### Outcome
 - **Review Readiness:** ready
+- **Review Decision:** ready
 - **Recommended Next Status:** done
-- **Short Summary:** Added `OrchestratorPlan`, `PacketCandidate`, and `CrossDomainDependency` to `src/forge/domain/orchestrator.py`; 12 new passing tests; 506/506 total suite.
+- **Short Summary:** Added `OrchestratorPlan`, `PacketCandidate`, and `CrossDomainDependency` to `src/forge/domain/orchestrator.py`; 12 new passing tests; 506/506 total suite. Trivial fix applied during review: `task.md` status corrected from `in_progress` to `review`.
 
 ## What Was Built
 - `src/forge/domain/orchestrator.py` — three dataclasses conforming to `data_contracts.md §18.2`; status validated in `__post_init__`

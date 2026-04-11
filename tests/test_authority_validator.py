@@ -2,8 +2,8 @@
 
 import pytest
 
-from forge.domain.documents import build_registry
-from forge.validators.authority_validator import (
+from grain.domain.documents import build_registry
+from grain.validators.authority_validator import (
     ALLOWED_AUTHORITY_VALUES,
     validate_authority,
 )

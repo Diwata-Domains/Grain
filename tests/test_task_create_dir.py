@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from forge.services.task_service import create_packet_directory
+from grain.services.task_service import create_packet_directory
 
 
 def test_create_packet_directory_returns_ok(packet_repo):

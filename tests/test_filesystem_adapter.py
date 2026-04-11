@@ -1,6 +1,6 @@
 import pytest
 from pathlib import Path
-from forge.adapters.filesystem import find_repo_root, resolve_repo_root
+from grain.adapters.filesystem import find_repo_root, resolve_repo_root
 
 
 def test_find_repo_root_detects_from_subdirectory(tmp_path):
@@ -8,7 +8,7 @@ def test_find_repo_root_detects_from_subdirectory(tmp_path):
     marker.parent.mkdir(parents=True)
     marker.touch()
 
-    subdir = tmp_path / "src" / "forge"
+    subdir = tmp_path / "src" / "grain"
     subdir.mkdir(parents=True)
 
     result = find_repo_root(subdir)

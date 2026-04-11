@@ -2,8 +2,8 @@
 
 import yaml
 
-from forge.services.context_service import build_context_bundle, build_source_metadata
-from forge.services.task_service import create_packet_directory
+from grain.services.context_service import build_context_bundle, build_source_metadata
+from grain.services.task_service import create_packet_directory
 
 
 def _write_manifest_file(repo_root, manifest_dict):
@@ -198,5 +198,9 @@ def test_build_context_bundle_applies_primary_adapter_source_bias(packet_repo):
     assert adapter_context["primary_adapter"] == "code_adapter"
     assert adapter_context["applied"] is True
     assert adapter_context["selected_sources"] == ["src/main.py", "tests/test_main.py"]
+    assert set(adapter_context["selection_trace"].keys()) == {"src/main.py", "tests/test_main.py"}
+    for source_path, trace in adapter_context["selection_trace"].items():
+        assert trace[0] == source_path
+        assert any(path.startswith("tasks/P6-T05-TASK-0001/") for path in trace)
     assert adapter_context["review_focus_hints"] == ["behavior regressions"]
     assert adapter_context["test_or_validation_hints"] == ["run focused tests before full suite"]

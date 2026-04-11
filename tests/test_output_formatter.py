@@ -1,8 +1,8 @@
 import json
 import click
 from click.testing import CliRunner
-from forge.cli.output import CommandResult, print_result
-from forge.cli import main
+from grain.cli.output import CommandResult, print_result
+from grain.cli import main
 
 runner = CliRunner()
 

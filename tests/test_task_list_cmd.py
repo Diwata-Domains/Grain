@@ -4,7 +4,7 @@ import json
 
 from click.testing import CliRunner
 
-from forge.cli import main
+from grain.cli import main
 
 
 def test_task_list_exits_zero_empty(packet_repo):

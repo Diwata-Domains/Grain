@@ -4,7 +4,7 @@ import copy
 
 import pytest
 
-from forge.validators.manifest_validator import validate_manifest_schema
+from grain.validators.manifest_validator import validate_manifest_schema
 
 
 def _minimal_valid_manifest() -> dict:

@@ -2,8 +2,8 @@
 
 import yaml
 
-from forge.services.context_service import build_context_bundle
-from forge.services.task_service import create_packet_directory
+from grain.services.context_service import build_context_bundle
+from grain.services.task_service import create_packet_directory
 
 
 def _write_manifest(repo_root):

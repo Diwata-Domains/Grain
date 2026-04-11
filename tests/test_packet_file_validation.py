@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from forge.validators.packet_validator import (
+from grain.validators.packet_validator import (
     validate_packet,
     validate_packet_files,
     validate_packet_metadata,

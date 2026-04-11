@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from forge.services.workflow_service import evaluate_workflow_state
+from grain.services.workflow_service import evaluate_workflow_state
 
 
 def _write(path: Path, text: str) -> None:

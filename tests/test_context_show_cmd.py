@@ -5,8 +5,8 @@ import json
 import yaml
 from click.testing import CliRunner
 
-from forge.cli import main
-from forge.services.task_service import create_packet_directory
+from grain.cli import main
+from grain.services.task_service import create_packet_directory
 
 
 def _write_manifest(repo_root, manifest_dict):

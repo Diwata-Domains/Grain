@@ -2,7 +2,7 @@
 
 ## Metadata
 - **ID:** TASK-0072
-- **Status:** in_progress
+- **Status:** done
 - **Phase:** Phase 9 — Orchestration Service Foundation
 - **Backlog:** P9-T01
 - **Packet Path:** tasks/P9-T01-TASK-0072/

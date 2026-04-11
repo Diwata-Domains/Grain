@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from forge.validators.packet_validator import validate_closure
+from grain.validators.packet_validator import validate_closure
 
 _REQUIRED_FILES = ("task.md", "context.md", "plan.md", "deliverable_spec.md")
 

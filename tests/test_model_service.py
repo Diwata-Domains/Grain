@@ -2,9 +2,9 @@
 
 from pathlib import Path
 
-from forge.adapters.model_config import parse_agent_profiles_markdown
-from forge.domain.routing import select_model_class
-from forge.services.model_service import select_model_for_stage_or_role
+from grain.adapters.model_config import parse_agent_profiles_markdown
+from grain.domain.routing import select_model_class
+from grain.services.model_service import select_model_for_stage_or_role
 
 
 SAMPLE_AGENT_PROFILES = """# Agent Profiles
