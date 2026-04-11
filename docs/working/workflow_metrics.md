@@ -305,27 +305,57 @@ Record the following in each task packet `results.md`:
 
 ---
 
+### Phase 10
+
+* Tasks completed: 6 (P10-T01 through P10-T05 + T06 remediation)
+* Blocked tasks: 0
+* Prompt runs: ~19 (6 execute × 1 + 6 review × 1 + 6 close × 1, plus T06 execute had 1 restart = +1)
+* Avg prompt runs per completed task: ~3.2
+* Manual interventions: 1 (human reopened Phase 10 after T01-T05 accepted — tree-sitter spec was not actually satisfied)
+* First-pass success rate: 5/6 (T01 required remediation via T06; T02-T06 first-pass); systematic handoff.md pre-fill errors on T01-T04; T04 review intake template placeholders not replaced with explicit "None"
+* Rework count: 1 (T01 — ast/regex accepted by reviewer but did not meet tree-sitter spec; replaced in full by T06)
+* Drift incidents: 0 (CP-009 applied before Phase 10 began; all code correctly under `grain`)
+* Phase duration: Sessions 12–13
+* Tests at phase close: 575 (T01 +5, T02 +4, T03 +0 net, T04 +3, T05 +2, T06 +0 net — T06 replaced T01 tests in-place)
+* Conversation model: multi-agent (separate executor / reviewer / closer conversations)
+* Token tracking: proxy metrics only
+
+### Phase 10 Notes
+
+* What felt efficient: T02-T05 and T06 all ran 1 prompt per stage; graph service, context update, and capability wiring stayed additive without touching unrelated surfaces; T06 remediation was focused (one module + dep update + test assertions) and kept all downstream graph/context/orchestration contracts intact
+* What created friction: T01 reviewer accepted "API-equivalent" AST/regex fallback without checking that tree-sitter was actually invoked — phase required reopening and a remediation task (T06); 1 conversation restart during T06 execute; NetworkX declared but not installed in venv — fallback used; T04 reviewer left template placeholder text in review intake
+* What to tighten next: reviewer must verify declared key technologies are actually used, not just that the API surface is compatible; install project deps before Phase 11; template cleanup for review intake placeholders (carries over from Phases 7-10)
+
+### Phase Retrospective Classification
+
+* **Fix now:** Install project deps (`pip install -e .`) before Phase 11 starts; add "verify declared key technologies are actually invoked" to reviewer checklist (tree-sitter gap is the lesson)
+* **Batch next phase:** packet-template prefill cleanup for handoff.md and review intake placeholder text (carries over from Phases 7-10); `grain workflow reconcile` CLI (QD-01, carries over from Phase 8)
+* **Ignore:** T04 placeholder text in review intake (minor, no functional impact)
+
+---
+
 ## V2 Aggregate (to date)
 
-* Total v2 tasks completed: 41 (Phase 6: 7, Phase 7: 7, Phase 8: 11, Phase 9: 7)
+* Total v2 tasks completed: 47 (Phase 6: 7, Phase 7: 7, Phase 8: 11, Phase 9: 7, Phase 10: 6)
 * Total v2 blocked: 0
-* Tests at v2 Phase 6 close: 399; at Phase 7 close: 419; at Phase 8 close: 494; at Phase 9 close: 561
-* Open questions resolved during v2 (to date): Q12–Q16 (5 questions); QD-01 deferred; no new questions opened in Phase 9
-* Canonical change proposals raised during v2: 1 (P8-T10 `cli_spec.md §6.9` addition); CP-009 pending (forge→grain rename, no canonical doc changes applied yet)
+* Tests at v2 Phase 6 close: 399; at Phase 7 close: 419; at Phase 8 close: 494; at Phase 9 close: 561; at Phase 10 close: 575
+* Open questions resolved during v2 (to date): Q12–Q16 (5 questions); QD-01 deferred; no new questions opened in Phases 9–10
+* Canonical change proposals raised during v2: 1 (P8-T10 `cli_spec.md §6.9` addition); CP-009 applied (Forge→Grain, Sentinel→Assay rename); CP-010 raised and resolved (superseded by CP-009)
 * Major Phase 6 additions: adapter profiles runtime doc, AdapterProfile domain model, adapter loader/parser, packet adapter metadata fields, adapter-aware context biasing, adapter hint surfacing in context outputs, adapter system tests
 * Major Phase 7 additions: stable new-project onboarding prompt, init seed-file scaffolding, adapter selection, starter packet bootstrap, onboarding integration tests, existing-project adoption boundary docs
-* Major Phase 8 additions: workflow state evaluator, forge workflow next/run, forge task next/prepare, forge phase next, forge prompt show, machine-readable JSON contract for automation commands, runner integration tests, Sentinel bridge contract (`cli_spec.md §6.9` + `v2_plan.md §11`), working-doc reconciliation approach
+* Major Phase 8 additions: workflow state evaluator, grain workflow next/run, grain task next/prepare, grain phase next, grain prompt show, machine-readable JSON contract for automation commands, runner integration tests, Assay bridge contract (`cli_spec.md §6.9` + `v2_plan.md §11`), working-doc reconciliation approach
 * Major Phase 9 additions: OrchestratorPlan domain model (PacketCandidate, CrossDomainDependency), AdapterCapabilityProtocol + NullAdapterCapability + 6 result types, orchestration service (task-level + phase-level), grain adapter list/show, grain orchestrate scope/plan, OrchestratorPlan validator, orchestration integration tests, proposal artifacts in `docs/working/proposals/`
+* Major Phase 10 additions: structural extraction service (Layer 1, tree-sitter via language packs — T06 replaced T01's AST/regex), knowledge graph builder (Layer 3, NetworkX + deterministic fallback), graph-assisted context selection (Layer 4, per-source trace paths), graph-aware adapter capabilities (detect_scope + analyze_impact wired), Phase 10 integration + rebuild-determinism tests
 
 ---
 
 ## Combined Aggregate
 
-* Total tasks completed: 94 (53 v1 + 41 v2)
+* Total tasks completed: 100 (53 v1 + 47 v2)
 * Total blocked (all phases): 0
-* Total tests at v1 close: 379; at Phase 6 close: 399; at Phase 7 close: 419; at Phase 8 close: 494; at Phase 9 close: 561
-* Open questions resolved total: Q1–Q16 (16 resolved); QD-01 deferred; no new questions in Phase 9
-* Canonical change proposals applied total: CP-001 through CP-008 (8 applied in v1); 1 scoped addition in v2 (P8-T10 `cli_spec.md §6.9`); CP-009 pending (forge→grain rename)
+* Total tests at v1 close: 379; at Phase 6 close: 399; at Phase 7 close: 419; at Phase 8 close: 494; at Phase 9 close: 561; at Phase 10 close: 575
+* Open questions resolved total: Q1–Q16 (16 resolved); QD-01 deferred; no new questions in Phases 9–10
+* Canonical change proposals applied total: CP-001 through CP-008 (8 applied in v1); 1 scoped addition in v2 (P8-T10 `cli_spec.md §6.9`); CP-009 applied (Forge→Grain, Sentinel→Assay); CP-010 resolved (superseded)
 * V1 phases closed: 5 (Phases 1–5)
-* V2 phases closed: 4 (Phase 6, Phase 7, Phase 8, Phase 9)
+* V2 phases closed: 5 (Phase 6, Phase 7, Phase 8, Phase 9, Phase 10)
 * V2 planning docs created: v2_plan.md, v2_adapters.md, v2_onboarding.md

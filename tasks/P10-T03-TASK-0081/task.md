@@ -2,7 +2,7 @@
 
 ## Metadata
 - **ID:** TASK-0081
-- **Status:** review
+- **Status:** done
 - **Phase:** Phase 10 — Structural Intelligence: Tree-sitter + Knowledge Graph
 - **Backlog:** P10-T03
 - **Packet Path:** tasks/P10-T03-TASK-0081/

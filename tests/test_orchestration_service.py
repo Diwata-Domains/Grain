@@ -151,6 +151,8 @@ def test_analyze_scope_signals_reports_active_adapters(tmp_path: Path):
     assert payload is not None
     assert sorted(payload["active_adapters"]) == ["code_adapter", "frontend_adapter"]
     assert payload["cross_domain_flags"] == ["code", "frontend"]
+    assert "impact" in payload["adapter_signals"][0]
+    assert "affected_files" in payload["adapter_signals"][0]["impact"]
 
 
 def test_build_task_level_plan_unknown_adapter_filter_errors(tmp_path: Path):

@@ -56,6 +56,9 @@ Check:
 * whether deliverable_spec.md is satisfied
 * whether `results.md` and `handoff.md` conform to the current task templates — note: `results.md` does NOT have a top-level `## Status` field; packet status lives only in `task.md`
 
+**Named tool/library check (required):**
+If the task description or title names a specific library or tool as the implementation approach (e.g. "use tree-sitter", "implement with NetworkX", "add redis caching"), verify that library is actually imported and called in the implementation files. A dependency declaration in `pyproject.toml` or a comment referencing the library is not sufficient. If the named tool appears in the spec but is not imported and used in the code, this is a **failing condition** — set review decision to `needs fixes` and record it as a required fix, not an optional improvement.
+
 ## Step 3 — Apply Trivial Fixes Inline (Optional)
 
 Before recording the review decision, check whether any required fix is trivial enough to apply directly:

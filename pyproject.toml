@@ -5,16 +5,52 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "grain"
 version = "0.1.0"
+description = "CLI-first workflow toolkit for structured AI-assisted software development."
+readme = "README.md"
+license = "LicenseRef-Proprietary"
 requires-python = ">=3.11"
+keywords = [
+    "ai",
+    "workflow",
+    "cli",
+    "orchestration",
+    "developer-tools",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Build Tools",
+]
 dependencies = [
     "click>=8.1",
     "PyYAML>=6.0",
     "networkx>=3.3",
-    "tree-sitter>=0.22",
+    "tree-sitter>=0.25.2",
+    "tree-sitter-language-pack>=0.13.0",
 ]
 
 [project.scripts]
 grain = "grain.cli:cli"
+
+[project.optional-dependencies]
+release = [
+    "build>=1.4.3",
+    "twine>=5.1",
+]
+
+[project.urls]
+Homepage = "https://github.com/barbaricum/ai-build-toolkit"
+Repository = "https://github.com/barbaricum/ai-build-toolkit"
+Issues = "https://github.com/barbaricum/ai-build-toolkit/issues"
+
+[tool.setuptools]
+include-package-data = false
 
 [tool.setuptools.packages.find]
 where = ["src"]

@@ -1,18 +1,18 @@
 # Handoff: TASK-0081
 
 ## Final State
-Graph-assisted context selection is implemented and packet is ready for review.
+Graph-assisted context selection is implemented, reviewed as ready, and packet is closed as done.
 
 ## Review Bundle
 
 ### Packet Identity
 - **Task ID:** TASK-0081
 - **Phase:** Phase 10 — Structural Intelligence: Tree-sitter + Knowledge Graph
-- **Status:** review
+- **Status:** done
 
 ### Outcome
 - **Review Readiness:** ready
-- **Recommended Next Status:** review
+- **Recommended Next Status:** done
 - **Short Summary:** Replaced adapter glob-only inclusion with graph-assisted traversal and traceable per-source path metadata.
 
 ## What Was Built
@@ -50,7 +50,7 @@ Graph-assisted context selection is implemented and packet is ready for review.
 - `tasks/P10-T03-TASK-0081/handoff.md` — handoff
 
 ## Reviewer Notes
-This completes Layer 4 context selection work for Phase 10 and unblocks `P10-T04` (graph-driven orchestration capability wiring).
+Review completed with no required fixes; task accepted and closed.
 
 ## Closeout Intake
 

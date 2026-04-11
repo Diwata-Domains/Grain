@@ -1,9 +1,9 @@
 # Results: TASK-0081
 
 ## Packet State
-- **Current Task Status:** review
-- **Review Readiness:** [reviewer fills]
-- **Recommended Next Status:** [reviewer fills]
+- **Current Task Status:** done
+- **Review Readiness:** ready
+- **Recommended Next Status:** done
 
 ## Files Changed
 - `src/grain/services/context_service.py` — replaced adapter glob-only source inclusion with graph-assisted traversal and per-source trace paths
@@ -37,14 +37,14 @@ Implemented graph-assisted context selection for adapter source inclusion. Conte
 - **Notes:** Cost stayed low by integrating traversal in existing context service helpers and validating behavior with focused tests before full-suite run.
 
 ### Review
-- **Prompt Runs:** [reviewer fills]
-- **Conversation Restarts:** [reviewer fills]
-- **Notes:** [reviewer fills]
+- **Prompt Runs:** 1
+- **Conversation Restarts:** 0
+- **Notes:** Validated packet artifacts and ran targeted graph/context tests; no required fixes identified.
 
 ### Close
-- **Prompt Runs:** [closer fills]
-- **Conversation Restarts:** [closer fills]
-- **Notes:** [closer fills]
+- **Prompt Runs:** 1
+- **Conversation Restarts:** 0
+- **Notes:** Closed after confirming review bundle completeness, backlog state update, and no working-doc intake items beyond recorded follow-up.
 
 ## Review Notes
 - Adapter source selection is now graph-first: candidate files must be reachable from packet-local files in the generated graph.
@@ -53,24 +53,24 @@ Implemented graph-assisted context selection for adapter source inclusion. Conte
 
 ## Review Intake
 <!-- reviewer fills this section — executor must leave all fields below as-is -->
-- **Review Decision:** [reviewer fills]
-- **Definition of Done Met:** [reviewer fills]
-- **Recommended Next Status:** [reviewer fills]
+- **Review Decision:** ready
+- **Definition of Done Met:** yes
+- **Recommended Next Status:** done
 
 ### Required Fixes
-- [fix, or "None"]
+- None
 
 ### Open Questions To Log
-- [question summary, or "None"]
+- None
 
 ### Proposal Candidates To Log
-- [proposal summary, or "None"]
+- None
 
 ### Follow-Ups To Log
-- [follow-up note, or "None"]
+- Execute `P10-T04` next to wire graph outputs into orchestration adapter capabilities.
 
 ### Residual Risks
-- [risk, or "None"]
+- Graph traversal currently depends on adapter linkage heuristics and not language-specific dependency semantics for all source types.
 
 ## Deliverable Checklist
 - [x] Context selection uses graph traversal for adapter source inclusion

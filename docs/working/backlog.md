@@ -224,9 +224,9 @@ Default status for new backlog items in this file: `draft`
 
 ---
 
-## 13. Phase 10 — Structural Intelligence: Tree-sitter + Knowledge Graph
+## 13. Phase 10 — Structural Intelligence: Tree-sitter + Knowledge Graph ✓ CLOSED
 
-> **Status:** seeded — Phase 9 closed; planning-ready. FR-015 Layers 1 + 3 + 4. Absorbs FA-T01.
+> **Status:** CLOSED. All 6 tasks done (T01-T05 + T06 remediation). 575/575 tests passing. Phase closed 2026-04-11. FR-015 Layers 1 + 3 + 4. Absorbs FA-T01.
 
 ### P10 Planning Notes
 - Scope: tree-sitter structural extraction (Layer 1), JSON knowledge graph on disk using NetworkX (Layer 3), and graph-assisted context selection to replace glob-pattern loading (Layer 4)
@@ -251,7 +251,7 @@ Default status for new backlog items in this file: `draft`
 - **Ready:** yes
 
 ### P10-T03 — Graph-assisted context selection (Layer 4)
-- **Status:** review
+- **Status:** done
 - **Description:** Replace glob-pattern context loading in `context_service.py` with graph traversal. Prefer packet-local files, then include only structurally connected files by graph distance. Enforce the minimal context rule and traceable selection — every inclusion must have a traceable graph path. No hidden inclusions.
 - **Files:** `src/forge/services/context_service.py`, `tests/`
 - **Model:** frontier_model
@@ -259,7 +259,7 @@ Default status for new backlog items in this file: `draft`
 - **Ready:** yes
 
 ### P10-T04 — Wire graph into orchestration adapter capabilities
-- **Status:** ready
+- **Status:** done
 - **Description:** Connect graph layer outputs to `detect_scope` and `analyze_impact` adapter capabilities from Phase 9. Adapters use graph traversal results instead of static patterns when the graph is available. Fallback to static patterns when graph is absent.
 - **Files:** `src/forge/adapters/`, `src/forge/services/orchestration_service.py`, `tests/`
 - **Model:** frontier_model
@@ -267,18 +267,27 @@ Default status for new backlog items in this file: `draft`
 - **Ready:** yes
 
 ### P10-T05 — Integration tests and graph rebuild validation
-- **Status:** draft
+- **Status:** done
 - **Description:** Add integration coverage across the full structural intelligence path: tree-sitter extraction → graph build → context selection → orchestration scope. Add graph rebuild validation ensuring the graph is always derivable from source artifacts with no hidden state.
 - **Files:** `tests/`
 - **Model:** open_model
 - **Dependencies:** P10-T04
-- **Ready:** after P10-T04
+- **Ready:** yes
+
+### P10-T06 — Replace ast/regex extraction with full tree-sitter parser coverage (REMEDIATION)
+- **Status:** done
+- **Description:** P10-T01 was accepted in review using Python `ast` and regex as substitutes for tree-sitter. This does not meet spec. Replace `structural_intelligence_service.py` with a full tree-sitter implementation covering all languages where tree-sitter grammars exist: Python, TypeScript, JavaScript, TSX, CSS/SCSS, Rust, Go, Java, Bash/Shell, Markdown, YAML, TOML, HCL. Use the `tree-sitter` Python bindings and install the required language grammar packages (`tree-sitter-python`, `tree-sitter-typescript`, `tree-sitter-javascript`, `tree-sitter-rust`, `tree-sitter-go`, `tree-sitter-java`, `tree-sitter-bash`, `tree-sitter-css`, etc.). The `parser` field on `StructuralExtraction` must report `"tree-sitter"` for all supported languages. Fallback to `"none"` only for languages with no available tree-sitter grammar — never fall back silently to regex. Update `pyproject.toml` with required grammar packages. Update all affected tests to assert `parser == "tree-sitter"` for supported languages.
+- **Files:** `src/grain/services/structural_intelligence_service.py`, `pyproject.toml`, `tests/`
+- **Model:** frontier_model
+- **Dependencies:** P10-T01 (replaces its implementation)
+- **Ready:** now — Phase 10 is reopened for this task
+- **Note:** P10-T02 through P10-T05 consumed extraction output from P10-T01 and remain valid in structure — graph nodes, context selection, and orchestration wiring do not change. Only the extraction layer underneath is being replaced.
 
 ---
 
 ## 14. Phase 11 — Distribution and Global Install
 
-> **Status:** seeded — not yet started. Depends on Phase 10 close. FR-004b.
+> **Status:** seeded — Phase 10 closed; planning-ready. FR-004b.
 
 ### P11 Planning Notes
 - Scope: PyPI publishing, `uv tool install` compatibility, Homebrew formula (macOS), versioned install/upgrade docs, install verification
@@ -287,7 +296,7 @@ Default status for new backlog items in this file: `draft`
 - Roadmap reference: FR-004b
 
 ### P11-T01 — Finalize packaging metadata and build configuration
-- **Status:** draft
+- **Status:** done
 - **Description:** Audit and finalize `pyproject.toml` — classifiers, license, description, homepage, keywords, Python version constraints. Ensure `grain` entry point is cleanly defined. Verify `src/` layout builds a clean wheel with no dev artifacts or editable paths included.
 - **Files:** `pyproject.toml`, `src/grain/`
 - **Model:** open_model
@@ -295,7 +304,7 @@ Default status for new backlog items in this file: `draft`
 - **Ready:** after Phase 10 close
 
 ### P11-T02 — PyPI publish workflow
-- **Status:** draft
+- **Status:** review
 - **Description:** Set up a release workflow for publishing to PyPI. Define a version bump process, build and publish steps (`python -m build`, `twine upload`), and a CI-compatible publish path. Verify `pip install grain` installs the correct binary and package from PyPI.
 - **Files:** `pyproject.toml`, build/publish tooling config
 - **Model:** open_model
@@ -303,7 +312,7 @@ Default status for new backlog items in this file: `draft`
 - **Ready:** after P11-T01
 
 ### P11-T03 — `uv tool install` compatibility and documentation
-- **Status:** draft
+- **Status:** ready
 - **Description:** Verify `uv tool install grain` works correctly and installs the `grain` CLI into the global tool path. Document the recommended install method. Test the installed binary resolves `grain --help` without a virtual environment.
 - **Files:** install docs, `README.md`
 - **Model:** open_model

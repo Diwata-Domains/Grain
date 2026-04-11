@@ -410,7 +410,7 @@ Implement the orchestration service (task and phase-level), adapter capability s
 
 ---
 
-## Phase 10 — Structural Intelligence: Tree-sitter + Knowledge Graph
+## Phase 10 — Structural Intelligence: Tree-sitter + Knowledge Graph ✓ CLOSED
 
 ### Objective
 Add deterministic structural intelligence: tree-sitter entity extraction, a JSON knowledge graph, and graph-assisted context selection to replace glob-pattern loading.
@@ -423,12 +423,17 @@ Add deterministic structural intelligence: tree-sitter entity extraction, a JSON
 - Integration tests across full path: tree-sitter extraction → graph build → context selection → orchestration scope
 
 ### Notes
-- Seeded — not yet started. Depends on Phase 9 close.
+- Phase 10 complete: 6/6 tasks done (T01-T05 + T06 remediation)
+- 575/575 tests passing at phase close (same count as T05 — T06 replaced T01's tests in-place)
+- Phase 10 was reopened after initial close: T01 review accepted AST+pattern matchers as equivalent, but phase-level review determined tree-sitter spec was not satisfied; T06 remediation replaced extraction layer with proper tree-sitter bindings
+- T06: 1 conversation restart during execute; all downstream graph/context/orchestration contracts unaffected
+- Layer 1 extraction now uses tree-sitter for all supported languages; `parser = "none"` only for unsupported grammars
 - Absorbs FA-T01 (tree-sitter proof-of-concept)
+- Phase closed 2026-04-11
 - Roadmap reference: FR-015, FR-011
 
 ### Dependencies
-- requires Phase 9 orchestration service and adapter capability surface
+- requires Phase 9 orchestration service and adapter capability surface ✓
 
 ---
 

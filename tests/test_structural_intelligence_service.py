@@ -29,7 +29,7 @@ def build():
     names_by_type = {(entity.entity_type, entity.name) for entity in extraction.entities}
 
     assert extraction.language == "python"
-    assert extraction.parser == "python-ast"
+    assert extraction.parser == "tree-sitter"
     assert ("class", "Worker") in names_by_type
     assert ("function", "run") in names_by_type
     assert ("function", "build") in names_by_type
@@ -53,10 +53,11 @@ function renderApp() {
     extraction = extract_structural_entities(path)
     names_by_type = {(entity.entity_type, entity.name) for entity in extraction.entities}
 
-    assert extraction.language == "typescript"
+    assert extraction.language in {"typescript", "tsx"}
+    assert extraction.parser == "tree-sitter"
     assert ("import", "react") in names_by_type
     assert ("function", "renderApp") in names_by_type
-    assert any(item[0] == "call_site" and item[1] == "log" for item in names_by_type)
+    assert any(item[0] == "call_site" and item[1].endswith("log") for item in names_by_type)
 
 
 def test_extract_markdown_entities_includes_headings_and_links(tmp_path: Path):
@@ -72,6 +73,7 @@ See [Architecture](docs/canonical/architecture.md).
     names_by_type = {(entity.entity_type, entity.name) for entity in extraction.entities}
 
     assert extraction.language == "markdown"
+    assert extraction.parser == "tree-sitter"
     assert ("heading", "Title") in names_by_type
     assert ("link", "docs/canonical/architecture.md") in names_by_type
 
@@ -102,8 +104,10 @@ RUN pip install -r requirements.txt
     yaml_deps = [entity.name for entity in yaml_extraction.entities if entity.entity_type == "dependency"]
 
     assert docker_extraction.language == "dockerfile"
+    assert docker_extraction.parser == "tree-sitter"
     assert "python:3.12-slim" in docker_deps
     assert yaml_extraction.language == "yaml"
+    assert yaml_extraction.parser == "tree-sitter"
     assert yaml_deps == ["db", "redis"]
 
 
