@@ -2,7 +2,7 @@
 
 ## Metadata
 - **ID:** TASK-0086
-- **Status:** review
+- **Status:** done
 - **Phase:** Phase 11 — Distribution and Global Install
 - **Backlog:** P11-T02
 - **Packet Path:** tasks/P11-T02-TASK-0086/

@@ -9,7 +9,9 @@ from grain.adapters.manifest import load_manifest
 from grain.cli.output import CommandResult
 from grain.domain.context import (
     ContextBundle,
+    ContextStats,
     PacketSourceSet,
+    SourceStats,
     discover_packet_files,
     select_canonical_docs,
     select_working_docs,
@@ -225,6 +227,15 @@ def build_context_bundle(
             "selection_trace": selection_trace,
         }
 
+    stats = _compute_context_stats(
+        root=root,
+        packet_paths=packet_source_paths,
+        adapter_sources=adapter_sources,
+        selection_trace=selection_trace,
+        canonical_docs=canonical_docs,
+        working_docs=working_docs,
+    )
+
     bundle = ContextBundle(
         task_id=task_id,
         packet_dir=source_set.packet_dir,
@@ -235,6 +246,24 @@ def build_context_bundle(
             "generated_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
             "sources": sources,
             "adapter_context": adapter_context,
+            "context_stats": {
+                "total_sources": stats.total_sources,
+                "total_lines": stats.total_lines,
+                "packet_sources": stats.packet_sources,
+                "graph_traced_sources": stats.graph_traced_sources,
+                "glob_only_sources": stats.glob_only_sources,
+                "canonical_sources": stats.canonical_sources,
+                "working_sources": stats.working_sources,
+                "per_file": [
+                    {
+                        "path": s.path,
+                        "lines": s.lines,
+                        "selection_method": s.selection_method,
+                        "graph_depth": s.graph_depth,
+                    }
+                    for s in stats.per_file
+                ],
+            },
         },
     )
 
@@ -428,3 +457,79 @@ def _node_to_path_or_id(node_id: str) -> str:
     if node_id.startswith("file::"):
         return node_id.removeprefix("file::")
     return node_id
+
+
+def _count_file_lines(root: Path, path: str) -> int:
+    """Return the line count for a file, or 0 if unreadable."""
+    try:
+        return sum(1 for _ in (root / path).open(encoding="utf-8", errors="replace"))
+    except OSError:
+        return 0
+
+
+def _compute_context_stats(
+    root: Path,
+    packet_paths: list[str],
+    adapter_sources: list[str],
+    selection_trace: dict[str, list[str]],
+    canonical_docs: list,
+    working_docs: list,
+) -> ContextStats:
+    """Compute per-file line counts and selection method for a context bundle."""
+    per_file: list[SourceStats] = []
+    packet_set = set(packet_paths)
+    adapter_set = set(adapter_sources)
+    traced_set = set(selection_trace.keys())
+
+    for path in packet_paths:
+        per_file.append(SourceStats(
+            path=path,
+            lines=_count_file_lines(root, path),
+            selection_method="packet",
+            graph_depth=-1,
+        ))
+
+    for path in adapter_sources:
+        if path in traced_set:
+            depth = max(0, len(selection_trace[path]) - 1)
+            method = "graph_traced"
+        else:
+            depth = -1
+            method = "glob_only"
+        per_file.append(SourceStats(
+            path=path,
+            lines=_count_file_lines(root, path),
+            selection_method=method,
+            graph_depth=depth,
+        ))
+
+    for record in canonical_docs:
+        path = record.path
+        if path not in packet_set and path not in adapter_set:
+            per_file.append(SourceStats(
+                path=path,
+                lines=_count_file_lines(root, path),
+                selection_method="canonical",
+                graph_depth=-1,
+            ))
+
+    for record in working_docs:
+        path = record.path
+        if path not in packet_set and path not in adapter_set:
+            per_file.append(SourceStats(
+                path=path,
+                lines=_count_file_lines(root, path),
+                selection_method="working",
+                graph_depth=-1,
+            ))
+
+    return ContextStats(
+        total_sources=len(per_file),
+        total_lines=sum(s.lines for s in per_file),
+        packet_sources=sum(1 for s in per_file if s.selection_method == "packet"),
+        graph_traced_sources=sum(1 for s in per_file if s.selection_method == "graph_traced"),
+        glob_only_sources=sum(1 for s in per_file if s.selection_method == "glob_only"),
+        canonical_sources=sum(1 for s in per_file if s.selection_method == "canonical"),
+        working_sources=sum(1 for s in per_file if s.selection_method == "working"),
+        per_file=per_file,
+    )

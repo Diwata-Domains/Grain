@@ -1,6 +1,6 @@
-# Forge
+# Grain
 
-Forge is a CLI-first workflow system for structured AI-assisted software development.
+Grain is a CLI-first workflow system for structured AI-assisted software development.
 
 It gives you:
 - canonical docs as source of truth
@@ -10,7 +10,7 @@ It gives you:
 - minimal-context execution instead of broad repo dumping
 - more useful work per agent context window by reducing drift, retries, and unnecessary rereads
 
-Forge is not a coding model by itself.
+Grain is not a coding model by itself.
 It is the workflow and file system that external agent CLIs operate against.
 It exists in part to help agent-CLI users avoid burning through token windows on broad, repetitive, underspecified conversations.
 
@@ -18,7 +18,7 @@ It exists in part to help agent-CLI users avoid burning through token windows on
 
 ## Who It Is For
 
-Forge is for developers and technical operators who:
+Grain is for developers and technical operators who:
 - use agent CLIs such as Codex or Claude Code
 - want inspectable markdown files instead of opaque orchestration
 - want scoped task execution, review, and closure
@@ -29,7 +29,7 @@ Forge is for developers and technical operators who:
 
 ## Core Idea
 
-Forge separates work into layers:
+Grain separates work into layers:
 
 - `docs/canonical/`
   - source-of-truth decisions
@@ -46,7 +46,7 @@ Forge separates work into layers:
 
 ## Adapter Inventory
 
-Forge uses a contract-driven adapter model to tune workflow behavior for different domains.
+Grain uses a contract-driven adapter model to tune workflow behavior for different domains.
 
 The workflow loop is the same for every domain. Adapters change context selection, validation hints, and review focus — not workflow law.
 
@@ -83,35 +83,53 @@ Custom adapters follow the same contract as official adapters. Add them to `docs
 - shareable community adapter profiles
 - adapter-aware template sets per domain
 
-If you are managing content with Forge, `docs_adapter` is the natural direction because it fits markdown-first editorial, knowledge-base, and documentation workflows. If you are managing infrastructure or operations work, define a `devops_adapter` or `local_ops_adapter` with the file patterns and validation hints relevant to your domain.
+If you are managing content with Grain, `docs_adapter` is the natural direction because it fits markdown-first editorial, knowledge-base, and documentation workflows. If you are managing infrastructure or operations work, define a `devops_adapter` or `local_ops_adapter` with the file patterns and validation hints relevant to your domain.
 
 ---
 
 ## Recursive Build Principle
 
-Forge is intended to be used to build Forge itself, then to build Sentinel on top of it.
+Grain is intended to be used to build Grain itself, then to build Assay on top of it.
 
 That recursive use is deliberate.
 It is one of the main ways the product is validated in real work:
 
-- if Forge cannot manage its own build cleanly, its workflow claims are weak
-- if Forge reduces token waste, drift, and retries while building itself, that is stronger evidence than a synthetic demo
-- if Sentinel can later verify work produced through Forge, the loop becomes: structure the work, execute the work, verify the result
+- if Grain cannot manage its own build cleanly, its workflow claims are weak
+- if Grain reduces token waste, drift, and retries while building itself, that is stronger evidence than a synthetic demo
+- if Assay can later verify work produced through Grain, the loop becomes: structure the work, execute the work, verify the result
 
 Recursive building is validation, not proof of universal fit.
-Forge still needs to work outside its own repo shape and outside its creator's habits.
+Grain still needs to work outside its own repo shape and outside its creator's habits.
 
 ---
 
 ## Installation
 
-Current install path is local Python package install from source.
-
 Requirements:
 - Python 3.11+
-- `pip`
+- `uv` (recommended) or `pip`
 
-From the repo root:
+### Recommended: uv tool install
+
+```bash
+uv tool install grain-kit
+```
+
+This installs `grain` into uv's global tool path. No virtual environment needed.
+
+### Alternative: pip install
+
+```bash
+pip install grain-kit
+```
+
+### Local source install (development or testing)
+
+```bash
+uv tool install --from . grain
+```
+
+Fallback using a local venv:
 
 ```bash
 python3 -m venv .venv
@@ -119,28 +137,67 @@ source .venv/bin/activate
 pip install -e .
 ```
 
-Verify:
+### Verify
 
 ```bash
-forge --help
+grain --version
+grain init --help
 ```
 
-This installs the `forge` CLI entrypoint defined in [`pyproject.toml`](/Users/barbaricum/ai-build-toolkit/pyproject.toml).
-
-Current state:
-- supported now: local editable install
-- not yet productized: PyPI, Homebrew, standalone installer, global bootstrap flow
-
-Install and repo-state behavior:
-- once `forge` is installed into your active environment, you can invoke it from any directory
-- `forge init` is the entrypoint for folders that are not yet Forge-managed repos
-- commands that inspect or mutate Forge workflow state expect the current folder (or `--repo` target) to contain Forge docs/runtime files already
-
-If you are using an agent CLI, install Forge first, then run the onboarding/start prompts from `prompts/`.
+Expected output:
+- `grain, version <x.y.z>`
+- `Usage: grain init [OPTIONS]`
 
 ---
 
-## Should You Use Forge For Your Machine?
+## Updating
+
+### uv tool install
+
+```bash
+uv tool upgrade grain-kit
+```
+
+### pip install
+
+```bash
+pip install --upgrade grain-kit
+```
+
+### Local source install
+
+```bash
+uv tool install --from . grain --force
+```
+
+or for a venv-based install:
+
+```bash
+pip install -e . --upgrade
+```
+
+---
+
+## Troubleshooting
+
+If `grain` is not found after `uv tool install`:
+- run `uv tool dir --bin` and add that directory to your `PATH`
+- macOS/Linux: `export PATH="$(uv tool dir --bin):$PATH"`
+- Windows PowerShell: `$env:Path = "$(uv tool dir --bin);$env:Path"`
+
+If you have a Python version mismatch:
+- check: `python --version` (Grain requires Python 3.11+)
+- install with a specific interpreter: `uv tool install --python 3.11 grain`
+
+If venv conflicts cause unexpected behavior:
+- check: `which grain` (or `where grain` on Windows) to confirm the active path
+- reinstall: `uv tool uninstall grain-kit && uv tool install grain-kit`
+- for local source testing, use isolated env vars:
+  - point `UV_TOOL_DIR`, `UV_CACHE_DIR`, and `HOME` at temp directories
+
+---
+
+## Should You Use Grain For Your Machine?
 
 Yes, sometimes.
 
@@ -152,14 +209,14 @@ Good use cases:
 - treating your local environment as an inspectable system with tasks, review, and change history
 
 Bad default:
-- treating your entire home directory or whole machine as one Forge project
+- treating your entire home directory or whole machine as one Grain project
 
 Better pattern:
 - create a dedicated repo such as:
   - `local-ops`
   - `machine-admin`
   - `personal-systems`
-- use Forge inside that repo
+- use Grain inside that repo
 
 Reason:
 - keeps scope bounded
@@ -181,8 +238,8 @@ There are two starting modes:
 ### New Project
 
 1. create or enter the project repo
-2. run `forge init`
-3. open [`prompts/workflow.onboard.new.md`](/Users/barbaricum/ai-build-toolkit/prompts/workflow.onboard.new.md)
+2. run `grain init`
+3. open `prompts/workflow.onboard.new.md`
 4. fill in the `Project Context`
 5. paste that prompt into your agent CLI
 6. let the agent generate the initial docs, manifest, backlog, and open questions
@@ -191,15 +248,15 @@ There are two starting modes:
 Optional onboarding-aware init flags:
 
 ```bash
-forge init --primary-adapter code_adapter --secondary-adapter frontend_adapter --bootstrap
+grain init --primary-adapter code_adapter --secondary-adapter frontend_adapter --bootstrap
 ```
 
-- `--primary-adapter` sets the default adapter context for onboarding.
-- `--secondary-adapter` can be repeated for additional adapters.
-- `--bootstrap` creates a starter task packet and initializes `docs/working/current_task.md`.
+- `--primary-adapter` sets the default adapter context for onboarding
+- `--secondary-adapter` can be repeated for additional adapters
+- `--bootstrap` creates a starter task packet and initializes `docs/working/current_task.md`
 
 Compatibility note:
-- [`prompts/workflow.init.md`](/Users/barbaricum/ai-build-toolkit/prompts/workflow.init.md) is kept as an alias for users who still invoke the old onboarding name.
+- `prompts/workflow.init.md` is kept as an alias for users who still invoke the old onboarding name.
 
 After onboarding, use the normal loop:
 
@@ -214,8 +271,8 @@ The full adoption flow is planned but not fully productized yet.
 
 Current practical path:
 
-1. run `forge init` inside the existing repo
-2. use [`prompts/workflow.init.md`](/Users/barbaricum/ai-build-toolkit/prompts/workflow.init.md) as a temporary onboarding starter, but describe the project as an existing system
+1. run `grain init` inside the existing repo
+2. use `prompts/workflow.init.md` as a temporary onboarding starter, but describe the project as an existing system
 3. review generated docs carefully
 4. treat generated canonical docs as draft until confirmed
 
@@ -226,11 +283,11 @@ Planned dedicated path:
 
 ## Agent CLI Usage
 
-Forge is designed to be used from an agent CLI.
+Grain is designed to be used from an agent CLI.
 
 The basic pattern is:
 
-1. run the Forge CLI when filesystem scaffolding or validation is needed
+1. run the Grain CLI when filesystem scaffolding or validation is needed
 2. run a prompt from `prompts/`
 3. let the agent update the repo files
 4. continue through the structured loop
@@ -238,27 +295,25 @@ The basic pattern is:
 ### Recommended Stable Prompt Surface
 
 Phase planning:
-- [`prompts/phase.plan.next.md`](/Users/barbaricum/ai-build-toolkit/prompts/phase.plan.next.md)
-- [`prompts/phase.replan.md`](/Users/barbaricum/ai-build-toolkit/prompts/phase.replan.md)
-- [`prompts/phase.review.md`](/Users/barbaricum/ai-build-toolkit/prompts/phase.review.md)
-- [`prompts/phase.review_and_close.md`](/Users/barbaricum/ai-build-toolkit/prompts/phase.review_and_close.md)
+- `prompts/phase.plan.next.md`
+- `prompts/phase.review.md`
+- `prompts/phase.review_and_close.md`
 
 Task planning and execution:
-- [`prompts/task.plan.next.md`](/Users/barbaricum/ai-build-toolkit/prompts/task.plan.next.md)
-- [`prompts/task.execute.md`](/Users/barbaricum/ai-build-toolkit/prompts/task.execute.md)
-- [`prompts/task.review.md`](/Users/barbaricum/ai-build-toolkit/prompts/task.review.md)
-- [`prompts/task.close.md`](/Users/barbaricum/ai-build-toolkit/prompts/task.close.md)
+- `prompts/task.plan.next.md`
+- `prompts/task.execute.md`
+- `prompts/task.review.md`
+- `prompts/task.close.md`
 
 Project bootstrap:
-- [`prompts/workflow.onboard.new.md`](/Users/barbaricum/ai-build-toolkit/prompts/workflow.onboard.new.md)
-- [`prompts/workflow.init.md`](/Users/barbaricum/ai-build-toolkit/prompts/workflow.init.md) (compatibility alias)
+- `prompts/workflow.onboard.new.md`
+- `prompts/workflow.init.md` (compatibility alias)
 
 ### Recommended Daily Loop
 
 Use this loop continuously inside the active phase:
 
-1. `task.plan.next`
-   - only when the next task must be selected, split, or added
+1. `task.plan.next` — only when the next task must be selected, split, or added
 2. `task.execute`
 3. `task.review`
 4. `task.close`
@@ -270,14 +325,13 @@ Do not run `task.plan.next` every time if a ready task already exists.
 Use this less often:
 
 1. `phase.plan.next`
-2. `phase.replan` only when the phase shape is wrong
-3. `phase.review` or `phase.review_and_close` at phase boundaries
+2. `phase.review` or `phase.review_and_close` at phase boundaries
 
 ---
 
 ## Customization
 
-Forge is meant to be customized to the project it is managing.
+Grain is meant to be customized to the project it is managing.
 
 Users should customize:
 - canonical docs for the project domain and scope
@@ -287,17 +341,13 @@ Users should customize:
 - onboarding outputs for new or existing projects
 
 Users should try to keep stable:
-- the core workflow loop
-  - plan
-  - execute
-  - review
-  - close
+- the core workflow loop: plan → execute → review → close
 - file-backed workflow state
 - authority boundaries between canonical, working, runtime, and task layers
 - explicit review and change-proposal gates
 
 Good customization:
-- adapt Forge to Python, Rust, React, docs, spreadsheets, local-ops, or mixed projects
+- adapt Grain to Python, Rust, React, docs, spreadsheets, local-ops, or mixed projects
 - add project-specific constraints, risks, adapters, and backlog structure
 
 Bad customization:
@@ -312,20 +362,26 @@ In short:
 
 ---
 
-## Minimal CLI Flow
-
-Common commands:
+## Minimal CLI Reference
 
 ```bash
-forge init
-forge docs validate
-forge task create --title "..."
-forge task list
-forge task show --id TASK-####
-forge task close --id TASK-####
+grain init
+grain docs validate
+grain task create --title "..."
+grain task list
+grain task show --id TASK-####
+grain task close --id TASK-####
+grain workflow next
+grain workflow run
+grain task next
+grain task prepare
+grain orchestrate scope --scope "..."
+grain orchestrate plan --scope "..."
+grain adapter list
+grain adapter show --id <id>
 ```
 
-In normal Forge usage, the prompts drive most of the workflow and the CLI handles scaffolding, validation, and command surfaces.
+In normal Grain usage, the prompts drive most of the workflow and the CLI handles scaffolding, validation, and command surfaces.
 
 ---
 
@@ -338,37 +394,29 @@ In normal Forge usage, the prompts drive most of the workflow and the CLI handle
 - if prompt or workflow-contract docs change mid-conversation, restart the relevant agent conversation
 
 See:
-- [`docs/runtime/PROJECT_RULES.md`](/Users/barbaricum/ai-build-toolkit/docs/runtime/PROJECT_RULES.md)
-- [`docs/runtime/docs_manifest.yaml`](/Users/barbaricum/ai-build-toolkit/docs/runtime/docs_manifest.yaml)
+- `docs/runtime/PROJECT_RULES.md`
+- `docs/runtime/docs_manifest.yaml`
 
 ---
 
 ## Current Product State
 
-Current repo status:
-- v1 core workflow is complete (Phases 1–5 closed)
-- v2 Phase 6 (Adapter System Foundation) closed
-- v2 Phase 7 (New-Project Onboarding Flow) complete — `forge init` supports adapter selection and starter-packet bootstrap
-- v2 Phase 8 (Workflow Automation Runner Foundation) active — planning and CLI-first runner primitives
-- existing-project adoption remains deferred behind FR-013 entry criteria
+- v1 core workflow complete (Phases 1–5 closed) — init, docs, task, context, model, review commands
+- Phase 6 closed — adapter system foundation (`code_adapter`, `frontend_adapter`)
+- Phase 7 closed — new-project onboarding flow (`grain init` with adapter selection and starter-packet bootstrap)
+- Phase 8 closed — workflow automation runner (`grain workflow next/run`, `grain task next/prepare`, `grain phase next`, `grain prompt show`, machine-readable JSON contract)
+- Phase 9 closed — orchestration service (`grain orchestrate scope/plan`, `grain adapter list/show`, OrchestratorPlan domain model)
+- Phase 10 closed — structural intelligence (tree-sitter extraction, knowledge graph, graph-assisted context selection)
+- Phase 11 closed — distribution and global install (`pip install grain`, `uv tool install grain`, PyPI publish workflow)
+- Phase 12 in progress — automated workflow loop (`grain workflow loop`)
+- existing-project adoption deferred behind FR-013 entry criteria
 
-See:
-- [`docs/working/current_focus.md`](/Users/barbaricum/ai-build-toolkit/docs/working/current_focus.md)
-- [`docs/working/implementation_plan.md`](/Users/barbaricum/ai-build-toolkit/docs/working/implementation_plan.md)
-- [`docs/working/v2_onboarding.md`](/Users/barbaricum/ai-build-toolkit/docs/working/v2_onboarding.md)
+Workflow loop guardrails:
+- `grain workflow loop --steps N` sets a hard loop-step limit
+- `grain workflow loop --dry-run` previews planned actions without mutating state
+- supervision levels:
+  - `supervised`: operator approval before each action
+  - `gated`: automatic run, stops at review/close gates (default)
+  - `autonomous`: minimal stops, unverified automation (Assay will provide future independent verification)
 
----
-
-## Short Recommendation
-
-For future users, the intended startup experience should be:
-
-1. read this `README`
-2. choose:
-   - new project
-   - existing project
-3. run `forge init`
-4. run the onboarding prompt in an agent CLI
-5. move into the standard task loop
-
-That is the cleanest human entrypoint without overloading the `README` itself with the entire onboarding conversation.
+See `docs/working/current_focus.md` and `docs/working/implementation_plan.md` for active phase detail.

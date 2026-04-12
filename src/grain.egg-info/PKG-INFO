@@ -134,13 +134,25 @@ Forge still needs to work outside its own repo shape and outside its creator's h
 
 ## Installation
 
-Current install path is local Python package install from source.
+Recommended global install method: `uv tool install grain` (once published).
 
 Requirements:
 - Python 3.11+
-- `pip`
+- `uv` (recommended) or `pip`
 
-From the repo root:
+Global install from package index:
+
+```bash
+uv tool install grain
+```
+
+Local source install using uv tool (for development/testing):
+
+```bash
+uv tool install --from . grain
+```
+
+Fallback local editable install:
 
 ```bash
 python3 -m venv .venv
@@ -151,21 +163,45 @@ pip install -e .
 Verify:
 
 ```bash
-forge --help
+grain --version
+grain init --help
 ```
 
-This installs the `forge` CLI entrypoint defined in [`pyproject.toml`](/Users/barbaricum/ai-build-toolkit/pyproject.toml).
+Expected verification output includes:
+- `grain, version <x.y.z>`
+- `Usage: grain init [OPTIONS]`
 
-Current state:
-- supported now: local editable install
-- not yet productized: PyPI, Homebrew, standalone installer, global bootstrap flow
+This installs the `grain` CLI entrypoint defined in [`pyproject.toml`](/Users/barbaricum/ai-build-toolkit/pyproject.toml).
 
 Install and repo-state behavior:
-- once `forge` is installed into your active environment, you can invoke it from any directory
-- `forge init` is the entrypoint for folders that are not yet Forge-managed repos
-- commands that inspect or mutate Forge workflow state expect the current folder (or `--repo` target) to contain Forge docs/runtime files already
+- once `grain` is installed into your active environment, you can invoke it from any directory
+- `grain init` is the entrypoint for folders that are not yet Grain-managed repos
+- commands that inspect or mutate Grain workflow state expect the current folder (or `--repo` target) to contain Grain docs/runtime files already
 
-If you are using an agent CLI, install Forge first, then run the onboarding/start prompts from `prompts/`.
+If you are using an agent CLI, install Grain first, then run the onboarding/start prompts from `prompts/`.
+
+### Troubleshooting
+
+If `grain` is not found after `uv tool install`:
+- run `uv tool dir --bin` and add that directory to your `PATH`
+- macOS/Linux example:
+  - `export PATH="$(uv tool dir --bin):$PATH"`
+- Windows PowerShell example:
+  - `$env:Path = "$(uv tool dir --bin);$env:Path"`
+
+If you have a Python-version mismatch:
+- check local Python: `python --version`
+- Grain requires Python `3.11+`
+- for uv installs, use a matching interpreter:
+  - `uv tool install --python 3.11 grain`
+
+If venv conflicts cause unexpected behavior:
+- make sure `which grain` (or `where grain` on Windows) points to the intended tool path
+- if needed, remove and reinstall:
+  - `uv tool uninstall grain`
+  - `uv tool install grain`
+- for local source install tests, prefer isolated env vars:
+  - `UV_TOOL_DIR`, `UV_CACHE_DIR`, and `HOME` pointed at temp directories
 
 ---
 

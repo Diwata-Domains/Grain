@@ -2,7 +2,7 @@
 
 ## Project
 
-Forge
+Grain
 
 ---
 
@@ -334,28 +334,58 @@ Record the following in each task packet `results.md`:
 
 ---
 
+### Phase 11
+
+* Tasks completed: 4 (P11-T01 through P11-T04)
+* Tasks blocked: 1 (P11-T05 — Homebrew formula, deferred by operator)
+* Prompt runs: ~12 (4 execute × 1 + 4 review × 1 + 4 close × 1)
+* Avg prompt runs per completed task: 3.0
+* Manual interventions: 1 (operator decision to defer P11-T05 after Homebrew install errors)
+* First-pass success rate: 4/4 completed tasks (T05 not attempted — deferred before execution)
+* Rework count: 0
+* Drift incidents: 0
+* Phase duration: Session 14
+* Tests at phase close: 577 (+2 new tests from Phase 10 close — T02 added bump_version tests)
+* Conversation model: multi-agent (separate executor / reviewer / closer conversations)
+* Token tracking: proxy metrics only
+
+### Phase 11 Notes
+
+* What felt efficient: T01-T04 were tight, docs-and-config-focused tasks that ran cleanly with 1 prompt per stage; no canonical drift surfaced; install paths verified in isolation without global environment mutation
+* What created friction: Homebrew formula validation failed due to external infrastructure requirements (source tarball pinning, resource checksums, tap publication) — not solvable in-repo scope; operator correctly deferred rather than accepting a partial formula
+* What to tighten next: README uses absolute local paths throughout (pre-existing pattern, T03 residual risk) — convert to relative paths before public distribution; packet-template prefill cleanup carries over
+
+### Phase Retrospective Classification
+
+* **Fix now:** none
+* **Batch next phase:** README absolute local path links → relative paths before public distribution; packet-template prefill cleanup for review/close fields (carries over from Phases 7-10); `grain workflow reconcile` CLI (QD-01, carries over from Phase 8)
+* **Ignore:** T05 pending test markers (intentional — blocked before validation ran; formula file exists as starting point for future tap work)
+
+---
+
 ## V2 Aggregate (to date)
 
-* Total v2 tasks completed: 47 (Phase 6: 7, Phase 7: 7, Phase 8: 11, Phase 9: 7, Phase 10: 6)
-* Total v2 blocked: 0
-* Tests at v2 Phase 6 close: 399; at Phase 7 close: 419; at Phase 8 close: 494; at Phase 9 close: 561; at Phase 10 close: 575
-* Open questions resolved during v2 (to date): Q12–Q16 (5 questions); QD-01 deferred; no new questions opened in Phases 9–10
-* Canonical change proposals raised during v2: 1 (P8-T10 `cli_spec.md §6.9` addition); CP-009 applied (Forge→Grain, Sentinel→Assay rename); CP-010 raised and resolved (superseded by CP-009)
+* Total v2 tasks completed: 51 (Phase 6: 7, Phase 7: 7, Phase 8: 11, Phase 9: 7, Phase 10: 6, Phase 11: 4)
+* Total v2 blocked: 1 (P11-T05 deferred)
+* Tests at v2 Phase 6 close: 399; at Phase 7 close: 419; at Phase 8 close: 494; at Phase 9 close: 561; at Phase 10 close: 575; at Phase 11 close: 577
+* Open questions resolved during v2 (to date): Q12–Q16 (5 questions); QD-01 deferred; no new questions in Phases 9–11
+* Canonical change proposals raised during v2: 1 (P8-T10 `cli_spec.md §6.9` addition); CP-009 applied (Forge→Grain, Sentinel→Assay rename); CP-010 raised and resolved (superseded by CP-009); no new proposals in Phase 11
 * Major Phase 6 additions: adapter profiles runtime doc, AdapterProfile domain model, adapter loader/parser, packet adapter metadata fields, adapter-aware context biasing, adapter hint surfacing in context outputs, adapter system tests
 * Major Phase 7 additions: stable new-project onboarding prompt, init seed-file scaffolding, adapter selection, starter packet bootstrap, onboarding integration tests, existing-project adoption boundary docs
 * Major Phase 8 additions: workflow state evaluator, grain workflow next/run, grain task next/prepare, grain phase next, grain prompt show, machine-readable JSON contract for automation commands, runner integration tests, Assay bridge contract (`cli_spec.md §6.9` + `v2_plan.md §11`), working-doc reconciliation approach
 * Major Phase 9 additions: OrchestratorPlan domain model (PacketCandidate, CrossDomainDependency), AdapterCapabilityProtocol + NullAdapterCapability + 6 result types, orchestration service (task-level + phase-level), grain adapter list/show, grain orchestrate scope/plan, OrchestratorPlan validator, orchestration integration tests, proposal artifacts in `docs/working/proposals/`
 * Major Phase 10 additions: structural extraction service (Layer 1, tree-sitter via language packs — T06 replaced T01's AST/regex), knowledge graph builder (Layer 3, NetworkX + deterministic fallback), graph-assisted context selection (Layer 4, per-source trace paths), graph-aware adapter capabilities (detect_scope + analyze_impact wired), Phase 10 integration + rebuild-determinism tests
+* Major Phase 11 additions: finalized pyproject.toml distribution metadata, GitHub Actions OIDC PyPI publish workflow, semver version bump script, uv tool install compatibility verified, install verification and troubleshooting docs in README; Homebrew formula (contrib/homebrew/Formula/grain.rb) exists as deferred starting point
 
 ---
 
 ## Combined Aggregate
 
-* Total tasks completed: 100 (53 v1 + 47 v2)
-* Total blocked (all phases): 0
-* Total tests at v1 close: 379; at Phase 6 close: 399; at Phase 7 close: 419; at Phase 8 close: 494; at Phase 9 close: 561; at Phase 10 close: 575
-* Open questions resolved total: Q1–Q16 (16 resolved); QD-01 deferred; no new questions in Phases 9–10
-* Canonical change proposals applied total: CP-001 through CP-008 (8 applied in v1); 1 scoped addition in v2 (P8-T10 `cli_spec.md §6.9`); CP-009 applied (Forge→Grain, Sentinel→Assay); CP-010 resolved (superseded)
+* Total tasks completed: 104 (53 v1 + 51 v2)
+* Total blocked (all phases): 1 (P11-T05 Homebrew, deferred)
+* Total tests at v1 close: 379; at Phase 6 close: 399; at Phase 7 close: 419; at Phase 8 close: 494; at Phase 9 close: 561; at Phase 10 close: 575; at Phase 11 close: 577
+* Open questions resolved total: Q1–Q16 (16 resolved); QD-01 deferred; no new questions in Phases 9–11
+* Canonical change proposals applied total: CP-001 through CP-008 (8 applied in v1); 1 scoped addition in v2 (P8-T10 `cli_spec.md §6.9`); CP-009 applied (Forge→Grain, Sentinel→Assay); CP-010 resolved (superseded); no new proposals in Phase 11
 * V1 phases closed: 5 (Phases 1–5)
-* V2 phases closed: 5 (Phase 6, Phase 7, Phase 8, Phase 9, Phase 10)
+* V2 phases closed: 6 (Phase 6, Phase 7, Phase 8, Phase 9, Phase 10, Phase 11)
 * V2 planning docs created: v2_plan.md, v2_adapters.md, v2_onboarding.md

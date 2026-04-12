@@ -158,6 +158,96 @@ def test_context_build_include_working(packet_repo):
     assert "docs/working/backlog.md" in result.output
 
 
+def _base_manifest(repo_root):
+    _write_manifest(
+        repo_root,
+        {
+            "canonical": [
+                {
+                    "id": "workflow_spec",
+                    "path": "docs/canonical/workflow_spec.md",
+                    "purpose": "Workflow",
+                    "authority": "highest",
+                    "editable_by_agents": False,
+                    "read_when": ["running_tasks"],
+                }
+            ],
+            "working": [],
+            "runtime": [],
+            "tasks": {},
+            "rules": {},
+        },
+    )
+
+
+def test_context_build_stats_in_text_output(packet_repo):
+    _base_manifest(packet_repo)
+    (packet_repo / "docs" / "canonical" / "workflow_spec.md").parent.mkdir(parents=True, exist_ok=True)
+    (packet_repo / "docs" / "canonical" / "workflow_spec.md").write_text(
+        "line1\nline2\nline3\n", encoding="utf-8"
+    )
+    create_packet_directory(packet_repo, phase=4, task_num=5)
+
+    runner = CliRunner()
+    result = runner.invoke(
+        main, ["--repo", str(packet_repo), "context", "build", "--id", "TASK-0001"]
+    )
+    assert result.exit_code == 0, result.output
+    assert "total_sources" in result.output
+    assert "total_lines" in result.output
+    assert "packet_sources" in result.output
+    assert "graph_traced" in result.output
+    assert "glob_only" in result.output
+    assert "[packet" in result.output
+    assert "[canonical" in result.output
+
+
+def test_context_build_stats_in_json_output(packet_repo):
+    _base_manifest(packet_repo)
+    (packet_repo / "docs" / "canonical" / "workflow_spec.md").parent.mkdir(parents=True, exist_ok=True)
+    (packet_repo / "docs" / "canonical" / "workflow_spec.md").write_text(
+        "line1\nline2\n", encoding="utf-8"
+    )
+    create_packet_directory(packet_repo, phase=4, task_num=5)
+
+    runner = CliRunner()
+    result = runner.invoke(
+        main,
+        ["--repo", str(packet_repo), "--format", "json", "context", "build", "--id", "TASK-0001"],
+    )
+    assert result.exit_code == 0, result.output
+    data = json.loads(result.output)
+    stats = data["context_stats"]
+    assert stats["total_sources"] >= 1
+    assert stats["total_lines"] >= 0
+    assert "graph_traced_sources" in stats
+    assert "glob_only_sources" in stats
+    assert "packet_sources" in stats
+    assert "canonical_sources" in stats
+    assert "per_file" in stats
+    assert all("path" in f and "lines" in f and "selection_method" in f for f in stats["per_file"])
+
+
+def test_context_build_stats_line_counts_are_nonnegative(packet_repo):
+    _base_manifest(packet_repo)
+    (packet_repo / "docs" / "canonical" / "workflow_spec.md").parent.mkdir(parents=True, exist_ok=True)
+    (packet_repo / "docs" / "canonical" / "workflow_spec.md").write_text(
+        "\n".join(f"line {i}" for i in range(10)), encoding="utf-8"
+    )
+    create_packet_directory(packet_repo, phase=4, task_num=5)
+
+    runner = CliRunner()
+    result = runner.invoke(
+        main,
+        ["--repo", str(packet_repo), "--format", "json", "context", "build", "--id", "TASK-0001"],
+    )
+    assert result.exit_code == 0, result.output
+    data = json.loads(result.output)
+    stats = data["context_stats"]
+    assert all(f["lines"] >= 0 for f in stats["per_file"])
+    assert stats["total_lines"] == sum(f["lines"] for f in stats["per_file"])
+
+
 def test_context_build_unknown_task_exits_two(packet_repo):
     _write_manifest(
         packet_repo,

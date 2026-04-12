@@ -1,0 +1,22 @@
+version: 1
+
+# Workflow loop execution mode:
+# - supervised: propose every step and require operator approval before each invocation
+# - gated: run automatically and stop at review/close gates (default)
+# - autonomous: minimal stops; only pauses on failures/escalations
+#   NOTE: autonomous mode is unverified automation. It does not replace review/verification.
+#   Assay (FR-005) is the future independent verification layer.
+supervision_level: gated
+
+agents:
+  executor:
+    shortcut: codex
+    model: gpt-5.4
+
+  reviewer:
+    shortcut: codex
+    model: gpt-5.4
+
+  closer:
+    shortcut: codex
+    model: gpt-5.4

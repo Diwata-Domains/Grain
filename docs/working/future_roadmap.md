@@ -88,8 +88,8 @@ If an item is actively being executed, the working docs own the operational stat
 
 ### FR-002 — Spreadsheet Adapter (Excel Integration)
 
-* **Status:** candidate
-* **Suggested Target:** v2
+* **Status:** promoted — slotted as Phase 14 (v0.1.0 scope, alongside docs_adapter and PDF support)
+* **Suggested Target:** v0.1.0
 * **Why it matters:**
 
   * enables structured spreadsheet/model workflows
@@ -166,8 +166,8 @@ If an item is actively being executed, the working docs own the operational stat
 
 ### FR-004b — Grain Distribution and Installation Paths
 
-* **Status:** planned — slotted as Phase 11 (after Phase 10 close)
-* **Suggested Target:** v2
+* **Status:** graduated — delivered through Phase 11 (closed 2026-04-11); Homebrew path (P11-T05) deferred
+* **Suggested Target:** v0.1.0
 * **Why it matters:**
 
   * future users need a simple install path before Grain can be adopted broadly
@@ -542,8 +542,8 @@ If an item is actively being executed, the working docs own the operational stat
 
 ### FR-013 — Existing Project Adoption (Repo Scan and Onboard)
 
-* **Status:** planned
-* **Suggested Target:** v2
+* **Status:** promoted — slotted as Phase 13 (v0.1.0 scope, after Phase 12 close)
+* **Suggested Target:** v0.1.0
 * **Why it matters:**
 
   * most real projects already exist — Forge currently has no adoption path for them

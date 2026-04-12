@@ -7,12 +7,36 @@ and bundle assembly.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field  # noqa: F401 (field used by ContextBundle)
 from pathlib import Path
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from grain.domain.documents import DocumentRecord, DocumentRegistry
+
+@dataclass
+class SourceStats:
+    """Line count and selection metadata for one source file."""
+
+    path: str
+    lines: int
+    selection_method: str  # packet | graph_traced | glob_only | canonical | working
+    graph_depth: int  # hops from packet files via graph; -1 when not applicable
+
+
+@dataclass
+class ContextStats:
+    """Aggregate statistics for one context bundle build."""
+
+    total_sources: int
+    total_lines: int
+    packet_sources: int
+    graph_traced_sources: int
+    glob_only_sources: int
+    canonical_sources: int
+    working_sources: int
+    per_file: list[SourceStats]
+
 
 PACKET_FILENAMES: tuple[str, ...] = (
     "task.md",

@@ -4,6 +4,8 @@ import json
 import click
 
 from grain.adapters.filesystem import resolve_repo_root
+from grain.domain.errors import UsageError
+from grain.services.workflow_loop_service import run_workflow_loop
 from grain.services.workflow_service import evaluate_workflow_state, evaluation_to_dict
 from grain.services.workflow_run_service import run_workflow_step
 
@@ -110,3 +112,77 @@ def workflow_run(ctx):
         click.echo(f"  blocking_reasons  {len(payload.get('blocking_reasons', []))}")
         for reason in payload.get("blocking_reasons", []):
             click.echo(f"    - {reason}")
+
+
+@workflow_group.command("loop")
+@click.option(
+    "--steps",
+    type=click.IntRange(min=1),
+    default=None,
+    help="Maximum number of loop steps to execute before stopping.",
+)
+@click.option(
+    "--supervision-level",
+    "supervision_level",
+    type=click.Choice(["supervised", "gated", "autonomous"]),
+    default=None,
+    help="Override supervision level from docs/runtime/workflow_loop.yaml.",
+)
+@click.option(
+    "--dry-run",
+    is_flag=True,
+    default=False,
+    show_default=True,
+    help="Print planned loop action(s) without invoking stage commands or mutating state.",
+)
+@click.pass_context
+def workflow_loop(ctx, steps, supervision_level, dry_run):
+    """Run repeated workflow steps until a stop condition is reached."""
+    repo = ctx.obj.get("repo") if ctx.obj else None
+    fmt = ctx.obj.get("fmt", "text") if ctx.obj else "text"
+    root = resolve_repo_root(repo)
+
+    result, payload = run_workflow_loop(
+        root,
+        steps=steps,
+        supervision_level_override=supervision_level,
+        dry_run=dry_run,
+    )
+
+    if payload is None:
+        if fmt == "json":
+            click.echo(json.dumps(dataclasses.asdict(result), indent=2))
+        else:
+            click.echo("workflow loop: failed")
+            for err in result.errors:
+                click.echo(f"  error     {err}", err=True)
+        raise UsageError("workflow loop execution failed")
+
+    if fmt == "json":
+        data = dataclasses.asdict(result)
+        data["workflow_loop"] = payload
+        click.echo(json.dumps(data, indent=2))
+        return
+
+    click.echo("workflow loop: ok")
+    click.echo(f"  supervision_level  {payload.get('supervision_level', '')}")
+    click.echo(f"  steps_requested    {payload.get('steps_requested', 0)}")
+    click.echo(f"  steps_completed    {payload.get('steps_completed', 0)}")
+    click.echo(f"  stop_reason        {payload.get('stop_reason', '')}")
+    click.echo(f"  active_phase       {payload.get('active_phase', '')}")
+    click.echo(f"  active_task_id     {payload.get('active_task_id') or 'none'}")
+    if payload.get("recommended_prompt"):
+        click.echo(f"  recommended_prompt  {payload['recommended_prompt']}")
+    click.echo(f"  blocking_reasons   {len(payload.get('blocking_reasons', []))}")
+    for reason in payload.get("blocking_reasons", []):
+        click.echo(f"    - {reason}")
+
+    for step in payload.get("steps", []):
+        click.echo(
+            (
+                "  step[{index}] action={action} stage={stage} exit={exit_code} "
+                "changed={changed_state} dry_run={dry_run} duration_ms={duration_ms}"
+            ).format(
+                **step
+            )
+        )

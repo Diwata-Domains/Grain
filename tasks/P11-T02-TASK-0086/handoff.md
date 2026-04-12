@@ -8,11 +8,12 @@ Phase 11 publish-workflow and release-process tooling are implemented and ready 
 ### Packet Identity
 - **Task ID:** TASK-0086
 - **Phase:** Phase 11 — Distribution and Global Install
-- **Status:** review
+- **Status:** done
 
 ### Outcome
 - **Review Readiness:** ready
-- **Recommended Next Status:** review
+- **Review Decision:** ready
+- **Recommended Next Status:** done
 - **Short Summary:** Added CI publish workflow (TestPyPI/PyPI) and semver bump script for release preparation.
 
 ## What Was Built

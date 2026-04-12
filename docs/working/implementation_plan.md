@@ -437,24 +437,28 @@ Add deterministic structural intelligence: tree-sitter entity extraction, a JSON
 
 ---
 
-## Phase 11 — Distribution and Global Install
+## Phase 11 — Distribution and Global Install ✓ CLOSED (T05 deferred)
 
 ### Objective
 Make Grain installable globally by anyone. This is the public usability gate.
 
 ### Major Deliverables
-- Finalized `pyproject.toml` packaging metadata (classifiers, license, homepage, keywords)
-- PyPI publish workflow (`pip install grain` works from PyPI)
-- `uv tool install grain` verified and documented
-- Install verification and troubleshooting docs
-- Homebrew formula for macOS (`brew install grain`)
+- Finalized `pyproject.toml` packaging metadata (classifiers, license, homepage, keywords) ✓
+- PyPI publish workflow (`pip install grain` from PyPI, GitHub Actions OIDC publish) ✓
+- `uv tool install grain` verified and documented ✓
+- Install verification and troubleshooting docs ✓
+- Homebrew formula for macOS — deferred (P11-T05 blocked; resume when tap/release flow prioritized)
 
 ### Notes
-- Seeded — not yet started. Depends on Phase 10 close.
+- Phase 11 complete: 4/5 tasks done (T05 Homebrew deferred by operator)
+- 577/577 tests passing at phase close (+2 new tests from Phase 10 close)
+- Primary install paths active: `pip install grain`, `uv tool install grain`
+- Homebrew path (P11-T05) deferred — no blocking external infrastructure available in-repo at phase time
+- Phase closed 2026-04-11
 - Roadmap reference: FR-004b
 
 ### Dependencies
-- requires Phase 10 close (stable CLI surface, no further breaking changes expected)
+- requires Phase 10 close (stable CLI surface, no further breaking changes expected) ✓
 
 ---
 
@@ -464,20 +468,77 @@ Make Grain installable globally by anyone. This is the public usability gate.
 Eliminate manual conversation handoffs by automating the execute→review→close cycle. Allow per-stage configuration of which external agent and model to use.
 
 ### Major Deliverables
-- Per-stage agent/model config (`workflow_loop.yaml` + CLI flag overrides)
-- `grain workflow loop` command — drives full cycle using Phase 8 runner primitives, stops cleanly at human-decision gates
-- `--dry-run` mode, max step limit, structured per-step logging
-- Loop safety guardrails and documentation (explicitly noting this is unverified automation — Assay is the future verification layer)
+- Per-stage agent/model config (`workflow_loop.yaml` + CLI flag overrides); named shortcuts (`claude`, `codex`) and raw `command` mode
+- Supervision level config: `supervised` (approve each action), `gated` (stop at review/close gates — default), `autonomous` (minimal stops, escalation-only)
+- `grain workflow loop` command — drives full execute→review→close cycle, behavior varies by supervision level
+- `--dry-run` mode, `--steps N` limit, structured per-step logging
+- Loop safety guardrails and documentation (explicitly noting `autonomous` is unverified automation — Assay is the future verification layer)
+- Orchestrator/loop integration — approved OrchestratorPlan feeds loop task ordering; `grain orchestrate accept` command; fallback to backlog order when no plan accepted
+
+### Architectural boundary
+- Loop handles *how to execute* workflow stages; orchestrator handles *what to build and how to structure it*
+- Loop uses `grain workflow next` as its state machine; orchestrator is a separate planning layer
+- These are decoupled — loop works fully without orchestrator; orchestrator integration (P12-T04) is additive
 
 ### Notes
-- Seeded — not yet started. Depends on Phase 11 close.
-- No new safety infrastructure required — Phase 8 workflow gates are the stop points
-- Named shortcuts (`claude`, `codex`) expand to known CLI invocation patterns; raw `command` field accepts any shell command for custom or third-party agents
-- Example config: executor=codex/o3, reviewer=claude, closer=claude — or any agent via `command: "/path/to/my-agent --prompt {prompt_path}"`
+- P12-T01 in progress (TASK-0090)
+- No new safety infrastructure required for gated/supervised modes — Phase 8 workflow gates are the stop points
+- v0.1.0 scope
 
 ### Dependencies
-- requires Phase 11 close (stable public install — loop is a user-facing feature)
+- requires Phase 11 close (stable public install — loop is a user-facing feature) ✓
 - requires Phase 8 workflow runner primitives ✓
+
+---
+
+## Phase 13 — Existing Project Adoption
+
+### Objective
+Give existing repos a first-class adoption path into Grain. Produce a usable draft canonical doc set in one agent-driven pass without overwriting anything.
+
+### Major Deliverables
+- `prompts/workflow.onboard.existing.md` — agent-driven prompt that scans repo structure, asks targeted follow-up questions, generates draft canonical docs
+- `grain onboard` CLI command — scaffolds Grain directory structure into an existing repo additively (no overwrites)
+- Auto-generated draft `product_scope.md`, `architecture.md`, and initial backlog from codebase signals
+- Auto-generated `open_questions.md` entries for every gap or undocumented decision found
+- Auto-generated `change_proposals.md` stubs for structural issues or canonical conflicts identified
+- All generated docs marked `draft` — human review required before treating as canonical
+
+### Notes
+- Seeded — entry criteria met (Phase 7 stable, new-project onboarding proven)
+- Scan is additive only — never overwrites existing files
+- Frontend codebases and existing backend projects are primary target use cases
+- v0.1.0 scope
+- Roadmap reference: FR-013
+
+### Dependencies
+- requires Phase 12 close
+- requires stable Phase 7 onboarding surfaces ✓
+
+---
+
+## Phase 14 — Document and Spreadsheet Adapters
+
+### Objective
+Make Grain context-aware for Excel, Word, and PDF files. Extract readable content from binary and formatted document types into the existing context assembly pipeline so agents can work with these files the same way they work with code and markdown.
+
+### Major Deliverables
+- `spreadsheet_adapter` — full profile in `adapter_profiles.md`; reads `.xlsx`, `.xls`, `.csv`; extracts sheet names, headers, cell data, and formula summaries via `openpyxl`
+- `docs_adapter` — full profile in `adapter_profiles.md`; reads `.docx` and `.md`; extracts headings, paragraphs, and table content via `python-docx`
+- PDF document reader — reads `.pdf`; extracts text content via `pdfplumber` (text-first PDFs) with graceful degradation for layout-heavy files
+- Context assembly integration — all three feed extracted text into the existing context pipeline; file pattern rules wired into adapter profiles
+- New dependencies declared in `pyproject.toml`: `openpyxl`, `python-docx`, `pdfplumber`
+- Tests covering extraction, context selection, and graceful degradation for unsupported layouts
+
+### Notes
+- Extraction is read-only — adapters never modify source files
+- PDF extraction is best-effort; text-first PDFs work cleanly; layout-heavy PDFs may lose structure
+- All three document types are equally important operator use cases
+- v0.1.0 scope
+
+### Dependencies
+- requires Phase 13 close
+- requires stable Phase 4/10 context assembly service ✓
 
 ---
 

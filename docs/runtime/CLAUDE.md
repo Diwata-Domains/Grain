@@ -6,7 +6,7 @@ This repository uses a structured workflow for AI-assisted software development.
 
 Claude should operate as a disciplined execution and reasoning agent inside that workflow, not outside it.
 
-The project is `Forge`, a CLI-first workflow orchestrator for AI-assisted building.
+The project is `Grain`, a CLI-first workflow orchestrator for AI-assisted building.
 
 ---
 
@@ -25,6 +25,8 @@ At the start of a session, read in this order:
 9. relevant working docs only if needed
 
 Do not begin implementation before identifying the active task boundary.
+
+---
 
 ---
 

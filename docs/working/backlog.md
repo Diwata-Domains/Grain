@@ -285,9 +285,9 @@ Default status for new backlog items in this file: `draft`
 
 ---
 
-## 14. Phase 11 — Distribution and Global Install
+## 14. Phase 11 — Distribution and Global Install ✓ CLOSED (T05 deferred)
 
-> **Status:** seeded — Phase 10 closed; planning-ready. FR-004b.
+> **Status:** closed — 4/5 tasks done; T05 (Homebrew) deferred by operator. 577/577 tests passing. Phase closed 2026-04-11. FR-004b.
 
 ### P11 Planning Notes
 - Scope: PyPI publishing, `uv tool install` compatibility, Homebrew formula (macOS), versioned install/upgrade docs, install verification
@@ -304,7 +304,7 @@ Default status for new backlog items in this file: `draft`
 - **Ready:** after Phase 10 close
 
 ### P11-T02 — PyPI publish workflow
-- **Status:** review
+- **Status:** done
 - **Description:** Set up a release workflow for publishing to PyPI. Define a version bump process, build and publish steps (`python -m build`, `twine upload`), and a CI-compatible publish path. Verify `pip install grain` installs the correct binary and package from PyPI.
 - **Files:** `pyproject.toml`, build/publish tooling config
 - **Model:** open_model
@@ -312,7 +312,7 @@ Default status for new backlog items in this file: `draft`
 - **Ready:** after P11-T01
 
 ### P11-T03 — `uv tool install` compatibility and documentation
-- **Status:** ready
+- **Status:** done
 - **Description:** Verify `uv tool install grain` works correctly and installs the `grain` CLI into the global tool path. Document the recommended install method. Test the installed binary resolves `grain --help` without a virtual environment.
 - **Files:** install docs, `README.md`
 - **Model:** open_model
@@ -320,7 +320,7 @@ Default status for new backlog items in this file: `draft`
 - **Ready:** after P11-T02
 
 ### P11-T04 — Install verification and troubleshooting docs
-- **Status:** draft
+- **Status:** done
 - **Description:** Write installation verification instructions (`grain --version`, `grain init --help`, expected output). Write a short troubleshooting guide covering PATH issues, Python version mismatches, and venv conflicts. Cover macOS, Linux, and Windows basics.
 - **Files:** install/setup docs
 - **Model:** open_model
@@ -328,70 +328,106 @@ Default status for new backlog items in this file: `draft`
 - **Ready:** after P11-T03
 
 ### P11-T05 — Homebrew formula (macOS)
-- **Status:** draft
+- **Status:** blocked
 - **Description:** Create a Homebrew formula for `grain` targeting macOS. Formula should install the `grain` CLI via `brew install grain`. Validate formula locally with `brew install --build-from-source`. Document alongside PyPI/uv as a first-class install path.
 - **Files:** Homebrew formula (tap or contrib)
 - **Model:** open_model
 - **Dependencies:** P11-T02
 - **Ready:** after P11-T02
+- **Note:** Deferred by operator on 2026-04-11. Continue with `pip install grain` and `uv tool install grain` as supported install paths for now.
 
 ---
 
 ## 15. Phase 12 — Automated Workflow Loop
 
-> **Status:** seeded — not yet started. Depends on Phase 11 close.
+> **Status:** seeded — Phase 11 closed; planning-ready. Depends on Phase 11 close (met).
 
 ### P12 Planning Notes
-- Scope: `grain workflow loop` command that drives the full execute→review→close cycle automatically using Phase 8 workflow runner primitives. Per-stage agent and model configuration. No Assay required — existing workflow gates provide safety. Assay (FR-005) will add independent verification on top later.
+- Scope: `grain workflow loop` command that drives the full execute→review→close cycle automatically using Phase 8 workflow runner primitives. Per-stage agent and model configuration. Configurable supervision level (supervised/gated/autonomous). Orchestrator/loop integration to feed approved OrchestratorPlans into task ordering. No Assay required — existing workflow gates provide safety. Assay (FR-005) will add independent verification on top later.
 - Key design principle: the loop is unverified automation — it trusts the agents at each stage. The gates (`grain workflow run` stop points) are the safety layer, not an independent checker. Document this explicitly.
-- Roadmap reference: new item — extends Phase 8 workflow runner primitives
+- Architectural boundary: the loop handles *how to execute* workflow stages; the orchestrator handles *what to build and how to structure it*. They are separate layers. The orchestrator feeds approved plans into the loop's task ordering (P12-T04); the loop uses `grain workflow next` as its state machine.
+- Roadmap reference: new item — extends Phase 8 workflow runner primitives and Phase 9 orchestration service
 
 ### P12-T01 — Per-stage agent and model configuration
-- **Status:** draft
-- **Description:** Define a workflow loop config surface specifying which agent to use per stage (executor, reviewer, closer). Two config modes: (1) named agent shortcut (`claude`, `codex`) with optional `model` field — Grain expands these to their known CLI invocation patterns; (2) raw `command` string — any shell command that accepts a prompt and returns an exit code, enabling custom or third-party agents and scripts with no changes to Grain. Support both a persistent config file (`docs/runtime/workflow_loop.yaml`) and CLI flag overrides. The loop driver treats all agents identically — it invokes the resolved command, passes the prompt path, and waits for exit. Named shortcuts are convenience only; the raw command is the primitive. Token usage reporting: define an optional structured output contract — if an agent emits a JSON block `{"tokens_used": N, "model": "...", "stage": "...", "started_at": "ISO8601", "completed_at": "ISO8601"}` at the end of its run, the loop captures and records it. `started_at` and `completed_at` are always recorded by the loop driver itself (not the agent) so timing data is always available regardless of whether the agent reports tokens. Token fields remain opt-in — if absent, the loop continues normally with no token data for that stage. Named shortcut wrappers (`claude`, `codex`) are responsible for extracting token data from their native output format where possible and emitting the contract shape — if native output doesn't expose token data cleanly, the wrapper emits nothing. Timestamps enable time-of-day correlation analysis against token counts and duration over time.
-- **Files:** `docs/runtime/workflow_loop.yaml` (new), `src/grain/cli/workflow.py`, `src/grain/services/workflow_run_service.py`, `tests/`
-- **Model:** open_model
+- **Status:** done
+- **Description:** Define the workflow loop configuration surface. Agent config: two modes — (1) named shortcut (`claude`, `codex`) with optional `model` field, Grain resolves to known CLI invocation pattern; (2) raw `command` string, any shell command accepting a prompt path and returning an exit code. Supervision level config: `supervised` (proposes each action, waits for explicit human approval before executing), `gated` (runs automatically, stops at review/close gates — default), `autonomous` (minimal stops, only pauses on escalation conditions or explicit failures). Both persistent config (`docs/runtime/workflow_loop.yaml`) and CLI flag overrides supported. Token usage reporting: optional structured output contract — agent may emit `{"tokens_used": N, "model": "...", "stage": "...", "started_at": "ISO8601", "completed_at": "ISO8601"}`; loop captures if present, continues normally if absent. Loop driver always records `started_at`/`completed_at` regardless of agent token reporting.
+- **Files:** `docs/runtime/workflow_loop.yaml` (new), `src/grain/domain/workflow_loop.py` (new), `src/grain/services/workflow_loop_config_service.py` (new), `tests/`
+- **Model:** frontier_model
 - **Dependencies:** Phase 11 close
 - **Ready:** after Phase 11 close
 
 ### P12-T02 — `grain workflow loop` command
-- **Status:** draft
-- **Description:** Implement `grain workflow loop` — reads current workflow state via `grain workflow next`, invokes the configured agent CLI with the appropriate stage prompt, waits for completion, then repeats until a stop condition is reached (phase close, review gate requiring human input, or explicit `--steps N` limit). Emits structured progress output per step. Stops cleanly at any gate that requires human decision.
-- **Files:** `src/grain/cli/workflow.py`, `src/grain/services/workflow_run_service.py`, `tests/`
+- **Status:** done
+- **Description:** Implement `grain workflow loop` — reads current workflow state via `grain workflow next`, resolves the configured agent and prompt for the current stage, invokes the agent CLI, waits for completion, then repeats until a stop condition is reached. Stop conditions vary by supervision level: `supervised` stops before every invocation for approval; `gated` stops at review/close gates; `autonomous` stops only on escalation or failure. Supports `--steps N` limit and structured per-step progress output.
+- **Files:** `src/grain/cli/workflow.py`, `src/grain/services/workflow_loop_service.py` (new), `tests/`
 - **Model:** frontier_model
 - **Dependencies:** P12-T01
 - **Ready:** after P12-T01
 
 ### P12-T03 — Loop safety guardrails and documentation
-- **Status:** draft
-- **Description:** Add explicit guardrails: max step limit to prevent runaway loops, clear logging of each agent invocation and result, a `--dry-run` mode that prints what would be invoked without executing. Document that the loop is unverified automation and that Assay (FR-005) is the future independent verification layer. Add integration tests for the stop-at-gate behavior.
-- **Files:** `src/grain/cli/workflow.py`, loop docs
+- **Status:** done
+- **Description:** Add explicit guardrails: max step limit to prevent runaway loops, clear per-step logging of agent invocation and result, `--dry-run` mode that prints what would be invoked without executing. Document supervision levels clearly — especially that `autonomous` is unverified automation and Assay (FR-005) is the future independent verification layer. Integration tests for stop-at-gate behavior across all three supervision levels.
+- **Files:** `src/grain/cli/workflow.py`, `src/grain/services/workflow_loop_service.py`, loop docs
 - **Model:** open_model
 - **Dependencies:** P12-T02
 - **Ready:** after P12-T02
 
+### P12-T04 — Orchestrator/loop integration
+- **Status:** ready
+- **Description:** Wire approved OrchestratorPlan artifacts into the loop's task ordering. When a plan exists in `docs/working/proposals/` with `accepted` status, the loop consults it for task sequence rather than raw backlog order. Adds `grain orchestrate accept --plan <id>` command to mark a plan as accepted. The loop falls back to backlog order when no accepted plan exists — no breaking change to existing loop behavior. This makes the orchestrator the strategic layer feeding the loop's execution layer without coupling them tightly.
+- **Files:** `src/grain/cli/orchestrate.py`, `src/grain/services/orchestration_service.py`, `src/grain/services/workflow_loop_service.py`, `tests/`
+- **Model:** frontier_model
+- **Dependencies:** P12-T03
+- **Ready:** after P12-T03
+
 ---
 
-## 16. Phase 13 — Semantic Enrichment Layer (seeded, not yet planned)
+## 16. Phase 13 — Existing Project Adoption (seeded, planning-ready)
 
-> **Status:** seeded — not yet started. Depends on Phase 12 close and an embedding infrastructure decision. FR-015 Layer 2.
+> **Status:** seeded — Phase 12 close dependency; FR-013. Entry criteria met (Phase 7 new-project onboarding stable and closed). v0.1.0 scope.
 
 ### P13 Planning Notes
-- Scope: embeddings for semantic similarity, similar-task detection, doc-to-task matching, duplicate/overlap detection. All outputs labeled as inferred — not authoritative.
-- Key decision gate: embedding provider choice (local model, external API, or hybrid) must be resolved as a canonical change proposal before P13 tasks are written. Do not seed task stubs until this decision is made.
-- Depends on: stable Phase 12 close and Phase 10 knowledge graph (graph provides the structural backbone; embeddings add semantic enrichment on top)
+- Scope: agent-driven `workflow.onboard.existing.md` prompt, `grain onboard` CLI command, draft canonical doc generation from existing codebase scan, auto-generated open_questions and change_proposals stubs. All generated docs marked `draft` — human review required before treating as canonical.
+- Key design principle: scan must be additive — never overwrite existing files. Goal is a usable first draft in one pass, not a perfect canonical set.
+- Roadmap reference: FR-013
+- Depends on: Phase 12 close, stable Phase 7 new-project onboarding surfaces
 
 ---
 
-## 17. Phase 14 — Ranking and Decision Layer (seeded, not yet planned)
+## 17. Phase 14 — Document and Spreadsheet Adapters (seeded, not yet planned)
 
-> **Status:** seeded — not yet started. Depends on Phase 13 close. FR-015 Layer 7.
+> **Status:** seeded — not yet started. Depends on Phase 13 close. v0.1.0 scope. FR-002 (spreadsheet), FR-001 docs_adapter.
 
 ### P14 Planning Notes
+- Scope: implement `spreadsheet_adapter` (Excel .xlsx/.xls, CSV), `docs_adapter` (Word .docx, Markdown), and PDF document reading (.pdf). All three extract text content into the context assembly pipeline. Adds dependencies: `openpyxl` (Excel), `python-docx` (docx), `pdfplumber` or `pymupdf` (PDF).
+- Key design principle: adapters extract readable text and structure from binary/formatted files — they do not modify those files. Output is text context fed into existing context assembly, same as code and markdown files.
+- Adapter profiles for `spreadsheet_adapter` and `docs_adapter` must be fully defined in `docs/runtime/adapter_profiles.md`.
+- PDF extraction is best-effort — layout-heavy PDFs may lose structure; text-first PDFs work cleanly.
+- All three are equally important use cases for the operator.
+- Depends on: stable Phase 13 close and existing context assembly service (Phase 4/10)
+
+---
+
+## 18. Phase 15 — Semantic Enrichment Layer (seeded, not yet planned)
+
+> **Status:** seeded — not yet started. Depends on Phase 14 close and an embedding infrastructure decision. FR-015 Layer 2. v0.2.0 scope.
+
+### P15 Planning Notes
+- Scope: embeddings for semantic similarity, similar-task detection, doc-to-task matching, duplicate/overlap detection. All outputs labeled as inferred — not authoritative.
+- Key decision gate: embedding provider choice (local model, external API, or hybrid) must be resolved as a canonical change proposal before P15 tasks are written. Do not seed task stubs until this decision is made.
+- Depends on: stable Phase 14 close and Phase 10 knowledge graph (graph provides the structural backbone; embeddings add semantic enrichment on top)
+
+---
+
+## 19. Phase 16 — Ranking and Decision Layer (seeded, not yet planned)
+
+> **Status:** seeded — not yet started. Depends on Phase 15 close. FR-015 Layer 7. v0.2.0 scope.
+
+### P16 Planning Notes
 - Scope: deterministic scoring across graph distance, semantic similarity, authority level, packet-local priority, and telemetry signals. Applied to context selection, next-task suggestion, and impacted-file identification.
 - Key principle: all scoring must be deterministic and inspectable — no opaque ranking decisions.
-- Depends on: stable Phase 13 semantic layer and Phase 10 graph layer.
-- Note: P14 is the layer that makes the Advisory/Intelligence Layer significantly more capable without breaking Grain's determinism model.
+- Depends on: stable Phase 15 semantic layer and Phase 10 graph layer.
+- Note: P16 is the layer that makes the Advisory/Intelligence Layer significantly more capable without breaking Grain's determinism model.
 
 ---
 
