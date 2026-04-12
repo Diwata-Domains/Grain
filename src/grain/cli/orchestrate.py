@@ -146,6 +146,48 @@ def orchestrate_plan(ctx, scope_summary, adapter_ids):
         click.echo(f"    - {candidate_id}")
 
 
+@orchestrate_group.command("accept")
+@click.option("--plan", "plan_id", required=True, help="Orchestrator plan ID to accept (e.g. OP-ABC12345).")
+@click.pass_context
+def orchestrate_accept(ctx, plan_id):
+    """Mark a plan proposal as accepted for loop ordering integration."""
+    repo = ctx.obj.get("repo") if ctx.obj else None
+    fmt = ctx.obj.get("fmt", "text") if ctx.obj else "text"
+    root = resolve_repo_root(repo)
+
+    proposal_path = root / _PROPOSALS_DIR / f"{plan_id}.json"
+    if not proposal_path.exists():
+        raise click.ClickException(f"plan proposal not found: {proposal_path}")
+
+    try:
+        payload = json.loads(proposal_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        raise click.ClickException(f"invalid plan JSON: {exc}") from exc
+
+    payload["status"] = "accepted"
+    proposal_path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+
+    if fmt == "json":
+        click.echo(
+            json.dumps(
+                {
+                    "ok": True,
+                    "command": "orchestrate accept",
+                    "plan_id": plan_id,
+                    "proposal_path": str(proposal_path.relative_to(root)),
+                    "status": "accepted",
+                },
+                indent=2,
+            )
+        )
+        return
+
+    click.echo("orchestrate accept: ok")
+    click.echo(f"  plan_id           {plan_id}")
+    click.echo(f"  proposal_path     {proposal_path.relative_to(root)}")
+    click.echo("  status            accepted")
+
+
 def _is_phase_scope(scope_summary: str) -> bool:
     lowered = scope_summary.lower()
     return any(token in lowered for token in ("phase", "replan", "reshape"))

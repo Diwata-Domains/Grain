@@ -150,3 +150,42 @@ def test_orchestrate_plan_json_output_reports_artifact(tmp_path):
     assert data["plan_mode"] == "phase"
     assert data["proposal_path"].endswith(".json")
     assert data["orchestrator_plan"]["status"] == "draft"
+
+
+def test_orchestrate_accept_marks_plan_as_accepted(tmp_path):
+    _write_adapter_profiles(tmp_path)
+    proposals_dir = tmp_path / "docs" / "working" / "proposals"
+    proposals_dir.mkdir(parents=True, exist_ok=True)
+    proposal = proposals_dir / "OP-TEST1234.json"
+    proposal.write_text(
+        json.dumps(
+            {
+                "plan_id": "OP-TEST1234",
+                "status": "draft",
+                "packet_candidates": [],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    runner = CliRunner()
+    result = runner.invoke(
+        main,
+        ["--repo", str(tmp_path), "orchestrate", "accept", "--plan", "OP-TEST1234"],
+    )
+
+    assert result.exit_code == 0, result.output
+    assert "orchestrate accept: ok" in result.output
+    payload = json.loads(proposal.read_text(encoding="utf-8"))
+    assert payload["status"] == "accepted"
+
+
+def test_orchestrate_accept_fails_for_missing_plan(tmp_path):
+    runner = CliRunner()
+    result = runner.invoke(
+        main,
+        ["--repo", str(tmp_path), "orchestrate", "accept", "--plan", "OP-MISSING"],
+    )
+
+    assert result.exit_code == 1
+    assert "plan proposal not found" in result.output

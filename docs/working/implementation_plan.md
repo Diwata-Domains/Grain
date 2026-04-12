@@ -481,8 +481,10 @@ Eliminate manual conversation handoffs by automating the execute→review→clos
 - These are decoupled — loop works fully without orchestrator; orchestrator integration (P12-T04) is additive
 
 ### Notes
-- P12-T01 in progress (TASK-0090)
-- No new safety infrastructure required for gated/supervised modes — Phase 8 workflow gates are the stop points
+- ✓ CLOSED. All 4 tasks done (TASK-0090 through TASK-0093). 595 tests passing at phase close (+18 from Phase 11 close).
+- `grain workflow loop` implemented with supervised/gated/autonomous modes, --dry-run, 25-step cap, per-step logging
+- `grain orchestrate accept --plan <id>` added; loop consults accepted plan for conflicting-ready task ordering
+- No new safety infrastructure required — Phase 8 workflow gates are the stop points
 - v0.1.0 scope
 
 ### Dependencies

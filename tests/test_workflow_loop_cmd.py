@@ -189,3 +189,42 @@ def test_workflow_loop_dry_run_previews_without_state_mutation(tmp_path: Path):
     assert "stop_reason        dry_run_preview" in result.output
     assert "dry_run=True" in result.output
     assert before == after
+
+
+def test_workflow_loop_uses_accepted_plan_order_for_conflicting_ready_tasks(tmp_path: Path):
+    _base_repo(tmp_path)
+    _write_loop_config(tmp_path, supervision="gated", command="true")
+    _packet(tmp_path, "P12-T03", "TASK-0092", "ready")
+    _packet(tmp_path, "P12-T04", "TASK-0093", "ready")
+    _write(
+        tmp_path / "docs" / "working" / "backlog.md",
+        (
+            "## 15. Phase 12 — Automated Workflow Loop\n\n"
+            "### P12-T03 — Example A\n"
+            "- **Status:** ready\n\n"
+            "### P12-T04 — Example B\n"
+            "- **Status:** ready\n"
+        ),
+    )
+    _write(
+        tmp_path / "docs" / "working" / "proposals" / "OP-TEST1234.json",
+        json.dumps(
+            {
+                "plan_id": "OP-TEST1234",
+                "status": "accepted",
+                "packet_candidates": [
+                    {"candidate_id": "C-001", "title": "P12-T04 first"},
+                    {"candidate_id": "C-002", "title": "P12-T03 second"},
+                ],
+            }
+        ),
+    )
+
+    runner = CliRunner()
+    result = runner.invoke(main, ["--repo", str(tmp_path), "workflow", "loop", "--steps", "1"])
+
+    assert result.exit_code == 0, result.output
+    assert "stop_reason        steps_limit_reached" in result.output
+    current_task = (tmp_path / "docs" / "working" / "current_task.md").read_text(encoding="utf-8")
+    assert "Task ID: TASK-0093" in current_task
+    assert "tasks/P12-T04-TASK-0093/" in current_task

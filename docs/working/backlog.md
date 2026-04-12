@@ -338,9 +338,9 @@ Default status for new backlog items in this file: `draft`
 
 ---
 
-## 15. Phase 12 — Automated Workflow Loop
+## 15. Phase 12 — Automated Workflow Loop ✓ CLOSED
 
-> **Status:** seeded — Phase 11 closed; planning-ready. Depends on Phase 11 close (met).
+> **Status:** CLOSED. All 4 tasks done. 595/595 tests passing. Phase closed 2026-04-10. Extends Phase 8 workflow runner primitives and Phase 9 orchestration service.
 
 ### P12 Planning Notes
 - Scope: `grain workflow loop` command that drives the full execute→review→close cycle automatically using Phase 8 workflow runner primitives. Per-stage agent and model configuration. Configurable supervision level (supervised/gated/autonomous). Orchestrator/loop integration to feed approved OrchestratorPlans into task ordering. No Assay required — existing workflow gates provide safety. Assay (FR-005) will add independent verification on top later.
@@ -373,7 +373,7 @@ Default status for new backlog items in this file: `draft`
 - **Ready:** after P12-T02
 
 ### P12-T04 — Orchestrator/loop integration
-- **Status:** ready
+- **Status:** done
 - **Description:** Wire approved OrchestratorPlan artifacts into the loop's task ordering. When a plan exists in `docs/working/proposals/` with `accepted` status, the loop consults it for task sequence rather than raw backlog order. Adds `grain orchestrate accept --plan <id>` command to mark a plan as accepted. The loop falls back to backlog order when no accepted plan exists — no breaking change to existing loop behavior. This makes the orchestrator the strategic layer feeding the loop's execution layer without coupling them tightly.
 - **Files:** `src/grain/cli/orchestrate.py`, `src/grain/services/orchestration_service.py`, `src/grain/services/workflow_loop_service.py`, `tests/`
 - **Model:** frontier_model
@@ -382,9 +382,9 @@ Default status for new backlog items in this file: `draft`
 
 ---
 
-## 16. Phase 13 — Existing Project Adoption (seeded, planning-ready)
+## 16. Phase 13 — Existing Project Adoption (planning-ready)
 
-> **Status:** seeded — Phase 12 close dependency; FR-013. Entry criteria met (Phase 7 new-project onboarding stable and closed). v0.1.0 scope.
+> **Status:** planning-ready — Phase 12 closed; entry criteria met. FR-013. v0.1.0 scope.
 
 ### P13 Planning Notes
 - Scope: agent-driven `workflow.onboard.existing.md` prompt, `grain onboard` CLI command, draft canonical doc generation from existing codebase scan, auto-generated open_questions and change_proposals stubs. All generated docs marked `draft` — human review required before treating as canonical.

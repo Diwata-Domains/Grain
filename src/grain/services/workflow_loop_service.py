@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+import re
 import shlex
 import subprocess
 import time
@@ -14,6 +16,8 @@ from grain.services.workflow_run_service import run_workflow_step
 from grain.services.workflow_service import evaluate_workflow_state
 
 DEFAULT_MAX_LOOP_STEPS = 25
+_TASK_REF_RE = re.compile(r"(P\d+-T\d+)")
+_TASK_ID_RE = re.compile(r"TASK-\d{4,}")
 
 
 def run_workflow_loop(
@@ -53,6 +57,26 @@ def run_workflow_loop(
             return result, None
 
         if not evaluation.ok:
+            if evaluation.stop_reason == "conflicting_next_actions":
+                selected_ref = _select_task_ref_from_accepted_plan(root, evaluation)
+                if selected_ref:
+                    activate_result = _activate_task_ref(root, selected_ref)
+                    step_record: dict[str, Any] = {
+                        "index": len(progress) + 1,
+                        "action": "activate_task",
+                        "stage": "system",
+                        "prompt": "prompts/task.execute.md",
+                        "command": "accepted_plan.activate_task",
+                        "exit_code": 0 if activate_result.ok else 1,
+                        "changed_state": bool(activate_result.ok),
+                        "dry_run": False,
+                        "duration_ms": 0,
+                        "detail": f"selected by accepted plan: {selected_ref}",
+                    }
+                    progress.append(step_record)
+                    if activate_result.ok:
+                        continue
+
             return (
                 CommandResult(
                     ok=False,
@@ -358,6 +382,122 @@ def _state_signature(evaluation) -> tuple[Any, ...]:
         evaluation.active_task_id,
         tuple(evaluation.blocking_reasons),
     )
+
+
+def _select_task_ref_from_accepted_plan(root: Path, evaluation) -> str:
+    ready_refs = [task.task_ref for task in evaluation.candidate_tasks if task.status == "ready"]
+    if not ready_refs:
+        return ""
+
+    accepted_order = _accepted_plan_task_order(root)
+    for task_ref in accepted_order:
+        if task_ref in ready_refs:
+            return task_ref
+    return ""
+
+
+def _accepted_plan_task_order(root: Path) -> list[str]:
+    proposals_dir = root / "docs" / "working" / "proposals"
+    if not proposals_dir.exists():
+        return []
+
+    candidates: list[tuple[float, list[str]]] = []
+    for proposal in proposals_dir.glob("OP-*.json"):
+        try:
+            payload = json.loads(proposal.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            continue
+        if payload.get("status") != "accepted":
+            continue
+        order = _task_order_from_plan(payload)
+        if order:
+            candidates.append((proposal.stat().st_mtime, order))
+
+    if not candidates:
+        return []
+    candidates.sort(key=lambda item: item[0], reverse=True)
+    return candidates[0][1]
+
+
+def _task_order_from_plan(payload: dict[str, Any]) -> list[str]:
+    refs: list[str] = []
+    seen: set[str] = set()
+    packet_candidates = payload.get("packet_candidates")
+    if not isinstance(packet_candidates, list):
+        return refs
+
+    for item in packet_candidates:
+        if not isinstance(item, dict):
+            continue
+        ref = ""
+        task_ref = item.get("task_ref")
+        if isinstance(task_ref, str):
+            ref = task_ref.strip()
+        if not ref:
+            title = item.get("title")
+            if isinstance(title, str):
+                m = _TASK_REF_RE.search(title)
+                if m:
+                    ref = m.group(1)
+        if ref and ref not in seen:
+            seen.add(ref)
+            refs.append(ref)
+    return refs
+
+
+def _activate_task_ref(root: Path, task_ref: str) -> CommandResult:
+    packet_dir = _find_packet_dir_for_ref(root, task_ref)
+    if packet_dir is None:
+        return CommandResult(
+            ok=False,
+            command="workflow loop",
+            repo=str(root),
+            errors=[f"packet directory not found for task ref: {task_ref}"],
+        )
+
+    task_id = _read_task_id_from_packet(packet_dir) or task_ref
+    task_path = f"tasks/{packet_dir.name}/"
+    _write_current_task(root, task_id, task_path, "in_progress")
+    return CommandResult(
+        ok=True,
+        command="workflow loop",
+        repo=str(root),
+        files_updated=["docs/working/current_task.md"],
+    )
+
+
+def _find_packet_dir_for_ref(root: Path, task_ref: str) -> Path | None:
+    tasks_dir = root / "tasks"
+    if not tasks_dir.exists():
+        return None
+    prefix = task_ref + "-"
+    for candidate in tasks_dir.iterdir():
+        if candidate.is_dir() and candidate.name.startswith(prefix):
+            return candidate
+    return None
+
+
+def _read_task_id_from_packet(packet_dir: Path) -> str:
+    task_md = packet_dir / "task.md"
+    if not task_md.exists():
+        return ""
+    for line in task_md.read_text(encoding="utf-8").splitlines():
+        if "**ID:**" in line:
+            m = _TASK_ID_RE.search(line)
+            if m:
+                return m.group(0)
+    return ""
+
+
+def _write_current_task(root: Path, task_id: str, task_path: str, status: str) -> None:
+    current_task_path = root / "docs" / "working" / "current_task.md"
+    content = (
+        "# Current Task\n\n"
+        f"Task ID: {task_id}\n"
+        f"Task Path: {task_path}\n"
+        f"Status: {status}\n"
+    )
+    current_task_path.write_text(content, encoding="utf-8")
 
 
 def _payload(
