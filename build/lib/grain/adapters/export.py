@@ -3,6 +3,9 @@
 from pathlib import Path
 
 from grain.domain.context import ContextBundle
+from grain.services.docs_extractor import DocsExtractor
+from grain.services.pdf_extractor import PdfExtractor
+from grain.services.spreadsheet_extractor import SpreadsheetExtractor
 
 
 def render_context_markdown_export(root: Path, bundle: ContextBundle) -> str:
@@ -62,7 +65,7 @@ def render_context_markdown_export(root: Path, bundle: ContextBundle) -> str:
             continue
         lines.append("")
         lines.append("```md")
-        lines.append(source_path.read_text(encoding="utf-8"))
+        lines.append(_render_source_content(source_path))
         lines.append("```")
 
     return "\n".join(lines).strip() + "\n"
@@ -85,3 +88,17 @@ def write_context_markdown_export(
     content = render_context_markdown_export(root, bundle)
     resolved.write_text(content, encoding="utf-8")
     return resolved
+
+
+def _render_source_content(source_path: Path) -> str:
+    suffix = source_path.suffix.lower()
+    if suffix in {".csv", ".xls", ".xlsx"}:
+        return SpreadsheetExtractor().extract(source_path)
+    if suffix == ".docx":
+        return DocsExtractor().extract(source_path)
+    if suffix == ".pdf":
+        return PdfExtractor().extract(source_path)
+    try:
+        return source_path.read_text(encoding="utf-8")
+    except UnicodeDecodeError:
+        return f"[context_export: binary or non-utf8 source {source_path.name}]"

@@ -18,6 +18,7 @@ from .prompt import prompt_group
 from .orchestrate import orchestrate_group
 from .review import review_group
 from .workflow import workflow_group
+from .onboard import onboard_cmd
 from .error_handler import handle_error
 from grain.domain.errors import ForgeError
 
@@ -77,3 +78,4 @@ main.add_command(prompt_group)
 main.add_command(orchestrate_group)
 main.add_command(review_group)
 main.add_command(workflow_group)
+main.add_command(onboard_cmd)

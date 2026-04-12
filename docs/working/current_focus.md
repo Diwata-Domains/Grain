@@ -1,7 +1,7 @@
 # Current Focus
 
 ## Current Phase
-Phase 13 — Existing Project Adoption (planning-ready)
+v0.1.0 COMPLETE — Phase 15+ planning (Semantic Enrichment Layer, requires embedding infrastructure decision)
 
 ## V1 Status
 Complete. All 5 phases closed. 53 tasks done. 379 tests passing at v1 close.
@@ -27,9 +27,18 @@ CLOSED. 4/5 tasks done (T01-T04). 577/577 tests passing. T05 (Homebrew formula) 
 ## Phase 12 Status
 CLOSED. All 4 tasks done (T01-T04). 595/595 tests passing (+18 new tests from Phase 11 close). Delivered: per-stage agent/model config (`workflow_loop.yaml`), `grain workflow loop` command, supervised/gated/autonomous supervision levels, --dry-run mode, 25-step cap, per-step logging, `grain orchestrate accept --plan <id>`, accepted-plan loop ordering for conflicting ready tasks. Phase closed 2026-04-10.
 
+## Phase 13 Status
+CLOSED. All 5 tasks done (T01-T05). 638/638 tests passing (+43 new tests from Phase 12 close). Delivered: `grain onboard` CLI + additive scaffold engine, `CodebaseScanner` (language/adapter/key-file/CI detection), `OnboardDocGenerator` (draft canonical docs from scan), `workflow.onboard.existing.md` prompt, Phase 13 integration tests (16 tests). Phase closed 2026-04-12.
+
+## Phase 14 Status
+CLOSED. All 4 tasks done (T01-T04). 662/662 tests passing (+24 new tests from Phase 13 close). Delivered: `SpreadsheetExtractor` (xlsx/xls/csv via openpyxl), `DocsExtractor` (docx + md via python-docx), `PdfExtractor` (pdf via pdfplumber, graceful degradation), context assembly integration, adapter profiles updated, Phase 14 integration tests (12 tests). Phase closed 2026-04-12. **v0.1.0 scope complete.**
+
+## v0.1.0 Status
+COMPLETE. All planned phases closed (Phases 6–14, with Phase 11-T05 deferred). 662 tests passing. Ready to cut v0.1.0 release.
+
 ## Immediate Goals
-1. Begin Phase 13 planning — seed task packets for Existing Project Adoption (FR-013)
-2. First task: `grain onboard` CLI command and `workflow.onboard.existing.md` prompt
+1. Cut v0.1.0 release — bump version, tag, publish to PyPI
+2. Begin Phase 15 planning — resolve embedding infrastructure decision before seeding tasks (Phase 15 is blocked on this gate)
 
 ## After Phase 8 — Using the Runner with Agent CLIs
 
@@ -83,15 +92,32 @@ Phase 12 delivers the full execute→review→close automation loop:
 - `--dry-run` mode, `--steps N` limit, structured per-step logging
 - `grain orchestrate accept --plan <id>` — marks OrchestratorPlan proposals as accepted for loop ordering
 
-## v0.1.0 Scope
-- Phase 13 — Existing Project Adoption (FR-013) ← active next
-- Phase 14 — Document and Spreadsheet Adapters (Excel, docx, PDF)
-- Cut v0.1.0 after Phase 14 closes
+## After Phase 13 — Existing Project Adoption
+
+Phase 13 makes Grain adoptable by existing repos:
+- `grain onboard [path]` — scaffolds Grain directory structure additively; skips existing files; dry-run mode; JSON/text output
+- `CodebaseScanner` — detects languages, applicable adapters, key files (README, package.json, pyproject.toml, CI config), existing docs
+- `OnboardDocGenerator` — writes draft `product_scope.md`, `architecture.md`, initial backlog, open_questions stubs from scan; all output marked `# DRAFT`
+- `prompts/workflow.onboard.existing.md` — agent-driven full adoption flow prompt with mandatory CLI call steps
+
+## After Phase 14 — Document and Spreadsheet Adapters
+
+Phase 14 completes v0.1.0 by making Grain context-aware for binary/formatted document types:
+- `SpreadsheetExtractor` — reads .xlsx, .xls, .csv via openpyxl; extracts sheet names, headers, cell data, formula summaries
+- `DocsExtractor` — reads .docx and .md via python-docx; extracts headings, paragraphs, table content
+- `PdfExtractor` — reads .pdf via pdfplumber; graceful degradation for layout-heavy files
+- All three feed extracted text into existing context assembly pipeline via updated adapter profiles
+
+## v0.2.0 Scope (planned)
+- Phase 15 — Semantic Enrichment Layer (FR-015 Layer 2, requires embedding infrastructure decision — gate before seeding tasks)
+- Phase 16 — Ranking and Decision Layer (FR-015 Layer 7, depends on Phase 15)
+- Phase 11-T05 (deferred) — Homebrew formula, resume when tap/release flow is prioritized
+- Assay (FR-005) — independent verification layer (v2)
 
 ## Upcoming Phase Sequence
-- **Phase 13** — Existing Project Adoption (backlog §16, FR-013) ← active next
-- **Phase 14** — Document and Spreadsheet Adapters (backlog §17, Excel/docx/PDF)
-- **Phase 15+** — Semantic Enrichment, Ranking (v0.2.0, requires embedding infrastructure decision)
+- **Cut v0.1.0** — version bump, tag, PyPI publish ← immediate
+- **Phase 15** — Semantic Enrichment Layer (v0.2.0, blocked on embedding infrastructure decision)
+- **Phase 16** — Ranking and Decision Layer (v0.2.0, depends on Phase 15)
 - **Phase 11-T05 (deferred)** — Homebrew formula, resume when tap/release flow is prioritized
 
 ## Active Constraints
@@ -105,8 +131,8 @@ Phase 12 delivers the full execute→review→close automation loop:
 ## Do Not Work On Right Now
 - P11-T05 Homebrew formula until tap/release flow is prioritized
 - Assay (formerly Sentinel) implementation (v2 — FR-005)
-- advisory/intelligence layer beyond what orchestration and Phase 10 define
+- Phase 15+ work until embedding infrastructure decision is resolved as a canonical change proposal
 - telemetry automation (v2 — FR-011)
 - autonomous multi-step execution without explicit operator gate
 - TUI/GUI implementation
-- `grain workflow reconcile` CLI implementation (deferred — QD-01, scope in Phase 13+ planning)
+- `grain workflow reconcile` CLI implementation (deferred — QD-01)

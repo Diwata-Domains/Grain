@@ -88,18 +88,30 @@ def context_build(ctx, task_id, include_working, context_tags):
             ],
             "export_metadata": bundle.export_metadata,
         }
+        data["context_stats"] = bundle.export_metadata.get("context_stats", {})
         click.echo(json.dumps(data, indent=2))
         return
 
     click.echo("context build: ok")
     click.echo(f"  task_id           {bundle.task_id}")
     click.echo(f"  packet_dir        {bundle.packet_dir.name}")
-    click.echo(f"  packet_files      {len(bundle.packet_files)}")
-    click.echo(f"  canonical_docs    {len(bundle.selected_canonical_docs)}")
-    click.echo(f"  working_docs      {len(bundle.selected_working_docs)}")
-    click.echo(f"  sources           {len(bundle.export_metadata.get('sources', []))}")
     adapter_context = bundle.export_metadata.get("adapter_context", {})
     click.echo(f"  primary_adapter   {adapter_context.get('primary_adapter', 'none')}")
+
+    stats = bundle.export_metadata.get("context_stats", {})
+    if stats:
+        click.echo(f"  total_sources     {stats['total_sources']}")
+        click.echo(f"  total_lines       {stats['total_lines']}")
+        click.echo(f"  packet_sources    {stats['packet_sources']}")
+        click.echo(f"  graph_traced      {stats['graph_traced_sources']}")
+        click.echo(f"  glob_only         {stats['glob_only_sources']}")
+        click.echo(f"  canonical_docs    {stats['canonical_sources']}")
+        click.echo(f"  working_docs      {stats['working_sources']}")
+        click.echo("  sources")
+        for entry in stats.get("per_file", []):
+            depth_str = f"  depth={entry['graph_depth']}" if entry["graph_depth"] >= 0 else ""
+            click.echo(f"    [{entry['selection_method']:<12}] {entry['lines']:>5} lines  {entry['path']}{depth_str}")
+
     review_hints = adapter_context.get("review_focus_hints", [])
     validation_hints = adapter_context.get("test_or_validation_hints", [])
     if review_hints:
@@ -110,8 +122,6 @@ def context_build(ctx, task_id, include_working, context_tags):
         click.echo(f"  validation_hints  {len(validation_hints)}")
         for hint in validation_hints:
             click.echo(f"    - {hint}")
-    for source in bundle.export_metadata.get("sources", []):
-        click.echo(f"    - {source}")
 
 
 @context_group.command("show")

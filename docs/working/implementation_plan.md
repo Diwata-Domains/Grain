@@ -506,15 +506,27 @@ Give existing repos a first-class adoption path into Grain. Produce a usable dra
 - Auto-generated `change_proposals.md` stubs for structural issues or canonical conflicts identified
 - All generated docs marked `draft` — human review required before treating as canonical
 
+### Task Sequence
+- **P13-T01 (TASK-0094)** — `grain onboard` CLI + additive scaffold engine ← active
+- **P13-T02 (TASK-0095)** — Codebase scanner service (`CodebaseScanner`, `ScanResult`)
+- **P13-T03 (TASK-0096)** — Draft canonical doc generation from scan results
+- **P13-T04 (TASK-0097)** — `workflow.onboard.existing.md` agent prompt
+- **P13-T05 (TASK-0098)** — Phase 13 integration tests (≥ 15 tests)
+
 ### Notes
-- Seeded — entry criteria met (Phase 7 stable, new-project onboarding proven)
+- ✓ CLOSED. All 5 tasks done (TASK-0094 through TASK-0098). 638 tests passing at phase close (+43 from Phase 12 close).
+- `grain onboard` CLI + `OnboardService` scaffold engine — additive only, dry-run support, JSON/text output
+- `CodebaseScanner` detects languages, applicable adapters, key files, CI config, existing docs
+- `OnboardDocGenerator` writes draft canonical docs from scan results — all output marked `# DRAFT`
+- `workflow.onboard.existing.md` prompt walks full adoption flow with mandatory CLI call steps
+- Phase 13 integration tests: 16 new tests covering onboard, scanner, doc generator, and e2e flow
 - Scan is additive only — never overwrites existing files
 - Frontend codebases and existing backend projects are primary target use cases
 - v0.1.0 scope
 - Roadmap reference: FR-013
 
 ### Dependencies
-- requires Phase 12 close
+- requires Phase 12 close ✓
 - requires stable Phase 7 onboarding surfaces ✓
 
 ---
@@ -532,14 +544,23 @@ Make Grain context-aware for Excel, Word, and PDF files. Extract readable conten
 - New dependencies declared in `pyproject.toml`: `openpyxl`, `python-docx`, `pdfplumber`
 - Tests covering extraction, context selection, and graceful degradation for unsupported layouts
 
+### Task Sequence
+- **P14-T01 (TASK-0099)** — `spreadsheet_adapter`: `SpreadsheetExtractor`, openpyxl, adapter profile ← active
+- **P14-T02 (TASK-0100)** — `docs_adapter`: `DocsExtractor`, python-docx, .docx + .md profile
+- **P14-T03 (TASK-0101)** — PDF reader: `PdfExtractor`, pdfplumber, graceful degradation
+- **P14-T04 (TASK-0102)** — Phase 14 integration tests (≥ 12 tests, mixed-type context bundles)
+
 ### Notes
+- ✓ CLOSED. All 4 tasks done (TASK-0099 through TASK-0102). 662 tests passing at phase close (+24 from Phase 13 close). v0.1.0 scope complete.
+- `SpreadsheetExtractor`: reads .xlsx, .xls, .csv via openpyxl; sheet names, headers, cell data, formula summaries
+- `DocsExtractor`: reads .docx and .md via python-docx; headings, paragraphs, table content
+- `PdfExtractor`: reads .pdf via pdfplumber; graceful degradation for layout-heavy files
+- All three feed extracted text into existing context assembly pipeline; adapter profiles updated
+- Phase 14 integration tests: 12 tests covering extraction, context selection, mixed-type bundles, graceful degradation
 - Extraction is read-only — adapters never modify source files
-- PDF extraction is best-effort; text-first PDFs work cleanly; layout-heavy PDFs may lose structure
-- All three document types are equally important operator use cases
-- v0.1.0 scope
 
 ### Dependencies
-- requires Phase 13 close
+- requires Phase 13 close ✓
 - requires stable Phase 4/10 context assembly service ✓
 
 ---

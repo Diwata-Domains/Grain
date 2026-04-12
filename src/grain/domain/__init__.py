@@ -14,6 +14,7 @@ from grain.domain.orchestrator import (
     PacketCandidate,
     VALID_PLAN_STATUSES,
 )
+from grain.domain.scan_result import ScanResult
 
 __all__ = [
     "AdapterCapabilityProtocol",
@@ -25,6 +26,7 @@ __all__ = [
     "NullAdapterCapability",
     "OrchestratorPlan",
     "PacketCandidate",
+    "ScanResult",
     "ScopeSignal",
     "ValidationRequirement",
     "VALID_PLAN_STATUSES",

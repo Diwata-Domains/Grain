@@ -21,18 +21,23 @@ SUBCOMMANDS = {
     "docs": ["validate", "index", "show"],
     "task": ["create", "list", "show", "status", "validate", "close"],
     "adapter": ["list", "show"],
-    "orchestrate": ["scope", "plan"],
+    "orchestrate": ["scope", "plan", "accept"],
     "context": ["build", "show", "export"],
     "model": ["show", "select", "escalate"],
     "review": ["check", "handoff", "summary"],
     "phase": ["next"],
     "prompt": ["show"],
-    "workflow": ["next", "run"],
+    "workflow": ["next", "run", "loop"],
 }
 
 
 def test_init_help():
     result = runner.invoke(main, ["init", "--help"])
+    assert result.exit_code == 0
+
+
+def test_onboard_help():
+    result = runner.invoke(main, ["onboard", "--help"])
     assert result.exit_code == 0
 
 

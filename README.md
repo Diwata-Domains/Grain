@@ -27,6 +27,98 @@ Grain is for developers and technical operators who:
 
 ---
 
+## Quickstart
+
+### New project
+
+```bash
+# 1. Install
+uv tool install grain-kit
+
+# 2. Create a repo and initialize
+mkdir my-project && cd my-project
+git init
+grain init
+```
+
+After `grain init` your repo has:
+```
+docs/canonical/    ← source-of-truth decisions (you fill these in)
+docs/working/      ← backlog, current task, open questions
+docs/runtime/      ← workflow rules, manifest, adapter profiles
+tasks/             ← one folder per task packet
+prompts/           ← workflow entrypoints for your agent CLI
+```
+
+```bash
+# 3. Open prompts/workflow.onboard.new.md in your agent CLI
+#    Fill in the Project Context section at the top
+#    The agent generates your canonical docs, backlog, and first task
+
+# 4. Check what to do next
+grain workflow next
+```
+
+Output looks like:
+```
+workflow next: ok
+  phase             1
+  active_task_id    P1-T01-TASK-0001
+  next_action       task_execute
+  recommended_prompt  prompts/task.execute.md
+```
+
+```bash
+# 5. Run prompts/task.execute.md in your agent CLI — it executes the task
+# 6. Run prompts/task.review.md — review the work
+# 7. Run prompts/task.close.md — close the task and move to the next one
+# 8. Repeat from step 4
+```
+
+That is the full loop. `grain workflow next` always tells you exactly where you are and what to do next.
+
+---
+
+### Existing project
+
+```bash
+# 1. Install (if not already done)
+uv tool install grain-kit
+
+# 2. Scaffold Grain into your existing repo
+cd your-existing-project
+grain onboard
+```
+
+Output looks like:
+```
+onboard: ok
+  root              /your-existing-project
+Created:
+- docs/canonical
+- docs/working
+- docs/runtime
+- tasks
+- prompts
+- docs/canonical/product_scope.md
+- docs/canonical/architecture.md
+- docs/working/backlog.md
+- docs/working/current_focus.md
+- docs/working/open_questions.md
+Skipped:
+- (any files that already existed are listed here)
+```
+
+```bash
+# 3. Open prompts/workflow.onboard.existing.md in your agent CLI
+#    The agent scans your codebase, fills in the DRAFT docs, and records
+#    gaps as open questions — review everything before treating it as canonical
+
+# 4. grain workflow next — start the workflow loop from there
+```
+
+---
+
 ## Core Idea
 
 Grain separates work into layers:
@@ -57,12 +149,12 @@ The workflow loop is the same for every domain. Adapters change context selectio
 - `frontend_adapter`
   - TypeScript, JavaScript, React, Storybook, Tauri UI
 
-### Official Adapters (Planned)
+### Official Adapters (Supported)
 
 - `docs_adapter`
-  - Markdown documentation systems, content repositories, knowledge bases
+  - Markdown documentation systems, Word documents (.docx), PDF files
 - `spreadsheet_adapter`
-  - Excel and spreadsheet workflows
+  - Excel (.xlsx/.xls) and CSV spreadsheet workflows
 
 ### Custom Adapters
 
@@ -267,17 +359,22 @@ After onboarding, use the normal loop:
 
 ### Existing Project
 
-The full adoption flow is planned but not fully productized yet.
+1. run `grain onboard` inside the existing repo (or pass a path)
+2. open `prompts/workflow.onboard.existing.md`
+3. paste that prompt into your agent CLI
+4. the agent reviews the scaffold manifest, scans the codebase, and generates draft canonical docs
+5. review all generated docs before treating them as canonical — all output is marked `# DRAFT`
 
-Current practical path:
+Optional flags:
 
-1. run `grain init` inside the existing repo
-2. use `prompts/workflow.init.md` as a temporary onboarding starter, but describe the project as an existing system
-3. review generated docs carefully
-4. treat generated canonical docs as draft until confirmed
+```bash
+grain onboard                  # scaffold into current directory
+grain onboard /path/to/repo    # scaffold into a specific path
+grain onboard --dry-run        # preview what would be created without writing
+grain onboard --format json    # get a machine-readable manifest of created/skipped files
+```
 
-Planned dedicated path:
-- FR-013 (Existing Project Adoption) — deferred until new-project onboarding is stable; entry criteria recorded in `docs/working/v2_onboarding.md §10`
+`grain onboard` is additive only — it never overwrites existing files. Any file already present is skipped and listed in the manifest.
 
 ---
 
@@ -306,8 +403,9 @@ Task planning and execution:
 - `prompts/task.close.md`
 
 Project bootstrap:
-- `prompts/workflow.onboard.new.md`
-- `prompts/workflow.init.md` (compatibility alias)
+- `prompts/workflow.onboard.new.md` — new project onboarding
+- `prompts/workflow.onboard.existing.md` — existing project adoption
+- `prompts/workflow.init.md` (compatibility alias for new-project onboarding)
 
 ### Recommended Daily Loop
 
@@ -365,20 +463,47 @@ In short:
 ## Minimal CLI Reference
 
 ```bash
-grain init
-grain docs validate
+# Setup
+grain init                                    # initialize a new project
+grain onboard [path]                          # scaffold into an existing repo (additive)
+grain onboard --dry-run                       # preview scaffold without writing
+
+# Docs and validation
+grain docs validate                           # validate doc manifest and structure
+grain task validate --id TASK-####           # validate one task packet
+
+# Task management
 grain task create --title "..."
 grain task list
 grain task show --id TASK-####
-grain task close --id TASK-####
-grain workflow next
-grain workflow run
-grain task next
-grain task prepare
+grain task status --id TASK-#### --status done
+grain task next                               # which task to work on
+grain task prepare --id TASK-####            # assemble context prerequisites
+
+# Workflow automation
+grain workflow next                           # next legal step + blockers
+grain workflow next --format json             # machine-readable for agent CLIs
+grain workflow run                            # execute one step, stop at gates
+grain workflow loop                           # run full execute→review→close cycle
+grain workflow loop --supervision gated       # stop at review/close gates (default)
+grain workflow loop --supervision supervised  # approve every action
+grain workflow loop --dry-run                 # preview loop plan without execution
+
+# Context assembly
+grain context build --id TASK-####
+grain context build --id TASK-#### --format json
+
+# Orchestration
 grain orchestrate scope --scope "..."
 grain orchestrate plan --scope "..."
+grain orchestrate accept --plan <id>          # mark a plan accepted for loop ordering
+
+# Adapter inspection
 grain adapter list
 grain adapter show --id <id>
+
+# Prompts
+grain prompt show                             # recommended prompt for current state
 ```
 
 In normal Grain usage, the prompts drive most of the workflow and the CLI handles scaffolding, validation, and command surfaces.
@@ -407,9 +532,10 @@ See:
 - Phase 8 closed — workflow automation runner (`grain workflow next/run`, `grain task next/prepare`, `grain phase next`, `grain prompt show`, machine-readable JSON contract)
 - Phase 9 closed — orchestration service (`grain orchestrate scope/plan`, `grain adapter list/show`, OrchestratorPlan domain model)
 - Phase 10 closed — structural intelligence (tree-sitter extraction, knowledge graph, graph-assisted context selection)
-- Phase 11 closed — distribution and global install (`pip install grain`, `uv tool install grain`, PyPI publish workflow)
-- Phase 12 in progress — automated workflow loop (`grain workflow loop`)
-- existing-project adoption deferred behind FR-013 entry criteria
+- Phase 11 closed — distribution and global install (`pip install grain-kit`, `uv tool install grain-kit`, PyPI publish workflow)
+- Phase 12 closed — automated workflow loop (`grain workflow loop`, supervision levels, per-step logging, `grain orchestrate accept`)
+- Phase 13 closed — existing project adoption (`grain onboard`, `CodebaseScanner`, draft canonical doc generation, `workflow.onboard.existing.md` prompt)
+- Phase 14 closed — document and spreadsheet adapters (`SpreadsheetExtractor` for xlsx/csv, `DocsExtractor` for docx/md, `PdfExtractor` for pdf with graceful degradation)
 
 Workflow loop guardrails:
 - `grain workflow loop --steps N` sets a hard loop-step limit

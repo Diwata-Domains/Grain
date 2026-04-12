@@ -382,9 +382,9 @@ Default status for new backlog items in this file: `draft`
 
 ---
 
-## 16. Phase 13 — Existing Project Adoption (planning-ready)
+## 16. Phase 13 — Existing Project Adoption ✓ CLOSED
 
-> **Status:** planning-ready — Phase 12 closed; entry criteria met. FR-013. v0.1.0 scope.
+> **Status:** CLOSED. All 5 tasks done. 638/638 tests passing. Phase closed 2026-04-12. FR-013. v0.1.0 scope.
 
 ### P13 Planning Notes
 - Scope: agent-driven `workflow.onboard.existing.md` prompt, `grain onboard` CLI command, draft canonical doc generation from existing codebase scan, auto-generated open_questions and change_proposals stubs. All generated docs marked `draft` — human review required before treating as canonical.
@@ -392,19 +392,91 @@ Default status for new backlog items in this file: `draft`
 - Roadmap reference: FR-013
 - Depends on: Phase 12 close, stable Phase 7 new-project onboarding surfaces
 
+### P13-T01 — `grain onboard` CLI command + additive scaffold engine (TASK-0094)
+
+- **Status:** done
+- **Description:** Implement `grain onboard [path]` CLI command and `OnboardService.scaffold()`. The command creates the Grain directory structure additively into an existing repo — creates `docs/canonical/`, `docs/working/`, `docs/runtime/`, `tasks/`, `prompts/` directories and writes stub files marked `draft` where files don't already exist. Never overwrites existing files. Returns a manifest of what was created vs skipped.
+- **Files:** `src/grain/cli/onboard.py`, `src/grain/services/onboard_service.py`, `src/grain/cli/__init__.py`
+- **Model:** frontier_model
+- **Dependencies:** none
+
+### P13-T02 — Codebase scanner service (TASK-0095)
+
+- **Status:** done
+- **Description:** Implement `CodebaseScanner` that inspects an existing repo's directory tree and returns a `ScanResult` domain object. Detects: primary languages (from file extensions), applicable Grain adapters (code_adapter, frontend_adapter, docs_adapter, etc.), key existing files (README, package.json, pyproject.toml, Makefile, CI config), and existing documentation. Scanner output feeds T03 draft doc generation.
+- **Files:** `src/grain/services/codebase_scanner.py`, `src/grain/domain/scan_result.py`
+- **Model:** frontier_model
+- **Dependencies:** P13-T01
+
+### P13-T03 — Draft canonical doc generation from scan (TASK-0096)
+
+- **Status:** done
+- **Description:** Implement `OnboardDocGenerator` that takes a `ScanResult` and writes draft canonical docs: `docs/canonical/product_scope.md` (stub from detected project signals), `docs/canonical/architecture.md` (stub from detected adapters and structure), initial `docs/working/backlog.md` stub, and `open_questions.md` entries for every detected gap or undocumented decision. All generated docs include `# DRAFT` header — human review required. Additive only — skip any file that already exists.
+- **Files:** `src/grain/services/onboard_doc_generator.py`
+- **Model:** frontier_model
+- **Dependencies:** P13-T02
+
+### P13-T04 — `workflow.onboard.existing.md` prompt (TASK-0097)
+
+- **Status:** done
+- **Description:** Write the agent-driven `prompts/workflow.onboard.existing.md` prompt. The prompt walks an agent through the full existing project adoption flow: run `grain onboard`, review the scan manifest and generated stubs, ask targeted clarifying questions, fill in the draft docs with real content, and record remaining gaps as open_questions entries. Prompt must include mandatory CLI call steps.
+- **Files:** `prompts/workflow.onboard.existing.md`
+- **Model:** frontier_model
+- **Dependencies:** P13-T03
+
+### P13-T05 — Phase 13 integration tests (TASK-0098)
+
+- **Status:** done
+- **Description:** Write integration tests covering: `grain onboard` command on a synthetic existing repo (assert additive-only behavior, correct dir creation, skip existing), `CodebaseScanner` on known fixture trees (assert language/adapter detection), `OnboardDocGenerator` output shape and draft markers. Minimum: 15 new tests.
+- **Files:** `tests/test_onboard_cmd.py`, `tests/test_codebase_scanner.py`, `tests/test_onboard_doc_generator.py`
+- **Model:** frontier_model
+- **Dependencies:** P13-T01, P13-T02, P13-T03
+
 ---
 
-## 17. Phase 14 — Document and Spreadsheet Adapters (seeded, not yet planned)
+## 17. Phase 14 — Document and Spreadsheet Adapters ✓ CLOSED
 
-> **Status:** seeded — not yet started. Depends on Phase 13 close. v0.1.0 scope. FR-002 (spreadsheet), FR-001 docs_adapter.
+> **Status:** CLOSED. All 4 tasks done. 662/662 tests passing. Phase closed 2026-04-12. v0.1.0 scope complete. FR-002 (spreadsheet), FR-001 docs_adapter.
 
 ### P14 Planning Notes
-- Scope: implement `spreadsheet_adapter` (Excel .xlsx/.xls, CSV), `docs_adapter` (Word .docx, Markdown), and PDF document reading (.pdf). All three extract text content into the context assembly pipeline. Adds dependencies: `openpyxl` (Excel), `python-docx` (docx), `pdfplumber` or `pymupdf` (PDF).
+- Scope: implement `spreadsheet_adapter` (Excel .xlsx/.xls, CSV), `docs_adapter` (Word .docx, Markdown), and PDF document reading (.pdf). All three extract text content into the context assembly pipeline. Adds dependencies: `openpyxl` (Excel), `python-docx` (docx), `pdfplumber` (PDF).
 - Key design principle: adapters extract readable text and structure from binary/formatted files — they do not modify those files. Output is text context fed into existing context assembly, same as code and markdown files.
 - Adapter profiles for `spreadsheet_adapter` and `docs_adapter` must be fully defined in `docs/runtime/adapter_profiles.md`.
 - PDF extraction is best-effort — layout-heavy PDFs may lose structure; text-first PDFs work cleanly.
 - All three are equally important use cases for the operator.
 - Depends on: stable Phase 13 close and existing context assembly service (Phase 4/10)
+
+### P14-T01 — `spreadsheet_adapter` extraction service (TASK-0099)
+
+- **Status:** done
+- **Description:** Implement `SpreadsheetExtractor` service that reads `.xlsx`, `.xls`, and `.csv` files using `openpyxl` (Excel) and the stdlib `csv` module. Extracts sheet names, column headers, and row data as readable text. Define full `spreadsheet_adapter` profile in `adapter_profiles.md`. Wire file patterns (`.xlsx`, `.xls`, `.csv`) into context assembly so these files are selected when the adapter is active. Add `openpyxl>=3.1` to `pyproject.toml` dependencies. Tests: ≥ 8.
+- **Files:** `src/grain/services/spreadsheet_extractor.py`, `docs/runtime/adapter_profiles.md`, `pyproject.toml`, `tests/test_spreadsheet_extractor.py`
+- **Model:** frontier_model
+- **Dependencies:** Phase 13 close
+
+### P14-T02 — `docs_adapter` Word/docx extraction service (TASK-0100)
+
+- **Status:** done
+- **Description:** Implement `DocsExtractor` service that reads `.docx` files using `python-docx`. Extracts headings, paragraphs, and table content as readable text. Define full `docs_adapter` profile in `adapter_profiles.md` (`.docx` + `.md` file patterns). Add `python-docx>=1.1` to `pyproject.toml` dependencies. Wire into context assembly. Tests: ≥ 8.
+- **Files:** `src/grain/services/docs_extractor.py`, `docs/runtime/adapter_profiles.md`, `pyproject.toml`, `tests/test_docs_extractor.py`
+- **Model:** frontier_model
+- **Dependencies:** P14-T01
+
+### P14-T03 — PDF document reader (TASK-0101)
+
+- **Status:** done
+- **Description:** Implement `PdfExtractor` service that reads `.pdf` files using `pdfplumber`. Extracts text content page-by-page. Handles graceful degradation for layout-heavy PDFs (returns partial text with a warning, never raises on extraction failure). Add `pdfplumber>=0.11` to `pyproject.toml` dependencies. Wire `.pdf` patterns into context assembly under `docs_adapter`. Tests: ≥ 8 including graceful degradation behavior.
+- **Files:** `src/grain/services/pdf_extractor.py`, `docs/runtime/adapter_profiles.md`, `pyproject.toml`, `tests/test_pdf_extractor.py`
+- **Model:** frontier_model
+- **Dependencies:** P14-T02
+
+### P14-T04 — Phase 14 integration tests (TASK-0102)
+
+- **Status:** done
+- **Description:** Write cross-adapter integration tests covering: `grain context build` selects spreadsheet/docx/pdf files when adapter is active, extracted text feeds correctly into context bundle, mixed-file-type context bundles work end-to-end, graceful handling of corrupt or unreadable files. Tests must use synthetic fixture files (no real docs committed). Minimum: 12 new tests.
+- **Files:** `tests/test_document_adapters_integration.py`, `tests/fixtures/` (synthetic .xlsx, .docx, .pdf fixtures)
+- **Model:** frontier_model
+- **Dependencies:** P14-T01, P14-T02, P14-T03
 
 ---
 

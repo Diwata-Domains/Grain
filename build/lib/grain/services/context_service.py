@@ -9,7 +9,9 @@ from grain.adapters.manifest import load_manifest
 from grain.cli.output import CommandResult
 from grain.domain.context import (
     ContextBundle,
+    ContextStats,
     PacketSourceSet,
+    SourceStats,
     discover_packet_files,
     select_canonical_docs,
     select_working_docs,
@@ -193,10 +195,16 @@ def build_context_bundle(
     adapter_profile = _load_adapter_profile(root, primary_adapter)
     packet_source_paths = [str(packet_file.path.relative_to(root)) for packet_file in present_files]
     adapter_candidates = _adapter_candidate_paths(root, adapter_profile)
+    if adapter_profile is not None:
+        adapter_candidates = _apply_context_priority_rules(
+            adapter_candidates,
+            adapter_profile.context_priority_rules,
+        )
     adapter_sources, selection_trace = _select_adapter_source_paths(
         root,
         packet_source_paths,
         adapter_candidates,
+        require_graph_trace=_requires_graph_trace(adapter_profile),
     )
 
     sources = list(packet_source_paths)
@@ -225,6 +233,15 @@ def build_context_bundle(
             "selection_trace": selection_trace,
         }
 
+    stats = _compute_context_stats(
+        root=root,
+        packet_paths=packet_source_paths,
+        adapter_sources=adapter_sources,
+        selection_trace=selection_trace,
+        canonical_docs=canonical_docs,
+        working_docs=working_docs,
+    )
+
     bundle = ContextBundle(
         task_id=task_id,
         packet_dir=source_set.packet_dir,
@@ -235,6 +252,24 @@ def build_context_bundle(
             "generated_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
             "sources": sources,
             "adapter_context": adapter_context,
+            "context_stats": {
+                "total_sources": stats.total_sources,
+                "total_lines": stats.total_lines,
+                "packet_sources": stats.packet_sources,
+                "graph_traced_sources": stats.graph_traced_sources,
+                "glob_only_sources": stats.glob_only_sources,
+                "canonical_sources": stats.canonical_sources,
+                "working_sources": stats.working_sources,
+                "per_file": [
+                    {
+                        "path": s.path,
+                        "lines": s.lines,
+                        "selection_method": s.selection_method,
+                        "graph_depth": s.graph_depth,
+                    }
+                    for s in stats.per_file
+                ],
+            },
         },
     )
 
@@ -321,12 +356,21 @@ def _select_adapter_source_paths(
     root: Path,
     packet_paths: list[str],
     candidate_paths: list[str],
+    *,
+    require_graph_trace: bool = True,
 ) -> tuple[list[str], dict[str, list[str]]]:
     """Select graph-connected adapter sources plus trace paths.
 
     Every selected source must have a traceable path to packet-local files.
     """
-    if not packet_paths or not candidate_paths:
+    if not candidate_paths:
+        return [], {}
+
+    if not require_graph_trace:
+        selected = _dedupe_preserve_order(candidate_paths)
+        return selected[:_ADAPTER_SOURCE_LIMIT], {}
+
+    if not packet_paths:
         return [], {}
 
     graph_sources = _dedupe_preserve_order(packet_paths + candidate_paths)
@@ -349,6 +393,13 @@ def _select_adapter_source_paths(
 
     selected = _dedupe_preserve_order(selected)
     return selected[:_ADAPTER_SOURCE_LIMIT], trace
+
+
+def _requires_graph_trace(profile: AdapterProfile | None) -> bool:
+    """Return whether adapter source selection should require graph connectivity."""
+    if profile is None:
+        return True
+    return profile.adapter_id not in {"spreadsheet_adapter", "docs_adapter"}
 
 
 def _is_ignored_by_adapter(path: str, ignore_patterns: list[str]) -> bool:
@@ -428,3 +479,79 @@ def _node_to_path_or_id(node_id: str) -> str:
     if node_id.startswith("file::"):
         return node_id.removeprefix("file::")
     return node_id
+
+
+def _count_file_lines(root: Path, path: str) -> int:
+    """Return the line count for a file, or 0 if unreadable."""
+    try:
+        return sum(1 for _ in (root / path).open(encoding="utf-8", errors="replace"))
+    except OSError:
+        return 0
+
+
+def _compute_context_stats(
+    root: Path,
+    packet_paths: list[str],
+    adapter_sources: list[str],
+    selection_trace: dict[str, list[str]],
+    canonical_docs: list,
+    working_docs: list,
+) -> ContextStats:
+    """Compute per-file line counts and selection method for a context bundle."""
+    per_file: list[SourceStats] = []
+    packet_set = set(packet_paths)
+    adapter_set = set(adapter_sources)
+    traced_set = set(selection_trace.keys())
+
+    for path in packet_paths:
+        per_file.append(SourceStats(
+            path=path,
+            lines=_count_file_lines(root, path),
+            selection_method="packet",
+            graph_depth=-1,
+        ))
+
+    for path in adapter_sources:
+        if path in traced_set:
+            depth = max(0, len(selection_trace[path]) - 1)
+            method = "graph_traced"
+        else:
+            depth = -1
+            method = "glob_only"
+        per_file.append(SourceStats(
+            path=path,
+            lines=_count_file_lines(root, path),
+            selection_method=method,
+            graph_depth=depth,
+        ))
+
+    for record in canonical_docs:
+        path = record.path
+        if path not in packet_set and path not in adapter_set:
+            per_file.append(SourceStats(
+                path=path,
+                lines=_count_file_lines(root, path),
+                selection_method="canonical",
+                graph_depth=-1,
+            ))
+
+    for record in working_docs:
+        path = record.path
+        if path not in packet_set and path not in adapter_set:
+            per_file.append(SourceStats(
+                path=path,
+                lines=_count_file_lines(root, path),
+                selection_method="working",
+                graph_depth=-1,
+            ))
+
+    return ContextStats(
+        total_sources=len(per_file),
+        total_lines=sum(s.lines for s in per_file),
+        packet_sources=sum(1 for s in per_file if s.selection_method == "packet"),
+        graph_traced_sources=sum(1 for s in per_file if s.selection_method == "graph_traced"),
+        glob_only_sources=sum(1 for s in per_file if s.selection_method == "glob_only"),
+        canonical_sources=sum(1 for s in per_file if s.selection_method == "canonical"),
+        working_sources=sum(1 for s in per_file if s.selection_method == "working"),
+        per_file=per_file,
+    )

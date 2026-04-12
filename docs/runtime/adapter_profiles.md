@@ -14,10 +14,11 @@ Adapter profiles guide:
 Supported today:
 - `code_adapter`
 - `frontend_adapter`
+- `spreadsheet_adapter`
+- `docs_adapter`
 
 Planned:
-- `docs_adapter`
-- `spreadsheet_adapter`
+- `pdf extraction under docs_adapter`
 
 Possible later:
 - content-specific variants for editorial or knowledge-base systems
@@ -166,6 +167,74 @@ Each profile should follow this section structure:
 - `default_model_bias`:
   - `open_model` for scoped UI copy/layout fixes
   - `frontier_model` for larger interaction or architecture changes
+
+### spreadsheet_adapter
+
+- `adapter_id`: `spreadsheet_adapter`
+- `domain_type`: `data`
+- `applies_to`:
+  - Excel spreadsheets
+  - CSV datasets
+  - tabular data review
+- `relevant_file_patterns`:
+  - `**/*.xlsx`
+  - `**/*.xls`
+  - `**/*.csv`
+- `ignore_file_patterns`:
+  - `node_modules/**`
+  - `dist/**`
+  - `build/**`
+- `build_or_run_hints`:
+  - treat extracted values as read-only context
+  - validate data shape changes before downstream code updates
+- `test_or_validation_hints`:
+  - confirm header and row-count expectations
+  - spot-check representative rows for schema drift
+- `review_focus_hints`:
+  - column additions/removals
+  - row-shape or type inconsistencies
+  - unintended delimiter or encoding changes in CSV
+- `context_priority_rules`:
+  - prioritize sheets with explicit headers first
+  - include representative row content when datasets are large
+- `default_model_bias`:
+  - `open_model` for simple data formatting checks
+  - `frontier_model` for schema-impact or cross-file reasoning
+
+### docs_adapter
+
+- `adapter_id`: `docs_adapter`
+- `domain_type`: `docs`
+- `applies_to`:
+  - markdown documents
+  - Word `.docx` documents
+  - documentation-heavy repositories
+- `relevant_file_patterns`:
+  - `**/*.md`
+  - `**/*.docx`
+  - `**/*.pdf`
+- `ignore_file_patterns`:
+  - `node_modules/**`
+  - `dist/**`
+  - `build/**`
+- `build_or_run_hints`:
+  - treat extracted doc text as read-only context
+  - preserve source-of-truth boundaries between canonical and working docs
+- `test_or_validation_hints`:
+  - verify critical headings and key requirement statements after edits
+  - check table content for missing or reordered cells
+- `review_focus_hints`:
+  - requirement drift in heading/section changes
+  - accidental deletion of acceptance criteria or constraints
+  - table content regressions in structured docs
+  - PDF extraction gaps for layout-heavy or image-only pages
+- `context_priority_rules`:
+  - prioritize canonical and requirements-bearing docs first
+  - extract `.docx` headings, paragraphs, and table cells via docs extractor
+  - treat PDF extraction as best-effort; include page-level no-text markers when needed
+- `default_model_bias`:
+  - `open_model` for scoped text edits and formatting checks
+  - `frontier_model` for structural documentation refactors
 
 ---
 

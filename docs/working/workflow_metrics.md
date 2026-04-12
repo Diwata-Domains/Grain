@@ -392,13 +392,81 @@ Record the following in each task packet `results.md`:
 
 ---
 
+### Phase 13
+
+* Tasks completed: 5 (P13-T01 through P13-T05)
+* Tasks blocked: 0
+* Prompt runs: ~15 (5 execute × 1 + 5 review × 1 + 5 close × 1)
+* Avg prompt runs per completed task: 3.0
+* Manual interventions: 0
+* First-pass success rate: 5/5
+* Rework count: 0
+* Drift incidents: 0
+* Phase duration: Session 16
+* Tests at phase close: 638 (+43 new tests from Phase 12 close — T01: +10, T02: +7, T03: +5, T04: +2, T05: +16 integration)
+* Conversation model: multi-agent (separate executor / reviewer / closer conversations)
+* Token tracking: proxy metrics only
+
+### Phase 13 Notes
+
+* What felt efficient: T01-T05 composed cleanly as a linear dependency chain; scanner (T02) and doc generator (T03) are pure service tasks with no CLI wiring overhead; T04 (prompt authoring) was a focused docs task; T05 integration tests hit all three new services in one module plus an e2e flow
+* What created friction: none reported — all tasks ran 1 prompt per stage with no restarts
+* What to tighten next: generated draft docs require human review before treating as canonical (by design, not a deficiency); packet-template prefill cleanup carries over from Phases 7–12; `grain workflow reconcile` CLI (QD-01, carries over from Phase 8)
+
+### Phase Retrospective Classification
+
+* **Fix now:** none
+* **Batch next phase:** packet-template prefill cleanup for review/close fields (carries over from Phases 7–12); `grain workflow reconcile` CLI (QD-01); gated-mode gate-at-review question (carries over from Phase 12)
+* **Ignore:** none
+
+---
+
+### Phase 14
+
+* Tasks completed: 4 (P14-T01 through P14-T04)
+* Tasks blocked: 0
+* Prompt runs: ~12 (4 execute × 1 + 4 review × 1 + 4 close × 1)
+* Avg prompt runs per completed task: 3.0
+* Manual interventions: 0
+* First-pass success rate: 4/4
+* Rework count: 0
+* Drift incidents: 0
+* Phase duration: Session 17
+* Tests at phase close: 662 (+24 new tests from Phase 13 close — T01: +8, T02: +8, T03: +8, T04: +0 net in full suite; T04 integration tests counted via T03 run)
+* Conversation model: multi-agent (separate executor / reviewer / closer conversations)
+* Token tracking: proxy metrics only
+
+### Phase 14 Notes
+
+* What felt efficient: T01-T03 are three parallel extraction services with identical structure (extractor class + adapter profile update + context wiring); each ran 1 prompt per stage; T04 integration tests covered all three extractors plus mixed-type bundles in one module
+* What created friction: none reported
+* What to tighten next: PDF graceful degradation behavior is best-effort (by design); packet-template prefill cleanup carries over; QD-01 `grain workflow reconcile` carries over from Phase 8
+
+### Phase Retrospective Classification
+
+* **Fix now:** none
+* **Batch next phase:** packet-template prefill cleanup (carries over from Phases 7–13); `grain workflow reconcile` CLI (QD-01); gated-mode gate-at-review question (carries over from Phase 12); embedding infrastructure decision required before Phase 15 tasks can be seeded
+* **Ignore:** none
+
+---
+
+## v0.1.0 Close Summary
+
+* v0.1.0 scope complete — Phases 6–14 all closed (Phase 11-T05 Homebrew deferred by operator)
+* Total v2 tasks: 64 (Phase 6: 7, Phase 7: 7, Phase 8: 11, Phase 9: 7, Phase 10: 6, Phase 11: 4, Phase 12: 4, Phase 13: 5, Phase 14: 4)
+* Tests at v0.1.0 close: 662 (up from 379 at v1 close; +283 new tests across Phases 6–14)
+* Active install paths: `pip install grain`, `uv tool install grain`
+* v0.2.0 gate: embedding infrastructure decision required before Phase 15 (Semantic Enrichment) can be seeded
+
+---
+
 ## V2 Aggregate (to date)
 
-* Total v2 tasks completed: 55 (Phase 6: 7, Phase 7: 7, Phase 8: 11, Phase 9: 7, Phase 10: 6, Phase 11: 4, Phase 12: 4)
+* Total v2 tasks completed: 64 (Phase 6: 7, Phase 7: 7, Phase 8: 11, Phase 9: 7, Phase 10: 6, Phase 11: 4, Phase 12: 4, Phase 13: 5, Phase 14: 4)
 * Total v2 blocked: 1 (P11-T05 deferred)
-* Tests at v2 Phase 6 close: 399; at Phase 7 close: 419; at Phase 8 close: 494; at Phase 9 close: 561; at Phase 10 close: 575; at Phase 11 close: 577; at Phase 12 close: 595
-* Open questions resolved during v2 (to date): Q12–Q16 (5 questions); QD-01 deferred; no new questions in Phases 9–12
-* Canonical change proposals raised during v2: 1 (P8-T10 `cli_spec.md §6.9` addition); CP-009 applied (Forge→Grain, Sentinel→Assay rename); CP-010 raised and resolved (superseded by CP-009); no new proposals in Phases 11–12
+* Tests at v2 Phase 6 close: 399; at Phase 7 close: 419; at Phase 8 close: 494; at Phase 9 close: 561; at Phase 10 close: 575; at Phase 11 close: 577; at Phase 12 close: 595; at Phase 13 close: 638; at Phase 14 close: 662
+* Open questions resolved during v2 (to date): Q12–Q16 (5 questions); QD-01 deferred; no new questions in Phases 9–14
+* Canonical change proposals raised during v2: 1 (P8-T10 `cli_spec.md §6.9` addition); CP-009 applied (Forge→Grain, Sentinel→Assay rename); CP-010 raised and resolved (superseded by CP-009); no new proposals in Phases 11–14
 * Major Phase 6 additions: adapter profiles runtime doc, AdapterProfile domain model, adapter loader/parser, packet adapter metadata fields, adapter-aware context biasing, adapter hint surfacing in context outputs, adapter system tests
 * Major Phase 7 additions: stable new-project onboarding prompt, init seed-file scaffolding, adapter selection, starter packet bootstrap, onboarding integration tests, existing-project adoption boundary docs
 * Major Phase 8 additions: workflow state evaluator, grain workflow next/run, grain task next/prepare, grain phase next, grain prompt show, machine-readable JSON contract for automation commands, runner integration tests, Assay bridge contract (`cli_spec.md §6.9` + `v2_plan.md §11`), working-doc reconciliation approach
@@ -406,16 +474,19 @@ Record the following in each task packet `results.md`:
 * Major Phase 10 additions: structural extraction service (Layer 1, tree-sitter via language packs — T06 replaced T01's AST/regex), knowledge graph builder (Layer 3, NetworkX + deterministic fallback), graph-assisted context selection (Layer 4, per-source trace paths), graph-aware adapter capabilities (detect_scope + analyze_impact wired), Phase 10 integration + rebuild-determinism tests
 * Major Phase 11 additions: finalized pyproject.toml distribution metadata, GitHub Actions OIDC PyPI publish workflow, semver version bump script, uv tool install compatibility verified, install verification and troubleshooting docs in README; Homebrew formula (contrib/homebrew/Formula/grain.rb) exists as deferred starting point
 * Major Phase 12 additions: per-stage agent/model config (`workflow_loop.yaml` + `WorkflowLoopConfig` domain model), `grain workflow loop` command, supervised/gated/autonomous supervision levels, `--dry-run` mode, 25-step cap, per-step structured logging, `grain orchestrate accept --plan <id>` command, accepted-plan loop ordering for conflicting ready tasks, loop safety guardrails documentation
+* Major Phase 13 additions: `grain onboard` CLI + `OnboardService` additive scaffold engine (dry-run, JSON/text output), `CodebaseScanner` (language/adapter/key-file/CI/docs detection), `OnboardDocGenerator` (draft canonical docs from scan, all marked `# DRAFT`), `workflow.onboard.existing.md` agent-driven adoption prompt, Phase 13 integration test suite (16 tests covering onboard/scanner/generator/e2e)
+* Major Phase 14 additions: `SpreadsheetExtractor` (xlsx/xls/csv via openpyxl), `DocsExtractor` (docx + md via python-docx), `PdfExtractor` (pdf via pdfplumber, graceful degradation), context assembly integration for all three, adapter profiles updated, Phase 14 integration tests (12 tests, mixed-type context bundles)
 
 ---
 
 ## Combined Aggregate
 
-* Total tasks completed: 108 (53 v1 + 55 v2)
+* Total tasks completed: 117 (53 v1 + 64 v2)
 * Total blocked (all phases): 1 (P11-T05 Homebrew, deferred)
-* Total tests at v1 close: 379; at Phase 6 close: 399; at Phase 7 close: 419; at Phase 8 close: 494; at Phase 9 close: 561; at Phase 10 close: 575; at Phase 11 close: 577; at Phase 12 close: 595
-* Open questions resolved total: Q1–Q16 (16 resolved); QD-01 deferred; no new questions in Phases 9–12
-* Canonical change proposals applied total: CP-001 through CP-008 (8 applied in v1); 1 scoped addition in v2 (P8-T10 `cli_spec.md §6.9`); CP-009 applied (Forge→Grain, Sentinel→Assay); CP-010 resolved (superseded); no new proposals in Phases 11–12
+* Total tests at v1 close: 379; at Phase 6 close: 399; at Phase 7 close: 419; at Phase 8 close: 494; at Phase 9 close: 561; at Phase 10 close: 575; at Phase 11 close: 577; at Phase 12 close: 595; at Phase 13 close: 638; at Phase 14 close: 662
+* Open questions resolved total: Q1–Q16 (16 resolved); QD-01 deferred; no new questions in Phases 9–14
+* Canonical change proposals applied total: CP-001 through CP-008 (8 applied in v1); 1 scoped addition in v2 (P8-T10 `cli_spec.md §6.9`); CP-009 applied (Forge→Grain, Sentinel→Assay); CP-010 resolved (superseded); no new proposals in Phases 11–14
 * V1 phases closed: 5 (Phases 1–5)
-* V2 phases closed: 7 (Phase 6, Phase 7, Phase 8, Phase 9, Phase 10, Phase 11, Phase 12)
+* V2 phases closed: 9 (Phase 6, Phase 7, Phase 8, Phase 9, Phase 10, Phase 11, Phase 12, Phase 13, Phase 14)
 * V2 planning docs created: v2_plan.md, v2_adapters.md, v2_onboarding.md
+* **v0.1.0 status: COMPLETE** — all planned phases closed; 662 tests passing; ready for version tag and PyPI publish

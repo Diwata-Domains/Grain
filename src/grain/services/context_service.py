@@ -195,10 +195,16 @@ def build_context_bundle(
     adapter_profile = _load_adapter_profile(root, primary_adapter)
     packet_source_paths = [str(packet_file.path.relative_to(root)) for packet_file in present_files]
     adapter_candidates = _adapter_candidate_paths(root, adapter_profile)
+    if adapter_profile is not None:
+        adapter_candidates = _apply_context_priority_rules(
+            adapter_candidates,
+            adapter_profile.context_priority_rules,
+        )
     adapter_sources, selection_trace = _select_adapter_source_paths(
         root,
         packet_source_paths,
         adapter_candidates,
+        require_graph_trace=_requires_graph_trace(adapter_profile),
     )
 
     sources = list(packet_source_paths)
@@ -350,12 +356,21 @@ def _select_adapter_source_paths(
     root: Path,
     packet_paths: list[str],
     candidate_paths: list[str],
+    *,
+    require_graph_trace: bool = True,
 ) -> tuple[list[str], dict[str, list[str]]]:
     """Select graph-connected adapter sources plus trace paths.
 
     Every selected source must have a traceable path to packet-local files.
     """
-    if not packet_paths or not candidate_paths:
+    if not candidate_paths:
+        return [], {}
+
+    if not require_graph_trace:
+        selected = _dedupe_preserve_order(candidate_paths)
+        return selected[:_ADAPTER_SOURCE_LIMIT], {}
+
+    if not packet_paths:
         return [], {}
 
     graph_sources = _dedupe_preserve_order(packet_paths + candidate_paths)
@@ -378,6 +393,13 @@ def _select_adapter_source_paths(
 
     selected = _dedupe_preserve_order(selected)
     return selected[:_ADAPTER_SOURCE_LIMIT], trace
+
+
+def _requires_graph_trace(profile: AdapterProfile | None) -> bool:
+    """Return whether adapter source selection should require graph connectivity."""
+    if profile is None:
+        return True
+    return profile.adapter_id not in {"spreadsheet_adapter", "docs_adapter"}
 
 
 def _is_ignored_by_adapter(path: str, ignore_patterns: list[str]) -> bool:
