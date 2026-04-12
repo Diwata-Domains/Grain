@@ -32,7 +32,9 @@ jobs:
           python -m pip install build twine
 
       - name: Build distribution artifacts
-        run: python -m build
+        run: |
+          rm -rf dist/
+          python -m build
 
       - name: Validate artifacts
         run: python -m twine check dist/*
