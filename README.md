@@ -291,6 +291,19 @@ If venv conflicts cause unexpected behavior:
 
 ---
 
+## Contributing / Feedback
+
+Found a bug, have a feature request, or want to share feedback?
+
+Open an issue at: https://github.com/Diwata-Labs/Grain/issues
+
+When reporting a bug, include:
+- the command you ran
+- the output or error message
+- your Python version and install method (`uv tool install` or `pip install`)
+
+---
+
 ## Should You Use Grain For Your Machine?
 
 Yes, sometimes.
