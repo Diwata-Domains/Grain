@@ -101,6 +101,7 @@ src/grain/services/graph_service.py
 src/grain/services/handoff_service.py
 src/grain/services/init_service.py
 src/grain/services/model_service.py
+src/grain/services/notebook_extractor.py
 src/grain/services/onboard_doc_generator.py
 src/grain/services/onboard_service.py
 src/grain/services/orchestration_service.py
@@ -172,6 +173,7 @@ tests/test_model_routing.py
 tests/test_model_select_cmd.py
 tests/test_model_service.py
 tests/test_model_show_cmd.py
+tests/test_notebook_extractor.py
 tests/test_onboard_cmd.py
 tests/test_onboard_doc_generator.py
 tests/test_orchestrate_cmd.py
