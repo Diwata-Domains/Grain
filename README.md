@@ -151,6 +151,35 @@ Then open `prompts/workflow.onboard.existing.md` in your agent CLI. That prompt 
 
 ---
 
+## Using Grain with agent CLIs
+
+Grain is designed to be used through an agent CLI such as Claude Code or Codex.
+
+In practice, the agent should use Grain as the workflow layer for the repository:
+- use `grain` commands to determine the next legal step
+- use prompt files under `prompts/` as stable workflow entrypoints
+- operate within the execute, review, and close loop
+- respect explicit review and closure gates
+
+Example instruction for an agent:
+
+```text
+You have access to the Grain CLI.
+
+Use Grain to onboard this repository and follow the workflow.
+Always use Grain commands to determine the next workflow step.
+Use the prompt files Grain recommends.
+Respect review and closure gates before marking work complete.
+```
+
+That keeps agent-driven work:
+- structured
+- lower-context
+- inspectable
+- repeatable
+
+---
+
 ## The daily loop
 
 The practical loop is:
