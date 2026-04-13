@@ -34,8 +34,7 @@ Read:
 * docs/canonical/product_scope.md
 
 * docs/canonical/architecture.md
-
-* docs/canonical/workflow_spec.md
+* any additional canonical docs from `docs/runtime/docs_manifest.yaml` that are relevant to classifying the feature
 
 ---
 

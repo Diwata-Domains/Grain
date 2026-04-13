@@ -115,7 +115,7 @@ Before a command is fully implemented, it must either:
 
 Silent success (exit 0, no output) from a stub is not permitted.
 
-This rule is defined canonically in `docs/canonical/cli_spec.md §5.1`.
+If the project maintains a canonical interface or command-contract doc, this rule should be mirrored there.
 
 ---
 

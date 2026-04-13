@@ -32,7 +32,8 @@ Read:
 * docs/working/change_proposals.md
 * docs/canonical/product_scope.md
 * docs/canonical/architecture.md
-* docs/canonical/workflow_spec.md
+
+Read any additional canonical docs declared in `docs/runtime/docs_manifest.yaml` only when they are relevant to sequencing or task scope.
 
 If a recently completed or blocked task matters for sequencing, read only that task folder.
 

@@ -22,9 +22,6 @@
 |----|----|----|----|-----|
 | `product_scope` | `docs/canonical/product_scope.md` | highest | no | Defines goals, non-goals, users, and scope boundaries |
 | `architecture` | `docs/canonical/architecture.md` | highest | no | Defines system modules, interfaces, and design decisions |
-| `cli_spec` | `docs/canonical/cli_spec.md` | highest | no | Defines CLI commands, flags, contracts, and examples |
-| `workflow_spec` | `docs/canonical/workflow_spec.md` | highest | no | Defines build workflow, build loop, packet lifecycle, and execution model |
-| `data_contracts` | `docs/canonical/data_contracts.md` | highest | no | Defines schemas and contracts for manifests, packets, and structured files |
 
 ## Working Docs
 

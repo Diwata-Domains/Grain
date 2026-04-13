@@ -32,7 +32,7 @@ Read:
 * docs/working/current_task.md
 * docs/canonical/product_scope.md
 * docs/canonical/architecture.md
-* docs/canonical/workflow_spec.md
+* any additional canonical docs from `docs/runtime/docs_manifest.yaml` that are relevant to the phase under review
 
 Read the task folders relevant to the current phase.
 

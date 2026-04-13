@@ -1,3 +1,5 @@
+import yaml
+
 from grain.services.init_service import init_repo
 
 EXPECTED_DIRS = {
@@ -206,3 +208,25 @@ def test_bootstrap_result_id_reported_in_created(tmp_path):
     result = init_repo(tmp_path, bootstrap=True)
     all_created = " ".join(result.created)
     assert "P1-T01-TASK-0001" in all_created
+
+
+def test_init_seeds_project_shaped_manifest_without_forcing_cli_docs(tmp_path):
+    init_repo(tmp_path)
+
+    manifest_path = tmp_path / "docs" / "runtime" / "docs_manifest.yaml"
+    manifest = yaml.safe_load(manifest_path.read_text(encoding="utf-8"))
+    canonical_ids = {entry["id"] for entry in manifest["canonical"]}
+
+    assert canonical_ids == {"product_scope", "architecture"}
+    assert "cli_spec" not in canonical_ids
+    assert "workflow_spec" not in canonical_ids
+    assert "data_contracts" not in canonical_ids
+
+
+def test_init_stamps_minimum_grain_version_into_manifest(tmp_path):
+    init_repo(tmp_path)
+
+    manifest_path = tmp_path / "docs" / "runtime" / "docs_manifest.yaml"
+    manifest = yaml.safe_load(manifest_path.read_text(encoding="utf-8"))
+
+    assert manifest["project"]["minimum_grain_version"] != "__GRAIN_VERSION__"

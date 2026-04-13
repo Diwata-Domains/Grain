@@ -15,7 +15,7 @@ Read:
 * docs/runtime/agent_profiles.md
 * docs/working/current_task.md
 * docs/working/current_focus.md
-* docs/canonical/workflow_spec.md
+* any canonical docs from `docs/runtime/docs_manifest.yaml` that are relevant to the handoff review
 
 Then read the active task folder referenced by `docs/working/current_task.md`.
 

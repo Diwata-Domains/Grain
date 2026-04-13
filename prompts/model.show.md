@@ -12,8 +12,7 @@ Read:
 * docs/runtime/docs_index.md
 * docs/runtime/docs_manifest.yaml
 * docs/runtime/agent_profiles.md
-* docs/canonical/workflow_spec.md
-* docs/canonical/cli_spec.md
+* any canonical docs from `docs/runtime/docs_manifest.yaml` that define model usage, interfaces, or workflow rules for this project
 
 Read working docs only if needed to explain the current phase or active task.
 

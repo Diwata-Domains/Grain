@@ -6,6 +6,7 @@ project:
   mode: single_user
   storage: filesystem
   authority_model: explicit_hierarchy
+  minimum_grain_version: "__GRAIN_VERSION__"
 
 canonical:
   - id: product_scope
@@ -29,36 +30,6 @@ canonical:
       - creating_tasks
       - validating_implementation
       - resolving_design_conflicts
-
-  - id: cli_spec
-    path: docs/canonical/cli_spec.md
-    purpose: Defines CLI commands, flags, contracts, and examples
-    authority: highest
-    editable_by_agents: false
-    read_when:
-      - implementing_cli
-      - changing_command_behavior
-      - writing_tests_for_cli
-
-  - id: workflow_spec
-    path: docs/canonical/workflow_spec.md
-    purpose: Defines build workflow, build loop, packet lifecycle, and execution model
-    authority: highest
-    editable_by_agents: false
-    read_when:
-      - creating_packets
-      - running_tasks
-      - updating_execution_logic
-
-  - id: data_contracts
-    path: docs/canonical/data_contracts.md
-    purpose: Defines schemas and contracts for manifests, packets, and structured files
-    authority: highest
-    editable_by_agents: false
-    read_when:
-      - implementing_validation
-      - parsing_docs
-      - serializing_task_data
 
 working:
   - id: implementation_plan

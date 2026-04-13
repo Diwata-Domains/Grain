@@ -10,7 +10,7 @@ Use canonical docs:
 
 * product_scope.md
 * architecture.md
-* workflow_spec.md
+* any additional project-specific canonical docs that the repo actually needs
 
 ---
 

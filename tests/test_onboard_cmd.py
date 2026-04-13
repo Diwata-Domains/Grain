@@ -36,6 +36,15 @@ def test_onboard_creates_dirs_and_stubs_on_empty_repo(tmp_path: Path):
     assert "# DRAFT" in stub.read_text(encoding="utf-8")
 
 
+def test_onboard_does_not_force_cli_or_workflow_canonical_stubs(tmp_path: Path):
+    result = _run(tmp_path, "onboard", str(tmp_path))
+    assert result.exit_code == 0, result.output
+
+    assert not (tmp_path / "docs" / "canonical" / "cli_spec.md").exists()
+    assert not (tmp_path / "docs" / "canonical" / "workflow_spec.md").exists()
+    assert not (tmp_path / "docs" / "canonical" / "data_contracts.md").exists()
+
+
 def test_onboard_skips_existing_files_without_overwriting(tmp_path: Path):
     existing = tmp_path / "docs" / "canonical" / "architecture.md"
     existing.parent.mkdir(parents=True)

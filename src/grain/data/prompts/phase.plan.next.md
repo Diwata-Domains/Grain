@@ -36,7 +36,8 @@ Read:
 * docs/working/v2_onboarding.md if present
 * docs/canonical/product_scope.md
 * docs/canonical/architecture.md
-* docs/canonical/workflow_spec.md
+
+Read any additional canonical docs declared in `docs/runtime/docs_manifest.yaml` only when they materially affect phase planning.
 
 Read only the task folders needed to understand the just-completed phase or transition state.
 

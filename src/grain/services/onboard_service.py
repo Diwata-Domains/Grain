@@ -17,9 +17,6 @@ _REQUIRED_DIRS = [
 _STUB_FILES: dict[str, str] = {
     "docs/canonical/product_scope.md": "# Product Scope\\n\\n# DRAFT - replace with real content\\n",
     "docs/canonical/architecture.md": "# Architecture\\n\\n# DRAFT - replace with real content\\n",
-    "docs/canonical/cli_spec.md": "# CLI Spec\\n\\n# DRAFT - replace with real content\\n",
-    "docs/canonical/workflow_spec.md": "# Workflow Spec\\n\\n# DRAFT - replace with real content\\n",
-    "docs/canonical/data_contracts.md": "# Data Contracts\\n\\n# DRAFT - replace with real content\\n",
     "docs/working/backlog.md": "# Backlog\\n\\n# DRAFT - replace with real content\\n",
     "docs/working/current_focus.md": "# Current Focus\\n\\n# DRAFT - replace with real content\\n",
     "docs/working/current_task.md": "# Current Task\\n\\n# DRAFT - replace with real content\\n",

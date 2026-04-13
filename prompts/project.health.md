@@ -33,7 +33,7 @@ Read:
 * docs/working/future_roadmap.md if present
 * docs/canonical/product_scope.md
 * docs/canonical/architecture.md
-* docs/canonical/workflow_spec.md
+* any additional canonical docs from `docs/runtime/docs_manifest.yaml` that materially affect project health
 
 Read only the recent task packets needed to understand current execution health.
 

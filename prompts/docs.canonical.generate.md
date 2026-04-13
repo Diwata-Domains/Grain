@@ -11,7 +11,7 @@ Generate canonical reference documents for a project using the Forge document au
 
 ## How to Use This Prompt
 
-Fill in the **Project Context** section below before running. The agent will use this to generate `product_scope.md`, `architecture.md`, and `workflow_spec.md` tailored to the project.
+Fill in the **Project Context** section below before running. The agent will use this to generate a project-shaped canonical doc set, with `product_scope.md` and `architecture.md` as the default core docs.
 
 If context is ambiguous or incomplete, ask clarifying questions before generating.
 
@@ -58,11 +58,11 @@ v1 Scope: In — local CLI, filesystem state, task packets, doc validation, cont
 
 ## Required Documents
 
-Generate ONLY these three:
+Generate the core canonical docs:
 
 1. `docs/canonical/product_scope.md`
 2. `docs/canonical/architecture.md`
-3. `docs/canonical/workflow_spec.md`
+3. any additional canonical docs the project actually needs
 
 ---
 
@@ -73,7 +73,7 @@ Generate ONLY these three:
 * define what it governs
 * define what it does NOT cover
 * include concrete structures and rules, not just narrative
-* have no overlap in responsibility with the other two docs
+* have no overlap in responsibility with the other canonical docs you create
 
 ### product_scope.md must include
 
@@ -108,26 +108,21 @@ Generate ONLY these three:
 * integration boundary definition
 * architecture decisions for v1
 
-### workflow_spec.md must include
+### Optional project-specific canonical docs
 
-* workflow model (Building Workflow + Build Loop)
-* workflow stages
-* build loop steps
-* task packet lifecycle and states
-* required packet contents
-* context loading rules
-* model class usage in workflow
-* workflow authority handling
-* completion requirements
-* failure and recovery behavior
-* practical v1 rules
+Only generate additional canonical docs such as interface specs, workflow docs, or data contracts when the project genuinely needs them.
+
+If you add one:
+
+* justify why it belongs in the canonical layer
+* name it for the project domain, not a universal template
+* include it in `docs/runtime/docs_manifest.yaml`
 
 ### Consistent terminology across all three docs
 
 * task packets
 * model classes (open_model, frontier_model, reviewer_model)
 * doc layers (canonical, working, runtime, task-local)
-* workflow stages
 * proposal objects (recommendation, candidate_task, candidate_phase, candidate_roadmap_item)
 * propose → validate → commit flow
 
@@ -171,7 +166,7 @@ Provide examples mapping workflow activities to the doc that governs them.
 
 1. `product_scope.md`
 2. `architecture.md`
-3. `workflow_spec.md`
+3. any optional project-specific canonical docs created
 
 Then:
 

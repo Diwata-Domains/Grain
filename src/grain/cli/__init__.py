@@ -1,11 +1,16 @@
 import sys
+import tomllib
 import click
 from importlib.metadata import version, PackageNotFoundError
 
 try:
-    _VERSION = version("grain")
+    _VERSION = version("grain-kit")
 except PackageNotFoundError:
-    _VERSION = "unknown"
+    try:
+        with open("pyproject.toml", "rb") as f:
+            _VERSION = tomllib.load(f)["project"]["version"]
+    except Exception:
+        _VERSION = "unknown"
 
 from .init import init_cmd
 from .docs import docs_group
@@ -21,6 +26,71 @@ from .workflow import workflow_group
 from .onboard import onboard_cmd
 from .error_handler import handle_error
 from grain.domain.errors import ForgeError
+from grain.adapters.manifest import load_manifest
+from grain.adapters.filesystem import resolve_repo_root
+
+
+def _parse_semver(raw: str) -> tuple[int, int, int] | None:
+    parts = raw.strip().split(".")
+    if len(parts) < 3:
+        return None
+
+    values: list[int] = []
+    for part in parts[:3]:
+        digits = []
+        for ch in part:
+            if ch.isdigit():
+                digits.append(ch)
+            else:
+                break
+        if not digits:
+            return None
+        values.append(int("".join(digits)))
+    return tuple(values)  # type: ignore[return-value]
+
+
+def _maybe_warn_if_grain_outdated(repo: str | None, invoked_subcommand: str | None) -> None:
+    if not invoked_subcommand or _VERSION == "unknown":
+        return
+
+    try:
+        root = resolve_repo_root(repo)
+    except FileNotFoundError:
+        return
+
+    manifest_path = root / "docs" / "runtime" / "docs_manifest.yaml"
+    if not manifest_path.exists():
+        return
+
+    try:
+        manifest = load_manifest(root)
+    except Exception:
+        return
+
+    project = manifest.get("project")
+    if not isinstance(project, dict):
+        return
+
+    required = project.get("minimum_grain_version", "")
+    if not isinstance(required, str) or not required.strip():
+        return
+
+    current_version = _parse_semver(_VERSION)
+    required_version = _parse_semver(required)
+    if current_version is None or required_version is None:
+        return
+
+    if current_version >= required_version:
+        return
+
+    click.echo(
+        (
+            f"warning   repo requires Grain >= {required}; installed {_VERSION}. "
+            "Update first with `uv tool upgrade grain-kit` "
+            "or `pip install --upgrade grain-kit`."
+        ),
+        err=True,
+    )
 
 
 @click.group()
@@ -40,6 +110,7 @@ def main(ctx, repo, fmt):
     ctx.ensure_object(dict)
     ctx.obj["repo"] = repo
     ctx.obj["fmt"] = fmt
+    _maybe_warn_if_grain_outdated(repo, ctx.invoked_subcommand)
 
 
 @main.result_callback()

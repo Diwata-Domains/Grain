@@ -33,8 +33,7 @@ Read:
 * docs/canonical/product_scope.md
 
 * docs/canonical/architecture.md
-
-* docs/canonical/workflow_spec.md
+* any additional canonical docs from `docs/runtime/docs_manifest.yaml` that are relevant to the completed work
 
 Read the task folders relevant to the completed phase or recent batch of work.
 

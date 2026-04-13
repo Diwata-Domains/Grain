@@ -42,7 +42,7 @@ Read:
 * docs/working/v2_onboarding.md if present
 * docs/canonical/product_scope.md
 * docs/canonical/architecture.md
-* docs/canonical/workflow_spec.md
+* any additional canonical docs from `docs/runtime/docs_manifest.yaml` that are relevant to task generation
 
 Read only the recent phase/task artifacts needed to understand the handoff into the new phase.
 

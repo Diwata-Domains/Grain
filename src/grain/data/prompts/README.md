@@ -135,4 +135,4 @@ forge prompt show
 forge --format json prompt show
 ```
 
-Output includes: `recommended_prompt`, `model_class`, `scope`, `stage`, `next_action`, `stop_reason`, `blocking_reasons`. Prompts remain execution aids — the canonical workflow contract lives in `docs/canonical/workflow_spec.md`.
+Output includes: `recommended_prompt`, `model_class`, `scope`, `stage`, `next_action`, `stop_reason`, `blocking_reasons`. Prompts remain execution aids — canonical workflow rules live in the project's declared canonical and runtime docs, not in a single universal filename.

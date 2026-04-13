@@ -14,7 +14,7 @@ Read:
 * docs/runtime/agent_profiles.md
 * docs/working/current_focus.md
 * docs/working/current_task.md
-* docs/canonical/workflow_spec.md
+* any canonical docs from `docs/runtime/docs_manifest.yaml` that are relevant to the escalation decision
 
 Then read the active task packet if one exists.
 

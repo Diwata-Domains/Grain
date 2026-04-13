@@ -15,8 +15,7 @@ Read:
 * docs/runtime/agent_profiles.md
 * docs/working/current_focus.md
 * docs/working/current_task.md
-* docs/canonical/workflow_spec.md
-* docs/canonical/cli_spec.md
+* any canonical docs from `docs/runtime/docs_manifest.yaml` that define workflow, interface, or validation expectations for this task
 
 Then read the active task packet if one exists.
 

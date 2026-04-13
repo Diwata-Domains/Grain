@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+import tomllib
 from pathlib import Path
+from importlib.metadata import PackageNotFoundError, version
 
 # Directories required by architecture.md Section 5
 _REQUIRED_DIRS = [
@@ -59,6 +61,8 @@ _SEED_FILE_SOURCES = {
     "prompts/tasks.plan.next.md": "prompts/tasks.plan.next.md",
 }
 
+_GRAIN_VERSION_PLACEHOLDER = "__GRAIN_VERSION__"
+
 
 @dataclass
 class InitResult:
@@ -109,11 +113,15 @@ def init_repo(
             result.blocked.append(rel)
             continue
 
+        text = source.read_text(encoding="utf-8")
+        if rel == "docs/runtime/docs_manifest.yaml":
+            text = text.replace(_GRAIN_VERSION_PLACEHOLDER, _current_grain_version())
+
         if target.exists():
             if force and not rel.startswith(_CANONICAL_PREFIX):
                 result.updated.append(rel)
                 if not dry_run:
-                    target.write_text(source.read_text(encoding="utf-8"), encoding="utf-8")
+                    target.write_text(text, encoding="utf-8")
             else:
                 result.skipped.append(rel)
             continue
@@ -121,7 +129,7 @@ def init_repo(
         result.created.append(rel)
         if not dry_run:
             target.parent.mkdir(parents=True, exist_ok=True)
-            target.write_text(source.read_text(encoding="utf-8"), encoding="utf-8")
+            target.write_text(text, encoding="utf-8")
 
     # Write a .gitkeep placeholder into each newly created directory
     for rel in created_dirs:
@@ -186,6 +194,18 @@ def _apply_adapter_selection(
                 f"unknown secondary adapter '{aid}': not found in adapter profiles"
             )
     result.secondary_adapters = validated_secondary
+
+
+def _current_grain_version() -> str:
+    try:
+        return version("grain-kit")
+    except PackageNotFoundError:
+        try:
+            pyproject_path = Path(__file__).resolve().parents[3] / "pyproject.toml"
+            with pyproject_path.open("rb") as f:
+                return tomllib.load(f)["project"]["version"]
+        except Exception:
+            return "0.0.0"
 
 
 def _run_bootstrap(root: Path, result: InitResult, dry_run: bool) -> None:
