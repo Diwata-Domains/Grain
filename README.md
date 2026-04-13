@@ -1,5 +1,36 @@
 # Grain
 
+[![PyPI](https://img.shields.io/pypi/v/grain-kit)](https://pypi.org/project/grain-kit/)
+[![Python](https://img.shields.io/pypi/pyversions/grain-kit)](https://pypi.org/project/grain-kit/)
+[![License](https://img.shields.io/badge/license-proprietary-red)](https://github.com/Diwata-Labs/Grain)
+[![CI](https://github.com/Diwata-Labs/Grain/actions/workflows/publish-pypi.yml/badge.svg)](https://github.com/Diwata-Labs/Grain/actions)
+[![Downloads](https://img.shields.io/pypi/dm/grain-kit)](https://pypi.org/project/grain-kit/)
+
+A deterministic workflow engine for AI-assisted development
+
+Grain structures how you work with coding agents so you get more output per prompt, less drift, and fewer retries.
+
+---
+## Why Grain exists
+
+Using AI for development usually looks like this:
+
+- large prompts
+- repeated explanations
+- inconsistent outputs
+- wasted tokens
+- context drift across conversations
+
+Grain fixes this by enforcing:
+
+- scoped work (task packets)
+- minimal context loading
+- explicit execution + review loops
+- proposal-based changes (no silent mutations)
+
+---
+## What Grain is
+
 Grain is a CLI-first workflow system for structured AI-assisted software development.
 
 It gives you:
@@ -11,8 +42,8 @@ It gives you:
 - more useful work per agent context window by reducing drift, retries, and unnecessary rereads
 
 Grain is not a coding model by itself.
-It is the workflow and file system that external agent CLIs operate against.
-It exists in part to help agent-CLI users avoid burning through token windows on broad, repetitive, underspecified conversations.
+It does not replace coding agents.
+It **makes them reliable.**
 
 ---
 
@@ -24,6 +55,13 @@ Grain is for developers and technical operators who:
 - want scoped task execution, review, and closure
 - want less context drift and lower token waste than ad hoc prompting
 - regularly hit context or usage limits before useful work is complete
+
+---
+## Mental model
+
+Idea → Task Packet → Context → Execute → Review → Done
+
+Each step is explicit, inspectable, and repeatable.
 
 ---
 
