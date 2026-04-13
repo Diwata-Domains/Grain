@@ -36,9 +36,6 @@
 | `open_questions` | `docs/working/open_questions.md` | informational | yes | Open decisions needing clarification or approval |
 | `change_proposals` | `docs/working/change_proposals.md` | advisory | yes | Proposed changes to canonical docs pending human approval |
 | `workflow_metrics` | `docs/working/workflow_metrics.md` | informational | yes | Per-phase execution metrics and workflow health observations |
-| `v2_plan` | `docs/working/v2_plan.md` | advisory | yes | Working-layer transition plan for post-v1 sequencing and v2 readiness |
-| `v2_adapters` | `docs/working/v2_adapters.md` | advisory | yes | Planning document for the v2 adapter contract and integration boundaries |
-| `v2_onboarding` | `docs/working/v2_onboarding.md` | advisory | yes | Planning document for new-project onboarding and existing-project adoption flows |
 
 ## Runtime Docs
 

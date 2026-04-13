@@ -183,6 +183,8 @@ If you are managing content with Grain, `docs_adapter` is the natural direction 
 
 Grain is intended to be used to build Grain itself, then to build Assay on top of it.
 
+**Assay** is a planned independent verification layer. It will check work produced through Grain — test coverage, correctness signals, drift detection — without being part of the execution loop itself. The intended end state is: structure the work with Grain, execute the work with an agent CLI, verify the result with Assay.
+
 That recursive use is deliberate.
 It is one of the main ways the product is validated in real work:
 
@@ -546,3 +548,22 @@ Workflow loop guardrails:
   - `autonomous`: minimal stops, unverified automation (Assay will provide future independent verification)
 
 See `docs/working/current_focus.md` and `docs/working/implementation_plan.md` for active phase detail.
+
+---
+
+## Roadmap
+
+### v0.2.0 — Semantic Enrichment
+
+- **Semantic similarity** — embedding-based similar-task detection, doc-to-task matching, and duplicate/overlap identification. All outputs labeled as inferred, not authoritative.
+- **Ranking layer** — deterministic scoring across graph distance, semantic similarity, authority level, and packet-local priority. Applied to context selection and next-task suggestion.
+- **Assay** — independent verification layer that checks work produced through Grain. Closes the loop: structure the work, execute the work, verify the result.
+- **Homebrew tap** — `brew install` support for macOS users.
+
+These features depend on an embedding infrastructure decision (local model vs. external API) that has not yet been made. v0.2.0 planning begins after that decision is resolved.
+
+### Longer term
+
+- Community adapter profiles — shareable domain-specific adapter configurations
+- `--prefix` flag for `grain onboard` — adopt Grain into repos with existing `docs/` structures without conflict
+- TUI interface — optional terminal UI for operators who prefer visual workflow navigation
