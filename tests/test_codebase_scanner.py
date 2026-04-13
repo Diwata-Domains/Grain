@@ -104,3 +104,63 @@ def test_scanner_handles_missing_or_non_directory_root(tmp_path: Path):
     assert result.applicable_adapters == []
     assert result.key_files == []
 
+
+def test_scanner_emits_devops_hint_for_dockerfile(tmp_path: Path):
+    _write(tmp_path / "Dockerfile")
+    _write(tmp_path / "src" / "main.py")
+
+    result = CodebaseScanner(tmp_path).scan()
+
+    assert any("devops_adapter" in hint for hint in result.custom_adapter_hints)
+
+
+def test_scanner_emits_devops_hint_for_terraform(tmp_path: Path):
+    _write(tmp_path / "infra" / "main.tf")
+    _write(tmp_path / "src" / "app.py")
+
+    result = CodebaseScanner(tmp_path).scan()
+
+    assert any("devops_adapter" in hint for hint in result.custom_adapter_hints)
+
+
+def test_scanner_emits_data_hint_for_notebooks(tmp_path: Path):
+    _write(tmp_path / "analysis.ipynb", '{"cells":[],"metadata":{},"nbformat":4,"nbformat_minor":5}')
+
+    result = CodebaseScanner(tmp_path).scan()
+
+    assert any("data_adapter" in hint for hint in result.custom_adapter_hints)
+
+
+def test_scanner_emits_data_hint_for_parquet(tmp_path: Path):
+    _write(tmp_path / "data" / "dataset.parquet")
+
+    result = CodebaseScanner(tmp_path).scan()
+
+    assert any("data_adapter" in hint for hint in result.custom_adapter_hints)
+
+
+def test_scanner_emits_mobile_hint_for_swift(tmp_path: Path):
+    _write(tmp_path / "App" / "ContentView.swift")
+
+    result = CodebaseScanner(tmp_path).scan()
+
+    assert any("ios_adapter" in hint for hint in result.custom_adapter_hints)
+
+
+def test_scanner_emits_mobile_hint_for_kotlin(tmp_path: Path):
+    _write(tmp_path / "app" / "MainActivity.kt")
+
+    result = CodebaseScanner(tmp_path).scan()
+
+    assert any("android_adapter" in hint for hint in result.custom_adapter_hints)
+
+
+def test_scanner_no_custom_hints_for_standard_project(tmp_path: Path):
+    _write(tmp_path / "src" / "main.py")
+    _write(tmp_path / "tests" / "test_main.py")
+    _write(tmp_path / "README.md", "# project")
+
+    result = CodebaseScanner(tmp_path).scan()
+
+    assert result.custom_adapter_hints == []
+

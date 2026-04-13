@@ -106,5 +106,9 @@ def test_all_stub_files_contain_draft_marker(tmp_path: Path):
     result = _run(tmp_path, "onboard", str(tmp_path))
     assert result.exit_code == 0, result.output
 
-    for path in (tmp_path / "docs").rglob("*.md"):
-        assert "# DRAFT" in path.read_text(encoding="utf-8")
+    # Only canonical and working stubs carry the DRAFT marker.
+    # Runtime docs are seeded from bundled sources and are not DRAFT.
+    stub_dirs = ["docs/canonical", "docs/working"]
+    for stub_dir in stub_dirs:
+        for path in (tmp_path / stub_dir).rglob("*.md"):
+            assert "# DRAFT" in path.read_text(encoding="utf-8"), path

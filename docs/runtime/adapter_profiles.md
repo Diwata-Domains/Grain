@@ -2,7 +2,7 @@
 
 ## 1. Purpose
 
-This runtime document defines the v2 adapter profile contract for Grain.
+This runtime document defines the adapter profile contract for Grain.
 
 Adapter profiles guide:
 - context prioritization

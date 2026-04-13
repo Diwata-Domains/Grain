@@ -15,13 +15,51 @@ _REQUIRED_DIRS = [
 ]
 
 _STUB_FILES: dict[str, str] = {
-    "docs/canonical/product_scope.md": "# Product Scope\\n\\n# DRAFT - replace with real content\\n",
-    "docs/canonical/architecture.md": "# Architecture\\n\\n# DRAFT - replace with real content\\n",
-    "docs/working/backlog.md": "# Backlog\\n\\n# DRAFT - replace with real content\\n",
-    "docs/working/current_focus.md": "# Current Focus\\n\\n# DRAFT - replace with real content\\n",
-    "docs/working/current_task.md": "# Current Task\\n\\n# DRAFT - replace with real content\\n",
-    "docs/working/open_questions.md": "# Open Questions\\n\\n# DRAFT - replace with real content\\n",
-    "docs/working/change_proposals.md": "# Change Proposals\\n\\n# DRAFT - replace with real content\\n",
+    "docs/canonical/product_scope.md": "# Product Scope\n\n# DRAFT - replace with real content\n",
+    "docs/canonical/architecture.md": "# Architecture\n\n# DRAFT - replace with real content\n",
+    "docs/working/backlog.md": "# Backlog\n\n# DRAFT - replace with real content\n",
+    "docs/working/current_focus.md": "# Current Focus\n\n# DRAFT - replace with real content\n",
+    "docs/working/current_task.md": "# Current Task\n\n# DRAFT - replace with real content\n",
+    "docs/working/open_questions.md": "# Open Questions\n\n# DRAFT - replace with real content\n",
+    "docs/working/change_proposals.md": "# Change Proposals\n\n# DRAFT - replace with real content\n",
+}
+
+# Bundled runtime and prompt files seeded additively — mirrors init_service seeding.
+# Keys: destination path relative to project root.
+# Values: source path relative to the bundled data root.
+_BUNDLED_DATA_ROOT = Path(__file__).resolve().parents[1] / "data"
+_SOURCE_REPO_ROOT = (
+    _BUNDLED_DATA_ROOT
+    if _BUNDLED_DATA_ROOT.exists()
+    else Path(__file__).resolve().parents[3]
+)
+
+_SEED_FILE_SOURCES: dict[str, str] = {
+    "docs/runtime/PROJECT_RULES.md": "runtime/PROJECT_RULES.md",
+    "docs/runtime/docs_manifest.yaml": "runtime/docs_manifest.yaml",
+    "docs/runtime/docs_index.md": "runtime/docs_index.md",
+    "docs/runtime/context_loading.md": "runtime/context_loading.md",
+    "docs/runtime/agent_profiles.md": "runtime/agent_profiles.md",
+    "docs/runtime/adapter_profiles.md": "runtime/adapter_profiles.md",
+    "docs/runtime/workflow_loop.yaml": "runtime/workflow_loop.yaml",
+    "templates/tasks/task.md": "templates/tasks/task.md",
+    "templates/tasks/context.md": "templates/tasks/context.md",
+    "templates/tasks/plan.md": "templates/tasks/plan.md",
+    "templates/tasks/deliverable_spec.md": "templates/tasks/deliverable_spec.md",
+    "templates/tasks/results.md": "templates/tasks/results.md",
+    "templates/tasks/handoff.md": "templates/tasks/handoff.md",
+    "templates/tasks/task_packet.md": "templates/tasks/task_packet.md",
+    "prompts/workflow.onboard.new.md": "prompts/workflow.onboard.new.md",
+    "prompts/workflow.onboard.existing.md": "prompts/workflow.onboard.existing.md",
+    "prompts/workflow.init.md": "prompts/workflow.init.md",
+    "prompts/task.plan.next.md": "prompts/task.plan.next.md",
+    "prompts/task.execute.md": "prompts/task.execute.md",
+    "prompts/task.review.md": "prompts/task.review.md",
+    "prompts/task.close.md": "prompts/task.close.md",
+    "prompts/phase.plan.next.md": "prompts/phase.plan.next.md",
+    "prompts/phase.review.md": "prompts/phase.review.md",
+    "prompts/phase.review_and_close.md": "prompts/phase.review_and_close.md",
+    "prompts/tasks.plan.next.md": "prompts/tasks.plan.next.md",
 }
 
 
@@ -52,5 +90,19 @@ class OnboardService:
             if not dry_run:
                 target.parent.mkdir(parents=True, exist_ok=True)
                 target.write_text(content, encoding="utf-8")
+
+        for rel, source_rel in _SEED_FILE_SOURCES.items():
+            target = self.root / rel
+            if target.exists():
+                manifest.skipped.append(rel)
+                continue
+            source = _SOURCE_REPO_ROOT / source_rel
+            if not source.exists():
+                manifest.skipped.append(rel)
+                continue
+            manifest.created.append(rel)
+            if not dry_run:
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_text(source.read_text(encoding="utf-8"), encoding="utf-8")
 
         return manifest

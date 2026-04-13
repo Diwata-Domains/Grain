@@ -113,6 +113,13 @@ class OnboardDocGenerator:
         if not scan.applicable_adapters:
             questions.append("### Q4 — No adapter signals detected; what primary adapter should this project use?")
 
+        for hint in scan.custom_adapter_hints:
+            q_num = len(questions) + 1
+            questions.append(
+                f"### Q{q_num} — Custom adapter suggested\n"
+                f"* **Signal:** {hint}"
+            )
+
         if not questions:
             questions.append("### Q1 — Which detected draft assumptions should be corrected first by maintainers?")
 

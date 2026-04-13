@@ -52,6 +52,25 @@ _FRONTEND_EXTENSIONS: frozenset[str] = frozenset(
 _DOC_EXTENSIONS: frozenset[str] = frozenset({".md", ".mdx", ".rst", ".txt"})
 _SPREADSHEET_EXTENSIONS: frozenset[str] = frozenset({".csv", ".ods", ".xls", ".xlsx"})
 
+_NOTEBOOK_EXTENSION: str = ".ipynb"
+_DATA_EXTENSIONS: frozenset[str] = frozenset({".parquet", ".feather", ".arrow", ".h5", ".hdf5"})
+_DEVOPS_FILE_NAMES: frozenset[str] = frozenset(
+    {
+        "dockerfile",
+        "docker-compose.yml",
+        "docker-compose.yaml",
+        "docker-compose.override.yml",
+        "docker-compose.override.yaml",
+        "vagrantfile",
+        "ansible.cfg",
+    }
+)
+_DEVOPS_EXTENSIONS: frozenset[str] = frozenset({".tf", ".hcl"})
+_MOBILE_LANGUAGE_MAP: dict[str, str] = {
+    "Swift": "ios_adapter",
+    "Kotlin": "android_adapter",
+}
+
 _KEY_FILE_NAMES: frozenset[str] = frozenset(
     {
         "makefile",
@@ -87,6 +106,9 @@ class CodebaseScanner:
 
         has_frontend_signal = False
         has_spreadsheet_signal = False
+        has_notebook_signal = False
+        has_data_signal = False
+        has_devops_signal = False
 
         for rel in self._iter_files():
             rel_path = Path(rel)
@@ -114,6 +136,15 @@ class CodebaseScanner:
             if ext in _SPREADSHEET_EXTENSIONS:
                 has_spreadsheet_signal = True
 
+            if ext == _NOTEBOOK_EXTENSION:
+                has_notebook_signal = True
+
+            if ext in _DATA_EXTENSIONS:
+                has_data_signal = True
+
+            if ext in _DEVOPS_EXTENSIONS or name in _DEVOPS_FILE_NAMES:
+                has_devops_signal = True
+
         primary_languages = [
             language
             for language, _count in sorted(
@@ -129,6 +160,13 @@ class CodebaseScanner:
             has_spreadsheet_signal=has_spreadsheet_signal,
         )
 
+        custom_adapter_hints = self._detect_custom_adapter_hints(
+            primary_languages=primary_languages,
+            has_notebook_signal=has_notebook_signal,
+            has_data_signal=has_data_signal,
+            has_devops_signal=has_devops_signal,
+        )
+
         return ScanResult(
             root=str(self.root.resolve()),
             primary_languages=primary_languages,
@@ -137,6 +175,7 @@ class CodebaseScanner:
             key_files=sorted(set(key_files)),
             ci_configs=sorted(set(ci_configs)),
             documentation_files=sorted(set(documentation_files)),
+            custom_adapter_hints=custom_adapter_hints,
         )
 
     def _iter_files(self) -> list[str]:
@@ -164,6 +203,40 @@ class CodebaseScanner:
             return rel_path.name.lower() == "config.yml"
 
         return False
+
+    def _detect_custom_adapter_hints(
+        self,
+        *,
+        primary_languages: list[str],
+        has_notebook_signal: bool,
+        has_data_signal: bool,
+        has_devops_signal: bool,
+    ) -> list[str]:
+        hints: list[str] = []
+
+        if has_devops_signal:
+            hints.append(
+                "DevOps/infrastructure files detected (Dockerfile, Terraform, or similar). "
+                "Consider defining a custom `devops_adapter` in docs/runtime/adapter_profiles.md "
+                "with file patterns for your infrastructure artifacts."
+            )
+
+        if has_notebook_signal or has_data_signal:
+            hints.append(
+                "Data science signals detected (notebooks or data files). "
+                "Consider defining a custom `data_adapter` in docs/runtime/adapter_profiles.md "
+                "with file patterns for notebooks, datasets, and model artifacts."
+            )
+
+        for language, suggested_adapter in _MOBILE_LANGUAGE_MAP.items():
+            if language in primary_languages:
+                hints.append(
+                    f"{language} detected as a primary language. "
+                    f"Consider defining a custom `{suggested_adapter}` in docs/runtime/adapter_profiles.md "
+                    f"with file patterns suited to {language} project structure."
+                )
+
+        return hints
 
     def _detect_adapters(
         self,

@@ -16,4 +16,5 @@ class ScanResult:
     key_files: list[str] = field(default_factory=list)
     ci_configs: list[str] = field(default_factory=list)
     documentation_files: list[str] = field(default_factory=list)
+    custom_adapter_hints: list[str] = field(default_factory=list)
 
