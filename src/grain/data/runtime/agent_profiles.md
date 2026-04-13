@@ -1,7 +1,7 @@
 # Agent Profiles
 
 ## Purpose
-Defines model classes and routing behavior for Forge.
+Defines model classes and routing behavior for Grain.
 
 ## Model Classes
 
@@ -53,7 +53,7 @@ Use reviewer_model when:
 ## Prompt Metadata Consumption
 - Prompt metadata is advisory runtime guidance in the current repo state.
 - Humans or external agents may use `recommended_model_class` and `escalation_model_class` when choosing how to run a prompt.
-- Until `forge model select` and related routing commands are implemented, prompt metadata should not be treated as an enforced contract.
+- Until `grain model select` and related routing commands are implemented, prompt metadata should not be treated as an enforced contract.
 - When those commands exist, they may consume prompt metadata as an input to routing, but runtime routing rules still override prompt wording if they conflict.
 
 ## Principle

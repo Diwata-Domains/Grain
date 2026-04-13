@@ -219,20 +219,20 @@ def _next_actions(packet_status: str, report: ReviewReport) -> list[str]:
         return ["Packet is already closed; no further review action required."]
     if report.review_ready:
         return [
-            "Run `forge review handoff` to generate or validate the handoff artifact.",
+            "Run `grain review handoff` to generate or validate the handoff artifact.",
             "After reviewer approval, move the packet to `done`.",
         ]
     if report.blockers:
         return [
             "Resolve the validation findings listed above.",
-            "Re-run `forge review check` after updating the packet.",
+            "Re-run `grain review check` after updating the packet.",
         ]
     if report.completion_ready:
         return [
             "Transition the packet to `review` status.",
-            "Run `forge review handoff` once the packet is review-ready.",
+            "Run `grain review handoff` once the packet is review-ready.",
         ]
     return [
         "Fill in the missing packet details or results.",
-        "Re-run `forge review check` before handoff.",
+        "Re-run `grain review check` before handoff.",
     ]

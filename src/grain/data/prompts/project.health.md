@@ -1,6 +1,6 @@
 # Project Health Review
 
-Review the current health of the Forge-managed project as a system.
+Review the current health of the Grain-managed project as a system.
 
 Metadata:
 - scope: project

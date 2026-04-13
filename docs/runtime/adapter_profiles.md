@@ -2,7 +2,7 @@
 
 ## 1. Purpose
 
-This runtime document defines the v2 adapter profile contract for Forge.
+This runtime document defines the v2 adapter profile contract for Grain.
 
 Adapter profiles guide:
 - context prioritization
@@ -111,7 +111,7 @@ Each profile should follow this section structure:
   - `dist/**`
   - `build/**`
 - `build_or_run_hints`:
-  - prefer project-native CLI entrypoints (`forge`, `python -m`, `cargo`, `make`)
+  - prefer project-native CLI entrypoints (`grain`, `python -m`, `cargo`, `make`)
   - keep execution local and deterministic
 - `test_or_validation_hints`:
   - run focused tests before full suite

@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This repository contains `Forge`, a CLI-first toolkit for structuring AI-assisted software development workflows.
+This repository contains `Grain`, a CLI-first toolkit for structuring AI-assisted software development workflows.
 
 This system is a workflow orchestrator. It is not an autonomous coding agent.
 

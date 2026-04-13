@@ -8,7 +8,7 @@ Metadata:
 - recommended_model_class: frontier_model
 - escalation_model_class: frontier_model
 
-You are onboarding a new project into Forge.
+You are onboarding a new project into Grain.
 
 ---
 
@@ -103,7 +103,7 @@ Generate a full manifest with:
 - `tasks`
 - `rules`
 
-Include selected adapter entries and keep schema compatible with existing Forge contracts.
+Include selected adapter entries and keep schema compatible with existing Grain contracts.
 
 ### 3. `docs/runtime/docs_index.md`
 Generate the human-readable index from the manifest structure:
@@ -112,7 +112,7 @@ Generate the human-readable index from the manifest structure:
 - edit permissions
 
 ### 4. `docs/runtime/PROJECT_RULES.md`
-Generate execution/authority/context/completion rules aligned with Forge workflow.
+Generate execution/authority/context/completion rules aligned with Grain workflow.
 
 ### 5. `docs/runtime/agent_profiles.md`
 Generate model-class guidance for:

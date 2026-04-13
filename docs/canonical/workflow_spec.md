@@ -6,7 +6,7 @@
 
 ## 1. Purpose
 
-This document defines the operational workflow used by `Forge`.
+This document defines the operational workflow used by `Grain`.
 
 It governs:
 - the Building Workflow
@@ -36,7 +36,7 @@ Those belong in product scope and architecture.
 
 ## 2. Workflow Model
 
-`Forge` uses two linked operational structures:
+`Grain` uses two linked operational structures:
 
 1. **Building Workflow**
    - the higher-level sequence used to move the project forward
@@ -487,9 +487,9 @@ An adapter must not:
 
 ### 13.3 Adapter-Neutral Behavior
 
-When no adapter is declared for a task packet, Forge operates adapter-neutrally. No domain hints are applied. No context biasing occurs. All workflow rules remain identical.
+When no adapter is declared for a task packet, Grain operates adapter-neutrally. No domain hints are applied. No context biasing occurs. All workflow rules remain identical.
 
-Adapter presence is always explicit — declared in packet metadata. Forge never infers an adapter from file patterns or project type alone.
+Adapter presence is always explicit — declared in packet metadata. Grain never infers an adapter from file patterns or project type alone.
 
 ### 13.4 Workflow Invariance Rule
 
@@ -523,9 +523,9 @@ The orchestration service must not:
 
 ### 15.3 Orchestrator-Neutral Behavior
 
-When no orchestration is invoked, Forge operates without orchestration involvement. The workflow loop is identical. Adapters may still be active, but adapter hints are applied per-packet without cross-domain coordination.
+When no orchestration is invoked, Grain operates without orchestration involvement. The workflow loop is identical. Adapters may still be active, but adapter hints are applied per-packet without cross-domain coordination.
 
-Orchestration is always explicit — invoked by the operator when planning multi-domain or multi-packet work. Forge does not automatically orchestrate in the background.
+Orchestration is always explicit — invoked by the operator when planning multi-domain or multi-packet work. Grain does not automatically orchestrate in the background.
 
 ### 15.4 Workflow Invariance Rule (Orchestration)
 

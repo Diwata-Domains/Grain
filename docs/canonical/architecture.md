@@ -2,7 +2,7 @@
 
 ## 1. Purpose
 
-This document defines the structural design of `Forge`.
+This document defines the structural design of `Grain`.
 
 It governs:
 - the major system components
@@ -32,7 +32,7 @@ Those belong in product scope and workflow specification.
 
 ## 2. Architectural Overview
 
-`Forge` is a local CLI application that reads and writes structured repository files in order to orchestrate AI-assisted development workflows.
+`Grain` is a local CLI application that reads and writes structured repository files in order to orchestrate AI-assisted development workflows.
 
 ### 2.1 Layered Subsystem Model
 
@@ -113,7 +113,7 @@ The architecture must keep orchestration logic separate from external execution 
    - this applies to agent-generated content, roadmap suggestions, candidate tasks, and all advisory outputs
 
 9. **Constrained autonomy**
-   - Forge supports advisory intelligence with an explicit autonomy model: observe → suggest → draft → constrained commit
+   - Grain supports advisory intelligence with an explicit autonomy model: observe → suggest → draft → constrained commit
    - constrained commit means advisory outputs may only affect system state under explicit, documented rules
    - no advisory layer component has unconditional write authority over canonical state
 
@@ -362,11 +362,11 @@ Record, aggregate, and surface workflow quality signals. Provides the data input
 ### 4.13 Domain Adapter Layer
 
 #### Responsibility
-Bridge domain-specific execution hints, context selection priorities, validation patterns, and review focus into the Forge workflow without modifying the Runtime Core or workflow law.
+Bridge domain-specific execution hints, context selection priorities, validation patterns, and review focus into the Grain workflow without modifying the Runtime Core or workflow law.
 
 #### Adapter categories
 
-**Official adapters** — maintained by the Forge project; distributed as part of the core system. Examples: `code_adapter`, `frontend_adapter`, `docs_adapter`, `spreadsheet_adapter`.
+**Official adapters** — maintained by the Grain project; distributed as part of the core system. Examples: `code_adapter`, `frontend_adapter`, `docs_adapter`, `spreadsheet_adapter`.
 
 **Custom adapters** — defined locally within a repo for domain-specific or private use cases. Examples: a `devops_adapter` for VPS provisioning tasks, a `local_ops_adapter` for machine-admin repos, or a domain-specific adapter for any operational workflow expressible through repo artifacts. Custom adapters must conform to the same contract as official adapters.
 
@@ -517,7 +517,7 @@ The architecture should assume a repository layout similar to:
     tasks/
     prompts/
   src/
-    forge/
+    grain/
       cli/
       services/
       domain/
@@ -760,7 +760,7 @@ At no point does an advisory output directly mutate system state. The operator i
 5. `OrchestratorPlan` passes to the Review/Gate Layer as a proposal
 6. gate validates plan against canonical rules and packet contracts
 7. operator reviews and accepts, modifies, or rejects the plan
-8. accepted candidates are converted to task packets through the normal packet creation flow (`forge task create`)
+8. accepted candidates are converted to task packets through the normal packet creation flow (`grain task create`)
 9. no packets are created or mutated before step 8
 
 ### 8.7 Telemetry Collection Flow

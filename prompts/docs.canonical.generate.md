@@ -5,7 +5,7 @@ Metadata:
 - stage: initialize
 - recommended_model_class: frontier_model
 
-Generate canonical reference documents for a project using the Forge document authority model.
+Generate canonical reference documents for a project using the Grain document authority model.
 
 ---
 
@@ -36,7 +36,7 @@ If context is ambiguous or incomplete, ask clarifying questions before generatin
 [Languages, frameworks, platforms — used to generate architecture appropriate to the project]
 
 **Adapters:**
-[Which Forge adapters apply — backend_adapter, frontend_adapter, docs_adapter, spreadsheet_adapter, or other]
+[Which Grain adapters apply — backend_adapter, frontend_adapter, docs_adapter, spreadsheet_adapter, or other]
 
 **v1 Scope:**
 [What is in and out of scope for v1]
@@ -44,8 +44,8 @@ If context is ambiguous or incomplete, ask clarifying questions before generatin
 ---
 
 <!-- Reference example — do not modify below this line -->
-<!-- EXAMPLE (Forge):
-Project Name: Forge
+<!-- EXAMPLE (Grain):
+Project Name: Grain
 Purpose: CLI-first toolkit for structuring AI-assisted development workflows.
 Key Capabilities: task packet system, doc authority system, build loop enforcement, model-agnostic execution, context assembly and export
 Constraints: CLI-first, filesystem-based, single-user, minimal context loading, human approval for canonical changes

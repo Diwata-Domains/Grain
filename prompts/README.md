@@ -1,6 +1,6 @@
 # Prompt Index
 
-This directory contains the runnable prompt surface for Forge.
+This directory contains the runnable prompt surface for Grain.
 
 Use these prompts from your agent CLI.
 They are workflow entrypoints, not canonical source-of-truth documents.
@@ -128,11 +128,11 @@ Higher-authority rules still live in:
 
 ## Machine-Readable Prompt Surface
 
-`forge prompt show` surfaces the recommended prompt entrypoint for the current repo state without making prompts the source of truth.
+`grain prompt show` surfaces the recommended prompt entrypoint for the current repo state without making prompts the source of truth.
 
 ```bash
-forge prompt show
-forge --format json prompt show
+grain prompt show
+grain --format json prompt show
 ```
 
 Output includes: `recommended_prompt`, `model_class`, `scope`, `stage`, `next_action`, `stop_reason`, `blocking_reasons`. Prompts remain execution aids — canonical workflow rules live in the project's declared canonical and runtime docs, not in a single universal filename.

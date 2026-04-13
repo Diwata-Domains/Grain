@@ -2,7 +2,7 @@
 
 ## 1. Purpose
 
-This document defines the filesystem-level data contracts for `Forge`.
+This document defines the filesystem-level data contracts for `Grain`.
 
 It governs:
 - required document identifiers and structural metadata
@@ -537,7 +537,7 @@ default_model_bias: <string | mapping>
 
 ### 17.3 Official vs Custom Adapters
 
-**Official adapters** are maintained by the Forge project and distributed in the core adapter profiles file. They are subject to the same canonical change process as other runtime docs.
+**Official adapters** are maintained by the Grain project and distributed in the core adapter profiles file. They are subject to the same canonical change process as other runtime docs.
 
 **Custom adapters** are defined locally by users for repo-specific or private domain needs. They must conform to the same schema as official adapters. Custom adapters may be added to `docs/runtime/adapter_profiles.md` alongside official ones, or declared in a separate file referenced by the manifest.
 
@@ -630,7 +630,7 @@ A validator must be able to check:
 ### 18.4 OrchestratorPlan Lifecycle Rules
 
 - an OrchestratorPlan with status `draft` or `under_review` must not trigger task packet creation
-- an OrchestratorPlan with status `accepted` indicates operator approval; packet creation follows through `forge task create`, not automatically
+- an OrchestratorPlan with status `accepted` indicates operator approval; packet creation follows through `grain task create`, not automatically
 - an OrchestratorPlan with status `rejected` or `deferred` is retained for audit but has no effect on workflow state
 - OrchestratorPlans must not modify canonical docs, the backlog, or the phase plan directly
 

@@ -2,7 +2,7 @@
 
 ## 1. Purpose
 
-This document defines the product boundary for `Forge`.
+This document defines the product boundary for `Grain`.
 
 It governs:
 - project purpose
@@ -32,51 +32,51 @@ Those belong in architecture and workflow specifications.
 
 ## 2. Product Definition
 
-### 2.1 Forge
+### 2.1 Grain
 
-`Forge` is a CLI-first workflow orchestration system for AI-assisted software development.
+`Grain` is a CLI-first workflow orchestration system for AI-assisted software development.
 
-Forge is the **build and execution system**. Its role is to structure software development work so that humans and external coding agents can operate through:
+Grain is the **build and execution system**. Its role is to structure software development work so that humans and external coding agents can operate through:
 - explicit documentation layers
 - scoped task packets
 - minimal context loading
 - model-agnostic execution paths
 - reviewable, human-controlled canonical change flow
 
-Forge is not a coding agent. It does not replace external coding tools. It prepares, structures, and governs work so external tools can execute tasks with clearer boundaries, less unnecessary context, and less token waste across repeated agent conversations.
+Grain is not a coding agent. It does not replace external coding tools. It prepares, structures, and governs work so external tools can execute tasks with clearer boundaries, less unnecessary context, and less token waste across repeated agent conversations.
 
-Forge exists in part because agent-CLI users often lose throughput to broad context dumps, repeated planning, stale-context drift, and avoidable retries before usage limits refresh. Forge should improve the amount of useful work completed per context window by making execution state explicit and task-scoped.
+Grain exists in part because agent-CLI users often lose throughput to broad context dumps, repeated planning, stale-context drift, and avoidable retries before usage limits refresh. Grain should improve the amount of useful work completed per context window by making execution state explicit and task-scoped.
 
-Forge is also suitable for content-management workflows when the content lives in structured local files, especially markdown-first repositories such as documentation systems, knowledge bases, editorial systems, and site content collections.
+Grain is also suitable for content-management workflows when the content lives in structured local files, especially markdown-first repositories such as documentation systems, knowledge bases, editorial systems, and site content collections.
 
-Forge extends to any domain whose work can be expressed through repo artifacts, task packets, and explicit review — including DevOps, VPS provisioning, deployment automation, system administration, reverse-proxy configuration, firewall and SSH hardening, service management, backup planning, containerization, rollback procedures, and local-ops repositories.
+Grain extends to any domain whose work can be expressed through repo artifacts, task packets, and explicit review — including DevOps, VPS provisioning, deployment automation, system administration, reverse-proxy configuration, firewall and SSH hardening, service management, backup planning, containerization, rollback procedures, and local-ops repositories.
 
-Forge supports domain-specific execution through a **contract-driven adapter model**. Adapters are structured, repo-visible domain bridges that tune context selection, validation hints, and review focus for a specific execution domain without changing core workflow semantics. Official adapters are maintained by the Forge project. Custom adapters may be defined locally by users for any domain.
+Grain supports domain-specific execution through a **contract-driven adapter model**. Adapters are structured, repo-visible domain bridges that tune context selection, validation hints, and review focus for a specific execution domain without changing core workflow semantics. Official adapters are maintained by the Grain project. Custom adapters may be defined locally by users for any domain.
 
-Forge includes an **orchestration service** that coordinates work across multiple adapters and domains at the task, phase, and project levels. The orchestration service produces structured planning proposals — packet sequence plans, split recommendations, phase shape drafts, and cross-domain dependency maps — which pass through the Review/Gate Layer before affecting system state. Task packets remain the execution unit. Orchestration proposes; the operator approves; the packet system executes.
+Grain includes an **orchestration service** that coordinates work across multiple adapters and domains at the task, phase, and project levels. The orchestration service produces structured planning proposals — packet sequence plans, split recommendations, phase shape drafts, and cross-domain dependency maps — which pass through the Review/Gate Layer before affecting system state. Task packets remain the execution unit. Orchestration proposes; the operator approves; the packet system executes.
 
-Forge evolves toward an **assistant-guided system** while preserving precision and reliability. Intelligence and advisory behavior are supported but are explicitly separated from execution authority and contract enforcement. Forge should not be characterized as a purely dumb executor — advisory capability is part of its design — but all advisory outputs are proposals until validated, never direct mutations.
+Grain evolves toward an **assistant-guided system** while preserving precision and reliability. Intelligence and advisory behavior are supported but are explicitly separated from execution authority and contract enforcement. Grain should not be characterized as a purely dumb executor — advisory capability is part of its design — but all advisory outputs are proposals until validated, never direct mutations.
 
 ### 2.2 Sentinel
 
-`Sentinel` is the companion **verification and reproducibility system** to Forge.
+`Sentinel` is the companion **verification and reproducibility system** to Grain.
 
-Where Forge asks **"how do we build it?"**, Sentinel asks **"does it work?"**
+Where Grain asks **"how do we build it?"**, Sentinel asks **"does it work?"**
 
-Sentinel operates as a separate system that feeds structured verification results back into Forge as work inputs. It is a paid product built on top of a stable Forge foundation.
+Sentinel operates as a separate system that feeds structured verification results back into Grain as work inputs. It is a paid product built on top of a stable Grain foundation.
 
 ### 2.3 Product System
 
-Together, Forge and Sentinel form a complete AI-assisted development system:
+Together, Grain and Sentinel form a complete AI-assisted development system:
 
-- **Forge** — build, execution, workflow orchestration
+- **Grain** — build, execution, workflow orchestration
 - **Sentinel** — verification, reproducibility, issue detection and ingestion
 
 ### 2.3a Improvement Boundary
 
-Forge and Sentinel improve the overall system through different loops.
+Grain and Sentinel improve the overall system through different loops.
 
-Forge owns workflow improvement:
+Grain owns workflow improvement:
 - detect repeated friction in planning, packetization, review, and closure
 - surface token waste, context drift, retry churn, and automation candidates
 - turn those findings into proposals, backlog items, or scoped task packets
@@ -92,21 +92,21 @@ Improvement remains proposal-driven and gated by explicit review.
 
 ### 2.4 Recursive Validation Principle
 
-Forge is intended to be used recursively:
+Grain is intended to be used recursively:
 
-1. to build Forge itself
-2. to build Sentinel on top of Forge
+1. to build Grain itself
+2. to build Sentinel on top of Grain
 3. later, to build additional workflow and verification capabilities using the same disciplined loop
 
 This is a product validation strategy, not just a development preference.
 
 Reason:
-- it tests whether Forge's workflow survives real iterative use
+- it tests whether Grain's workflow survives real iterative use
 - it exposes token waste, context drift, retry churn, and workflow friction early
 - it proves whether task packets, review gates, and minimal-context execution hold up under actual product development
 
 Recursive validation is strong evidence, but it is not sufficient on its own.
-Forge must also work for projects that were not shaped around Forge from the start.
+Grain must also work for projects that were not shaped around Grain from the start.
 
 ---
 
@@ -150,7 +150,7 @@ The toolkit does not directly design, write, or refactor production code as its 
 ### 4.2 Not a Project Management Suite
 It is not a general PM platform, issue tracker, kanban system, or collaboration workspace.
 
-Forge does manage execution structure through phases, backlog items, task packets, review gates, and closure state. However, that workflow management exists to support agent-driven build execution, not to become a generic team planning product.
+Grain does manage execution structure through phases, backlog items, task packets, review gates, and closure state. However, that workflow management exists to support agent-driven build execution, not to become a generic team planning product.
 
 ### 4.3 Not a Multi-User Coordination System
 It does not manage permissions, teams, approvals, or multi-user workflow state.
@@ -164,7 +164,7 @@ There is no UI requirement for v1. All primary workflows must succeed through CL
 ### 4.6 Not a Fully Autonomous Builder
 The toolkit should not decide broad product direction independently or perform uncontrolled multi-step implementation loops without explicit task structure.
 
-Advisory intelligence is supported — Forge may suggest tasks, phases, roadmap items, and efficiency improvements. However, advisory outputs are proposals, not authoritative decisions. Only validated proposals may affect system state. Forge must never autonomously mutate canonical state, task structure, or system contracts without explicit human approval.
+Advisory intelligence is supported — Grain may suggest tasks, phases, roadmap items, and efficiency improvements. However, advisory outputs are proposals, not authoritative decisions. Only validated proposals may affect system state. Grain must never autonomously mutate canonical state, task structure, or system contracts without explicit human approval.
 
 ---
 
@@ -195,7 +195,7 @@ The toolkit should not assume:
 - custom database administration
 
 ### 5.3 Agent CLI Assumption
-Users of Forge are expected to have access to an agent CLI (e.g. Claude Code or equivalent). The primary workflow surface is agent-driven prompts, not raw CLI commands alone. The CLI handles mechanical operations; the agent handles reasoning, planning, and content generation. Documentation, prompts, and onboarding flows should be designed with this assumption.
+Users of Grain are expected to have access to an agent CLI (e.g. Claude Code or equivalent). The primary workflow surface is agent-driven prompts, not raw CLI commands alone. The CLI handles mechanical operations; the agent handles reasoning, planning, and content generation. Documentation, prompts, and onboarding flows should be designed with this assumption.
 
 ---
 
@@ -225,10 +225,10 @@ These are workflow roles, not vendor bindings.
 
 ### 6.6 AdapterProfile
 
-A structured, repo-visible domain bridge that extends Forge workflow behavior for a specific execution domain. An adapter profile specifies context selection hints, validation patterns, review focus, deliverable expectations, and optional model-routing guidance. Adapters extend the workflow; they do not override it.
+A structured, repo-visible domain bridge that extends Grain workflow behavior for a specific execution domain. An adapter profile specifies context selection hints, validation patterns, review focus, deliverable expectations, and optional model-routing guidance. Adapters extend the workflow; they do not override it.
 
 Two categories of adapter are supported:
-- **official adapters** — maintained by the Forge project; shipped as part of the core distribution
+- **official adapters** — maintained by the Grain project; shipped as part of the core distribution
 - **custom adapters** — defined locally within a repo for domain-specific or private use cases
 
 ### 6.8 OrchestratorPlan
@@ -358,7 +358,7 @@ Canonical changes require human approval.
 Each task should load only the minimum valid documentation required.
 
 ### 9.6 Execution Boundary Constraint
-External coding agents remain separate execution tools. `Forge` orchestrates workflow, context, and task structure.
+External coding agents remain separate execution tools. `Grain` orchestrates workflow, context, and task structure.
 
 ### 9.7 Complexity Constraint
 v1 should favor explicit files and simple flows over abstract orchestration machinery.
@@ -394,7 +394,7 @@ v1 should favor explicit files and simple flows over abstract orchestration mach
    - this is a foundational constraint, not a style preference
 
 9. **Open-core posture**
-   - Forge core functionality should be genuinely useful without artificial limitation
+   - Grain core functionality should be genuinely useful without artificial limitation
    - paid capabilities derive value from verification, reproducibility, intelligence, and multi-project coordination — not from withholding basic execution capability
 
 10. **Domain-adaptable, workflow-invariant**
@@ -412,10 +412,10 @@ v1 should favor explicit files and simple flows over abstract orchestration mach
 
 ## 11. Product Ladder
 
-Forge and Sentinel follow an open-core model.
+Grain and Sentinel follow an open-core model.
 
-### 11.1 Forge Core — Open
-The core Forge system is open and generous. It includes:
+### 11.1 Grain Core — Open
+The core Grain system is open and generous. It includes:
 - full workflow orchestration (build loop, task packets, lifecycle management)
 - context assembly and export
 - model routing
@@ -424,15 +424,15 @@ The core Forge system is open and generous. It includes:
 - custom adapter support: users may define repo-local adapter profiles for any domain (DevOps, VPS, local ops, content, or any domain expressible through repo artifacts and task packets)
 - prompt library and templates
 
-Forge Core should be fully usable for individual developers and small teams without payment.
+Grain Core should be fully usable for individual developers and small teams without payment.
 
-### 11.2 Forge Pro — Future Paid Layer
+### 11.2 Grain Pro — Future Paid Layer
 A possible future paid layer covering advanced capabilities:
 - intelligence and advisory features (candidate task generation, roadmap suggestions, efficiency analysis)
 - multi-project coordination and visibility
 - advanced project management features
 
-This is secondary to Sentinel monetization and may not exist in v1 or v2. Basic Forge Core must remain useful and complete without it.
+This is secondary to Sentinel monetization and may not exist in v1 or v2. Basic Grain Core must remain useful and complete without it.
 
 ### 11.3 Sentinel — Paid Product
 Sentinel is a paid verification and reproducibility system. Monetization is based on:
@@ -440,9 +440,9 @@ Sentinel is a paid verification and reproducibility system. Monetization is base
 - reproducible artifact generation
 - bug detection and issue ingestion
 - observability and workflow intelligence
-- structured issue feedback into Forge as work inputs
+- structured issue feedback into Grain as work inputs
 
-Sentinel derives value from what it adds, not from limiting Forge.
+Sentinel derives value from what it adds, not from limiting Grain.
 
 ---
 

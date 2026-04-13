@@ -1,7 +1,7 @@
 version: 1
 
 project:
-  name: Forge
+  name: Grain
   type: cli_toolkit
   mode: single_user
   storage: filesystem

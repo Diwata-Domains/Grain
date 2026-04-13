@@ -2,7 +2,7 @@
 
 ## 1. Purpose
 
-This document defines the CLI contract for `Forge`.
+This document defines the CLI contract for `Grain`.
 
 It governs:
 - command groups
@@ -79,19 +79,19 @@ The CLI must orchestrate workflow state through files on disk, not hidden servic
 Recommended command form:
 
 ```text
-forge <group> <command> [arguments] [options]
+grain <group> <command> [arguments] [options]
 ```
 
 Where:
 
-- `forge` is the executable name
+- `grain` is the executable name
 - `<group>` is a command namespace
 - `<command>` is an operation within that namespace
 
 Example:
 
 ```text
-forge task create --title "Add packet validator"
+grain task create --title "Add packet validator"
 ```
 
 ### 4.2 Path Resolution Rules
@@ -213,7 +213,7 @@ Initialize repository structure and baseline toolkit artifacts.
 
 #### v1 Commands
 
-**`forge init`** — create the base repository structure for toolkit usage.
+**`grain init`** — create the base repository structure for toolkit usage.
 
 #### Responsibilities
 
@@ -251,11 +251,11 @@ Inspect and validate repository documentation state.
 
 #### v1 Commands
 
-**`forge docs validate`** — validate required documentation structure and contracts.
+**`grain docs validate`** — validate required documentation structure and contracts.
 
-**`forge docs index`** — generate or refresh documentation index artifacts if supported in v1.
+**`grain docs index`** — generate or refresh documentation index artifacts if supported in v1.
 
-**`forge docs show`** — display doc metadata or path information for a known document.
+**`grain docs show`** — display doc metadata or path information for a known document.
 
 #### Responsibilities
 
@@ -284,17 +284,17 @@ Create and manage task packets.
 
 #### v1 Commands
 
-**`forge task create`** — create a new task packet.
+**`grain task create`** — create a new task packet.
 
-**`forge task list`** — list task packets.
+**`grain task list`** — list task packets.
 
-**`forge task show`** — show packet metadata and status.
+**`grain task show`** — show packet metadata and status.
 
-**`forge task status`** — update packet status.
+**`grain task status`** — update packet status.
 
-**`forge task validate`** — validate one packet or all packets.
+**`grain task validate`** — validate one packet or all packets.
 
-**`forge task close`** — attempt closure validation for a packet.
+**`grain task close`** — attempt closure validation for a packet.
 
 #### Responsibilities
 
@@ -328,11 +328,11 @@ Prepare minimal execution context for one task packet.
 
 #### v1 Commands
 
-**`forge context build`** — assemble context for a packet.
+**`grain context build`** — assemble context for a packet.
 
-**`forge context show`** — display selected docs and packet materials for a packet.
+**`grain context show`** — display selected docs and packet materials for a packet.
 
-**`forge context export`** — export context bundle for external tool usage.
+**`grain context export`** — export context bundle for external tool usage.
 
 #### Responsibilities
 
@@ -363,22 +363,22 @@ Prepare minimal execution context for one task packet.
 
 #### Output behavior
 
-- `forge context export` text mode writes a single markdown file
-- if `forge context export` is run without `--output`, it writes `context_export.md` inside the packet directory
+- `grain context export` text mode writes a single markdown file
+- if `grain context export` is run without `--output`, it writes `context_export.md` inside the packet directory
 
 #### Structured output behavior
 
-- `forge context build --format json` returns a `bundle` object for bundle inspection:
+- `grain context build --format json` returns a `bundle` object for bundle inspection:
   - packet files
   - selected canonical docs as full document records
   - selected working docs as full document records
   - export metadata
-- `forge context show --format json` returns a `bundle` object for context inspection:
+- `grain context show --format json` returns a `bundle` object for context inspection:
   - packet files
   - selected canonical docs as summary records containing `id` and `path`
   - selected working docs as summary records containing `id` and `path`
   - export metadata
-- `forge context export --format json` returns an `export` object for external-tool export metadata:
+- `grain context export --format json` returns an `export` object for external-tool export metadata:
   - `task_id`
   - `generated_at`
   - `sources[]` entries containing `path`, `kind`, and `exists`
@@ -395,11 +395,11 @@ Inspect model class routing and routing decisions.
 
 #### v1 Commands
 
-**`forge model show`** — show configured model classes and profiles.
+**`grain model show`** — show configured model classes and profiles.
 
-**`forge model select`** — resolve which model class should be used for a workflow stage or task.
+**`grain model select`** — resolve which model class should be used for a workflow stage or task.
 
-**`forge model escalate`** — promote a task or stage from one model class to another according to rules.
+**`grain model escalate`** — promote a task or stage from one model class to another according to rules.
 
 #### Responsibilities
 
@@ -428,11 +428,11 @@ Support acceptance, handoff, and completion workflows.
 
 #### v1 Commands
 
-**`forge review check`** — run review-oriented validation on a packet.
+**`grain review check`** — run review-oriented validation on a packet.
 
-**`forge review handoff`** — generate or validate handoff artifacts.
+**`grain review handoff`** — generate or validate handoff artifacts.
 
-**`forge review summary`** — produce a structured summary of packet state for final inspection.
+**`grain review summary`** — produce a structured summary of packet state for final inspection.
 
 #### Responsibilities
 
@@ -461,9 +461,9 @@ Inspect the available adapter profiles and their configured domain contracts.
 
 #### v1/v2 Commands
 
-**`forge adapter list`** — list all available adapter profiles (official and custom).
+**`grain adapter list`** — list all available adapter profiles (official and custom).
 
-**`forge adapter show`** — display the full contract for one adapter profile.
+**`grain adapter show`** — display the full contract for one adapter profile.
 
 #### Responsibilities
 
@@ -484,7 +484,7 @@ Inspect the available adapter profiles and their configured domain contracts.
 
 #### Deferral note
 
-`forge adapter list` and `forge adapter show` are defined here as the stable command surface for adapter inspection. Full implementation is deferred to the phase where adapter validation is automated. The command surface should be registered early so it appears in `forge --help` output and validates cleanly.
+`grain adapter list` and `grain adapter show` are defined here as the stable command surface for adapter inspection. Full implementation is deferred to the phase where adapter validation is automated. The command surface should be registered early so it appears in `grain --help` output and validates cleanly.
 
 ### 6.8 `orchestrate`
 
@@ -494,9 +494,9 @@ Invoke the orchestration service to produce structured planning proposals for mu
 
 #### v2 Commands
 
-**`forge orchestrate scope`** — analyze a described work item and identify relevant adapters, domains, and likely cross-domain dependencies.
+**`grain orchestrate scope`** — analyze a described work item and identify relevant adapters, domains, and likely cross-domain dependencies.
 
-**`forge orchestrate plan`** — produce a draft `OrchestratorPlan` containing packet candidates, dependency links, and split recommendations for a described phase or work scope.
+**`grain orchestrate plan`** — produce a draft `OrchestratorPlan` containing packet candidates, dependency links, and split recommendations for a described phase or work scope.
 
 #### Responsibilities
 
@@ -520,21 +520,21 @@ Invoke the orchestration service to produce structured planning proposals for mu
 
 #### Deferral note
 
-`forge orchestrate` commands are defined here as the stable CLI surface for orchestration. Implementation is deferred until the orchestration service is built in a future phase. The command group should be registered early so it appears in `forge --help` with a not-implemented message.
+`grain orchestrate` commands are defined here as the stable CLI surface for orchestration. Implementation is deferred until the orchestration service is built in a future phase. The command group should be registered early so it appears in `grain --help` with a not-implemented message.
 
 ### 6.9 `verify`
 
 #### Purpose
 
-Bridge command surface for Sentinel verification integration. Allows operators and agents to submit task artifacts for external verification, poll for verification status, and ingest completed Sentinel results into Forge workflow state. The verification gate in the workflow runner stops execution until a pending verification is resolved.
+Bridge command surface for Sentinel verification integration. Allows operators and agents to submit task artifacts for external verification, poll for verification status, and ingest completed Sentinel results into Grain workflow state. The verification gate in the workflow runner stops execution until a pending verification is resolved.
 
 #### v2/deferred Commands
 
-**`forge verify submit`** — submit a set of task artifacts to Sentinel for verification; returns a `verification_id` for subsequent status checks.
+**`grain verify submit`** — submit a set of task artifacts to Sentinel for verification; returns a `verification_id` for subsequent status checks.
 
-**`forge verify status`** — check the status of a pending verification by `verification_id`; returns current state (`pending`, `complete`, `failed`) and any available outcome fields.
+**`grain verify status`** — check the status of a pending verification by `verification_id`; returns current state (`pending`, `complete`, `failed`) and any available outcome fields.
 
-**`forge verify ingest`** — ingest a completed Sentinel result payload into Forge workflow state; triggers resolution of the verification gate stop condition in the runner.
+**`grain verify ingest`** — ingest a completed Sentinel result payload into Grain workflow state; triggers resolution of the verification gate stop condition in the runner.
 
 #### Responsibilities
 
@@ -561,7 +561,7 @@ Bridge command surface for Sentinel verification integration. Allows operators a
 
 #### Deferral note
 
-`forge verify` commands are defined here as the stable CLI surface for Sentinel integration. Implementation is deferred until the Sentinel Integration Layer (FR-006) is built. The command group should be registered as deferred stubs per §5.1 — returning a not-implemented error with a non-zero exit code — so it appears in `forge --help` and fails explicitly before implementation.
+`grain verify` commands are defined here as the stable CLI surface for Sentinel integration. Implementation is deferred until the Sentinel Integration Layer (FR-006) is built. The command group should be registered as deferred stubs per §5.1 — returning a not-implemented error with a non-zero exit code — so it appears in `grain --help` and fails explicitly before implementation.
 
 ---
 
@@ -707,36 +707,36 @@ The following are explicitly deferred unless needed later:
 v1 should support the following minimum command set:
 
 ```text
-forge init
-forge docs validate
-forge docs show
-forge task create
-forge task list
-forge task show
-forge task status
-forge task validate
-forge task close
-forge context build
-forge context show
-forge context export
-forge model show
-forge model select
-forge model escalate
-forge review check
-forge review handoff
-forge review summary
-forge adapter list
-forge adapter show
-forge orchestrate scope
-forge orchestrate plan
-forge verify submit
-forge verify status
-forge verify ingest
+grain init
+grain docs validate
+grain docs show
+grain task create
+grain task list
+grain task show
+grain task status
+grain task validate
+grain task close
+grain context build
+grain context show
+grain context export
+grain model show
+grain model select
+grain model escalate
+grain review check
+grain review handoff
+grain review summary
+grain adapter list
+grain adapter show
+grain orchestrate scope
+grain orchestrate plan
+grain verify submit
+grain verify status
+grain verify ingest
 ```
 
-`forge orchestrate` commands are defined but deferred. They must be registered with a not-implemented message until the orchestration service is implemented.
+`grain orchestrate` commands are defined but deferred. They must be registered with a not-implemented message until the orchestration service is implemented.
 
-`forge verify` commands are defined but deferred. They must be registered with a not-implemented message until the Sentinel Integration Layer (FR-006) is implemented.
+`grain verify` commands are defined but deferred. They must be registered with a not-implemented message until the Sentinel Integration Layer (FR-006) is implemented.
 
 Additional commands may be added later, but the surface should remain disciplined.
 
