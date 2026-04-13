@@ -1,11 +1,11 @@
 Metadata-Version: 2.4
 Name: grain-kit
-Version: 0.1.0
+Version: 0.1.1
 Summary: CLI-first workflow toolkit for structured AI-assisted software development.
 License-Expression: LicenseRef-Proprietary
-Project-URL: Homepage, https://github.com/barbaricum/ai-build-toolkit
-Project-URL: Repository, https://github.com/barbaricum/ai-build-toolkit
-Project-URL: Issues, https://github.com/barbaricum/ai-build-toolkit/issues
+Project-URL: Homepage, https://github.com/Diwata-Labs/Grain
+Project-URL: Repository, https://github.com/Diwata-Labs/Grain
+Project-URL: Issues, https://github.com/Diwata-Labs/Grain/issues
 Keywords: ai,workflow,cli,orchestration,developer-tools
 Classifier: Development Status :: 3 - Alpha
 Classifier: Environment :: Console

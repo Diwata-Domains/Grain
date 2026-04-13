@@ -18,17 +18,27 @@ _REQUIRED_DIRS = [
 
 # Paths treated as canonical — never overwritten without --force, always reported
 _CANONICAL_PREFIX = "docs/canonical"
-_SOURCE_REPO_ROOT = Path(__file__).resolve().parents[3]
+
+# Bundled data directory: src/grain/data/ — included in the package via package-data.
+# Falls back to the repo root for development workflows where the package is not installed.
+_BUNDLED_DATA_ROOT = Path(__file__).resolve().parents[1] / "data"
+_SOURCE_REPO_ROOT = (
+    _BUNDLED_DATA_ROOT
+    if _BUNDLED_DATA_ROOT.exists()
+    else Path(__file__).resolve().parents[3]
+)
 
 # Baseline seed files written during init when missing.
-# Sources are copied from this Forge repo's tracked template/runtime docs.
+# Keys: destination path relative to the new project root.
+# Values: source path relative to _SOURCE_REPO_ROOT.
 _SEED_FILE_SOURCES = {
-    "docs/runtime/PROJECT_RULES.md": "docs/runtime/PROJECT_RULES.md",
-    "docs/runtime/docs_manifest.yaml": "docs/runtime/docs_manifest.yaml",
-    "docs/runtime/docs_index.md": "docs/runtime/docs_index.md",
-    "docs/runtime/context_loading.md": "docs/runtime/context_loading.md",
-    "docs/runtime/agent_profiles.md": "docs/runtime/agent_profiles.md",
-    "docs/runtime/adapter_profiles.md": "docs/runtime/adapter_profiles.md",
+    "docs/runtime/PROJECT_RULES.md": "runtime/PROJECT_RULES.md",
+    "docs/runtime/docs_manifest.yaml": "runtime/docs_manifest.yaml",
+    "docs/runtime/docs_index.md": "runtime/docs_index.md",
+    "docs/runtime/context_loading.md": "runtime/context_loading.md",
+    "docs/runtime/agent_profiles.md": "runtime/agent_profiles.md",
+    "docs/runtime/adapter_profiles.md": "runtime/adapter_profiles.md",
+    "docs/runtime/workflow_loop.yaml": "runtime/workflow_loop.yaml",
     "templates/tasks/task.md": "templates/tasks/task.md",
     "templates/tasks/context.md": "templates/tasks/context.md",
     "templates/tasks/plan.md": "templates/tasks/plan.md",
@@ -36,6 +46,17 @@ _SEED_FILE_SOURCES = {
     "templates/tasks/results.md": "templates/tasks/results.md",
     "templates/tasks/handoff.md": "templates/tasks/handoff.md",
     "templates/tasks/task_packet.md": "templates/tasks/task_packet.md",
+    "prompts/workflow.onboard.new.md": "prompts/workflow.onboard.new.md",
+    "prompts/workflow.onboard.existing.md": "prompts/workflow.onboard.existing.md",
+    "prompts/workflow.init.md": "prompts/workflow.init.md",
+    "prompts/task.plan.next.md": "prompts/task.plan.next.md",
+    "prompts/task.execute.md": "prompts/task.execute.md",
+    "prompts/task.review.md": "prompts/task.review.md",
+    "prompts/task.close.md": "prompts/task.close.md",
+    "prompts/phase.plan.next.md": "prompts/phase.plan.next.md",
+    "prompts/phase.review.md": "prompts/phase.review.md",
+    "prompts/phase.review_and_close.md": "prompts/phase.review_and_close.md",
+    "prompts/tasks.plan.next.md": "prompts/tasks.plan.next.md",
 }
 
 
@@ -127,12 +148,18 @@ def _apply_adapter_selection(
     result: InitResult,
 ) -> None:
     """Validate declared adapters against source adapter profiles and record selections."""
-    from grain.adapters.adapter_config import load_adapter_profiles
     from grain.domain.errors import ConfigError, MissingPathError
 
     known_ids: set[str] = set()
     try:
-        profiles = load_adapter_profiles(_SOURCE_REPO_ROOT)
+        # Resolve adapter profiles from bundled data (runtime/adapter_profiles.md)
+        # or fall back to the repo-root layout (docs/runtime/adapter_profiles.md).
+        bundled_path = _SOURCE_REPO_ROOT / "runtime" / "adapter_profiles.md"
+        repo_path = _SOURCE_REPO_ROOT / "docs" / "runtime" / "adapter_profiles.md"
+        profiles_path = bundled_path if bundled_path.exists() else repo_path
+        from grain.adapters.adapter_config import parse_adapter_profiles_markdown
+        text = profiles_path.read_text(encoding="utf-8")
+        profiles = parse_adapter_profiles_markdown(text)
         known_ids = {p.adapter_id for p in profiles}
     except (ConfigError, MissingPathError, Exception):
         result.adapter_warnings.append(

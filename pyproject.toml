@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "grain-kit"
-version = "0.1.0"
+version = "0.1.1"
 description = "CLI-first workflow toolkit for structured AI-assisted software development."
 readme = "README.md"
 license = "LicenseRef-Proprietary"
@@ -48,12 +48,12 @@ release = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/barbaricum/ai-build-toolkit"
-Repository = "https://github.com/barbaricum/ai-build-toolkit"
-Issues = "https://github.com/barbaricum/ai-build-toolkit/issues"
-
-[tool.setuptools]
-include-package-data = false
+Homepage = "https://github.com/Diwata-Labs/Grain"
+Repository = "https://github.com/Diwata-Labs/Grain"
+Issues = "https://github.com/Diwata-Labs/Grain/issues"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+grain = ["data/**/*"]

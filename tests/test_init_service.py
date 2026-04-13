@@ -19,6 +19,7 @@ EXPECTED_SEED_FILES = {
     "docs/runtime/context_loading.md",
     "docs/runtime/agent_profiles.md",
     "docs/runtime/adapter_profiles.md",
+    "docs/runtime/workflow_loop.yaml",
     "templates/tasks/task.md",
     "templates/tasks/context.md",
     "templates/tasks/plan.md",
@@ -26,6 +27,17 @@ EXPECTED_SEED_FILES = {
     "templates/tasks/results.md",
     "templates/tasks/handoff.md",
     "templates/tasks/task_packet.md",
+    "prompts/workflow.onboard.new.md",
+    "prompts/workflow.onboard.existing.md",
+    "prompts/workflow.init.md",
+    "prompts/task.plan.next.md",
+    "prompts/task.execute.md",
+    "prompts/task.review.md",
+    "prompts/task.close.md",
+    "prompts/phase.plan.next.md",
+    "prompts/phase.review.md",
+    "prompts/phase.review_and_close.md",
+    "prompts/tasks.plan.next.md",
 }
 
 
