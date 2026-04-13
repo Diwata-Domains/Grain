@@ -7,6 +7,16 @@ Versioning: [Semantic Versioning](https://semver.org/)
 
 ---
 
+## [0.1.5] — 2026-04-13
+
+### Added
+- `grain upgrade` command — updates Grain-managed prompts, task templates, and safe runtime docs to the current installed version without touching user-owned files
+  - `--dry-run` to preview what would change
+  - `--format json` for machine-readable output
+  - Never touches: canonical docs, working docs, task packets, `docs_manifest.yaml`, `adapter_profiles.md`
+
+---
+
 ## [0.1.4] — 2026-04-13
 
 ### Added

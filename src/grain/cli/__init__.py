@@ -24,6 +24,7 @@ from .orchestrate import orchestrate_group
 from .review import review_group
 from .workflow import workflow_group
 from .onboard import onboard_cmd
+from .upgrade import upgrade_cmd
 from .error_handler import handle_error
 from grain.domain.errors import ForgeError
 from grain.adapters.manifest import load_manifest
@@ -150,3 +151,4 @@ main.add_command(orchestrate_group)
 main.add_command(review_group)
 main.add_command(workflow_group)
 main.add_command(onboard_cmd)
+main.add_command(upgrade_cmd)
