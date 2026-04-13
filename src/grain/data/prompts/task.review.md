@@ -1,20 +1,15 @@
-# Task Review Loop
+# Task Review
 
-Use this as the default task-review prompt.
-
-This is the preferred stable task-level entrypoint.
-
-It wraps `prompts/tasks.review.md`.
+Stable task review entrypoint.
 
 Metadata:
 - scope: task
 - stage: review
 - recommended_model_class: reviewer_model
+- escalation_model_class: frontier_model
 
-## Purpose
+## Instructions
 
-Review the active task packet and its review bundle.
+Read the file `prompts/tasks.review.md` and follow all steps in it exactly.
 
-## Output
-
-Use the same output contract as `prompts/tasks.review.md`.
+Do not summarize or abbreviate the steps. Execute the full prompt.

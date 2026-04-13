@@ -22,6 +22,7 @@ _STUB_FILES: dict[str, str] = {
     "docs/working/current_task.md": "# Current Task\n\n# DRAFT - replace with real content\n",
     "docs/working/open_questions.md": "# Open Questions\n\n# DRAFT - replace with real content\n",
     "docs/working/change_proposals.md": "# Change Proposals\n\n# DRAFT - replace with real content\n",
+    "docs/working/implementation_plan.md": "# Implementation Plan\n\n# DRAFT - replace with real content\n",
 }
 
 # Bundled runtime and prompt files seeded additively — mirrors init_service seeding.

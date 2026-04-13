@@ -16,6 +16,11 @@
 - `tasks/[packet-dir]/plan.md`
 - `tasks/[packet-dir]/deliverable_spec.md`
 
+## Adapter Context
+- **Primary Adapter:** [adapter_id or none]
+- **Secondary Adapters:** [adapter_ids or none]
+- **Adapter Rationale:** [why this adapter applies to this task, or "n/a"]
+
 ## Excluded Context
 - [doc or area excluded and why]
 

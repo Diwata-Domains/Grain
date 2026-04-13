@@ -1,20 +1,15 @@
-# Task Close Loop
+# Task Close
 
-Use this after a task has been reviewed and accepted.
-
-This is the preferred stable task-level entrypoint.
-
-It wraps `prompts/tasks.close.md`.
+Stable task close entrypoint.
 
 Metadata:
 - scope: task
 - stage: close
 - recommended_model_class: open_model
+- escalation_model_class: frontier_model
 
-## Purpose
+## Instructions
 
-Finalize one reviewed task packet so the workflow can move on cleanly.
+Read the file `prompts/tasks.close.md` and follow all steps in it exactly.
 
-## Output
-
-Use the same output contract as `prompts/tasks.close.md`.
+Do not summarize or abbreviate the steps. Execute the full prompt.

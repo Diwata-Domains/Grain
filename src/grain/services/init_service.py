@@ -59,6 +59,7 @@ _SEED_FILE_SOURCES = {
     "prompts/phase.review.md": "prompts/phase.review.md",
     "prompts/phase.review_and_close.md": "prompts/phase.review_and_close.md",
     "prompts/tasks.plan.next.md": "prompts/tasks.plan.next.md",
+    "docs/working/implementation_plan.md": "runtime/implementation_plan.md",
 }
 
 _GRAIN_VERSION_PLACEHOLDER = "__GRAIN_VERSION__"

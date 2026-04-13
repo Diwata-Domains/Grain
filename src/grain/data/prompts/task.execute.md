@@ -1,10 +1,6 @@
-# Task Execute Loop
+# Task Execute
 
-Use this as the default task-execution prompt.
-
-This is the preferred stable task-level entrypoint.
-
-It wraps `prompts/tasks.next_and_implement.md`.
+Stable task execution entrypoint.
 
 Metadata:
 - scope: task
@@ -12,10 +8,8 @@ Metadata:
 - recommended_model_class: open_model
 - escalation_model_class: frontier_model
 
-## Purpose
+## Instructions
 
-Carry out one scoped task packet at a time.
+Read the file `prompts/tasks.next_and_implement.md` and follow all steps in it exactly.
 
-## Output
-
-Use the same output contract as `prompts/tasks.next_and_implement.md`.
+Do not summarize or abbreviate the steps. Execute the full prompt.
