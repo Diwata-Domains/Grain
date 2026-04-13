@@ -98,9 +98,11 @@ Each profile should follow this section structure:
   - Rust
   - backend services
   - CLI tooling
+  - Jupyter notebooks
 - `relevant_file_patterns`:
   - `src/**`
   - `tests/**`
+  - `**/*.ipynb`
   - `pyproject.toml`
   - `Cargo.toml`
   - `Makefile`

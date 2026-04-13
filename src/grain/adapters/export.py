@@ -4,6 +4,7 @@ from pathlib import Path
 
 from grain.domain.context import ContextBundle
 from grain.services.docs_extractor import DocsExtractor
+from grain.services.notebook_extractor import NotebookExtractor
 from grain.services.pdf_extractor import PdfExtractor
 from grain.services.spreadsheet_extractor import SpreadsheetExtractor
 
@@ -98,6 +99,8 @@ def _render_source_content(source_path: Path) -> str:
         return DocsExtractor().extract(source_path)
     if suffix == ".pdf":
         return PdfExtractor().extract(source_path)
+    if suffix == ".ipynb":
+        return NotebookExtractor().extract(source_path)
     try:
         return source_path.read_text(encoding="utf-8")
     except UnicodeDecodeError:

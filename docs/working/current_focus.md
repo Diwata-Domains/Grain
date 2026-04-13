@@ -36,8 +36,12 @@ CLOSED. All 4 tasks done (T01-T04). 662/662 tests passing (+24 new tests from Ph
 ## v0.1.0 Status
 COMPLETE. All planned phases closed (Phases 6–14, with Phase 11-T05 deferred). 662 tests passing. Ready to cut v0.1.0 release.
 
+## v0.1.2 Patch Status
+IN PROGRESS. Jupyter notebook support added: `NotebookExtractor`, wired into `export.py`, `.ipynb` added to `code_adapter` relevant_file_patterns, 12 tests passing.
+- Remaining: bump version to 0.1.2, tag, publish to PyPI
+
 ## Immediate Goals
-1. Cut v0.1.0 release — bump version, tag, publish to PyPI
+1. Cut v0.1.2 patch — Jupyter notebook support (in progress)
 2. Begin Phase 15 planning — resolve embedding infrastructure decision before seeding tasks (Phase 15 is blocked on this gate)
 
 ## After Phase 8 — Using the Runner with Agent CLIs

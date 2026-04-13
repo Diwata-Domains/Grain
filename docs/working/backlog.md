@@ -503,6 +503,47 @@ Default status for new backlog items in this file: `draft`
 
 ---
 
+## 20. v0.2.1 — Data Adapter (seeded, not yet planned)
+
+> **Status:** seeded — not yet started. v0.2.1 scope.
+
+### Planning Notes
+- Scope: a dedicated `data_adapter` for data science and ML workflows
+- Notebook support (`.ipynb`) is already delivered in v0.1.2 via `code_adapter` — `data_adapter` extends the domain with richer data science context
+- Candidate additions:
+  - `.ipynb` migrated from `code_adapter` to `data_adapter` as primary home
+  - data file patterns: `.parquet`, `.feather`, `.arrow`, `.h5`, `.hdf5`
+  - schema/config files: `requirements.txt`, `environment.yml`, `Pipfile`
+  - model artifact awareness: `.pkl`, `.joblib`, `.pt`, `.onnx` (metadata only — not content extraction)
+  - data pipeline scripts and notebooks as first-class context sources
+- Key decision gate: scope of data file extraction (metadata-only vs. content sampling) must be resolved before tasks are written
+
+---
+
+## 21. v0.2.1 — Community Adapter Registry (seeded, not yet planned)
+
+> **Status:** seeded — not yet started. Depends on Phase 15 and Phase 16 close. v0.2.1 scope.
+
+### Planning Notes
+- Scope: discovery, distribution, and review pipeline for community-contributed adapter profiles
+- Adapter contract is already stable — community adapters follow the same schema as official adapters
+- Three tiers:
+  - **Official** — maintained by Diwata Labs, fully validated (existing adapters)
+  - **Community** — submitted via PR to a community repo, automated schema validation + maintainer review before merge
+  - **Local/private** — user-defined, stays in their own repo (already works today, no changes needed)
+- Community adapters proven reliable over time may be promoted to Official
+- Key decision gate: hosting model (dedicated GitHub org repo vs. subdirectory in Grain repo) must be resolved before tasks are written
+- Key open question: promotion criteria — what does a community adapter need to demonstrate before being promoted to Official?
+
+### Draft Tasks (not yet written as packets)
+- `grain adapter install <source>` command — fetch and apply a community adapter from a URL or registry handle
+- `grain adapter validate` — schema compliance check for adapter files before use
+- Community repo scaffold — structure, contribution guide, and adapter template
+- Automated schema validation in CI for community adapter PRs
+- Adapter author documentation
+
+---
+
 ## 11. Future — Adapter Context Selection (absorbed into Phase 10)
 
 > **Status:** draft — FA-T01 is preserved here for reference. Once Phase 10 is active, FA-T01 is absorbed into P10-T01 and this section becomes historical.
