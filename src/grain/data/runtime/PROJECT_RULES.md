@@ -199,15 +199,16 @@ Agents may prepare proposals, not finalize them.
 
 ---
 
-## 11. Non-Goals for v1
+## 11. Non-Goals for the Current Phase
 
-Do not introduce unless explicitly required:
-- GUI interfaces
+[Define your project's explicit non-goals here — things that are out of scope for the current development phase. Keeping this list up to date helps agents and reviewers avoid scope creep.]
+
+Examples of common non-goals:
+- GUI or dashboard interfaces
 - database-backed state
 - multi-user coordination
-- autonomous coding execution
-- complex plugin ecosystems
-- deeply abstracted orchestration layers
+- real-time or event-driven processing
+- third-party plugin systems
 
 ---
 

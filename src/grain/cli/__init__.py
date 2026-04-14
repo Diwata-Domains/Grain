@@ -27,7 +27,7 @@ from .onboard import onboard_cmd
 from .upgrade import upgrade_cmd
 from .error_handler import handle_error
 from grain.domain.errors import ForgeError
-from grain.adapters.manifest import load_manifest
+from grain.adapters.manifest import load_manifest, load_grain_config
 from grain.adapters.filesystem import resolve_repo_root
 
 
@@ -94,24 +94,68 @@ def _maybe_warn_if_grain_outdated(repo: str | None, invoked_subcommand: str | No
     )
 
 
+def _maybe_warn_if_upgrade_needed(root_path, invoked_subcommand: str | None) -> None:
+    """If grain.upgrade_check = warn in docs_manifest.yaml, surface a hint when stale files exist."""
+    if invoked_subcommand == "upgrade":
+        return  # don't warn inside the upgrade command itself
+
+    try:
+        cfg = load_grain_config(root_path)
+    except Exception:
+        return
+
+    if cfg.upgrade_check != "warn":
+        return
+
+    try:
+        from grain.services.upgrade_service import upgrade_repo
+        result = upgrade_repo(root_path, dry_run=True)
+        stale = len(result.updated) + len(result.added)
+        if stale > 0:
+            click.echo(
+                f"hint   {stale} Grain-managed file(s) are out of date. "
+                "Run `grain upgrade --diff` to review or `grain upgrade` to apply.",
+                err=True,
+            )
+    except Exception:
+        return
+
+
 @click.group()
 @click.version_option(_VERSION, "--version", "-V")
 @click.option("--repo", default=None, metavar="PATH", help="Path to repository root (auto-detected if omitted).")
 @click.option(
     "--format",
     "fmt",
-    default="text",
-    show_default=True,
+    default=None,
+    show_default=False,
     type=click.Choice(["text", "json"]),
-    help="Output format for command results.",
+    help="Output format for command results (default: from docs_manifest.yaml grain.default_format or 'text').",
 )
 @click.pass_context
 def main(ctx, repo, fmt):
     """Grain — CLI workflow orchestrator for AI-assisted development."""
     ctx.ensure_object(dict)
     ctx.obj["repo"] = repo
+
+    # Resolve effective format: CLI flag > grain config > hardcoded default
+    if fmt is None:
+        try:
+            root = resolve_repo_root(repo)
+            cfg = load_grain_config(root)
+            fmt = cfg.default_format
+        except Exception:
+            fmt = "text"
+
     ctx.obj["fmt"] = fmt
     _maybe_warn_if_grain_outdated(repo, ctx.invoked_subcommand)
+
+    # Upgrade staleness hint (only when upgrade_check = warn in grain config)
+    try:
+        root = resolve_repo_root(repo)
+        _maybe_warn_if_upgrade_needed(root, ctx.invoked_subcommand)
+    except Exception:
+        pass
 
 
 @main.result_callback()

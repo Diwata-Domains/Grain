@@ -1,12 +1,20 @@
 version: 1
 
 project:
-  name: Grain
-  type: cli_toolkit
+  name: "[Your Project Name]"
+  type: "[project type — e.g. web_app, cli_tool, service, data_pipeline]"
   mode: single_user
   storage: filesystem
   authority_model: explicit_hierarchy
   minimum_grain_version: "__GRAIN_VERSION__"
+
+# Grain configuration — project-level defaults for the grain CLI.
+# All fields are optional. Omit any you do not need.
+grain:
+  default_supervision: gated        # supervised | gated | autonomous
+  default_format: text              # text | json
+  upgrade_check: warn               # warn | silent
+  embedding_provider: none          # none | local | openai (used by semantic enrichment when available)
 
 canonical:
   - id: product_scope
@@ -139,7 +147,6 @@ runtime:
     authority: high_runtime
     editable_by_agents: true
     read_when:
-      - planning_v2
       - designing_adapters
       - context_selection
 

@@ -7,6 +7,22 @@ Versioning: [Semantic Versioning](https://semver.org/)
 
 ---
 
+## [0.1.7] — 2026-04-14
+
+### Added
+- `grain:` config block in `docs_manifest.yaml` — project-level defaults for `default_supervision`, `default_format`, `upgrade_check`, and `embedding_provider`
+- `load_grain_config()` in `manifest.py` — reads the `grain:` block with safe defaults for any missing or invalid field
+- `upgrade_check: warn` support — when set in project manifest, any `grain` command prints a one-line hint if Grain-managed files are stale
+- `--format` now falls back to `grain.default_format` from project config when not passed as a CLI flag
+
+### Fixed
+- `PROJECT_RULES.md` §11 "Non-Goals for v1" replaced with a generic placeholder — the previous list described Grain's own non-goals, not the user's project
+- `workflow_loop.yaml` — removed internal `Assay (FR-005)` reference; replaced `codex`/`gpt-5.4` example agent config with `claude`/`claude-opus-4-5` and clear comments that these should be customized
+- `docs_manifest.yaml` template — `project.name: Grain` and `project.type: cli_toolkit` replaced with user-facing placeholders; `read_when: planning_v2` removed from adapter_profiles entry
+- `phase.plan.next.md` — removed hardcoded references to Grain's internal `v2_plan.md`, `v2_adapters.md`, `v2_onboarding.md`; replaced with a generic instruction to read any planning docs declared in the manifest
+
+---
+
 ## [0.1.6] — 2026-04-14
 
 ### Added

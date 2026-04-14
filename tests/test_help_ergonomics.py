@@ -5,11 +5,12 @@ from click.testing import CliRunner
 from grain.cli import main
 
 
-def test_main_help_shows_format_default():
+def test_main_help_shows_format_option():
     result = CliRunner().invoke(main, ["--help"])
     assert result.exit_code == 0, result.output
     assert "--format [text|json]" in result.output
-    assert "[default: text]" in result.output
+    # default is resolved from grain config; help text describes the fallback chain
+    assert "grain.default_format" in result.output
 
 
 def test_task_validate_help_mentions_default_behavior():
