@@ -7,6 +7,31 @@ Versioning: [Semantic Versioning](https://semver.org/)
 
 ---
 
+## [0.1.8] — 2026-04-14
+
+### Added
+- `grain task close --quick` — minimal closure for conversational and voice workflows
+  - Accepts `--summary TEXT` and optional `--files PATH` (repeatable)
+  - Writes a lightweight `results.md` and marks the packet `done` without requiring `handoff.md` or efficiency metrics
+- `grain workflow next` gate for incomplete tasks: if an active task is `in_progress` and has no `results.md`, the workflow surfaces a `execution_in_flight` stop signal before allowing any further action — prevents agents from silently skipping task closure in voice-chat workflows
+- `grain onboard` now detects existing code modules and warns of code-ahead-of-backlog risk
+  - `CodebaseScanner` detects top-level packages under `src/`, `lib/`, `app/`, and repo root; stored in `ScanResult.detected_modules`
+  - `backlog.md` gains a "Retrospective Review Required" section listing detected modules when code is found, with explicit instructions to audit before treating the generated backlog as authoritative
+  - `open_questions.md` adds a structured question surfacing detected modules and risk when code is ahead of backlog
+
+### Fixed
+- `grain onboard` now pre-populates canonical draft docs from existing repo content instead of leaving blank placeholders
+  - `product_scope.md` pulls from README, `package.json` description, or `pyproject.toml` metadata
+  - `architecture.md` pulls from existing `architecture.md`, `design.md`, or similar docs if found
+  - Both fall back to clearly labelled placeholders when no source is available
+- `open_questions.md` now surfaces a structured question listing all existing docs found outside the canonical layer, so maintainers know exactly what to incorporate
+- `CodebaseScanner` extended with content extraction: reads README, architecture docs, scope/vision docs, `package.json`, and `pyproject.toml`; content capped at 2000 chars per file
+- `ScanResult` gains `existing_doc_content` field (`dict[str, str]`) and `detected_modules` field (`list[str]`) carrying extracted content and module signals into the generator
+- Draft marker changed from `# DRAFT` comment to HTML comment (`<!-- DRAFT — ... -->`) so it doesn't render as a heading
+- `grain workflow loop` correctly routes `execution_in_flight` state: supervised mode stops with `supervision_required`, autonomous/gated modes invoke the executor so the agent can complete the task
+
+---
+
 ## [0.1.7] — 2026-04-14
 
 ### Added

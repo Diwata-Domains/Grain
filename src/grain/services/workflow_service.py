@@ -157,6 +157,25 @@ def evaluate_workflow_state(
             )
             return _result_with_evaluation(root, evaluation)
 
+        # Gate: if results.md is absent, the task hasn't been formally completed yet.
+        # Surface this before letting the agent jump to the next task.
+        if not (packet_dir / "results.md").exists():
+            evaluation = WorkflowEvaluation(
+                ok=False,
+                stop_reason="execution_in_flight",
+                blocking_reasons=[
+                    "task has no results.md — complete implementation and document outcomes "
+                    "before advancing; use `grain task close --quick` for conversational workflows"
+                ],
+                affected_artifacts=[
+                    str((packet_dir / "results.md").relative_to(root)),
+                ],
+                active_phase=current_phase,
+                active_task_id=active_task_id,
+                recommended_prompt="prompts/task.execute.md",
+            )
+            return _result_with_evaluation(root, evaluation)
+
         evaluation = WorkflowEvaluation(
             ok=True,
             next_action="task_execute",

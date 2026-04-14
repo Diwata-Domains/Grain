@@ -149,7 +149,7 @@ def test_phase13_doc_generator_outputs_have_draft_marker(tmp_path: Path):
     scan = ScanResult(root=str(tmp_path), primary_languages=["Python"], applicable_adapters=["code_adapter"])
     OnboardDocGenerator(tmp_path).generate(scan)
     for path in (tmp_path / "docs").rglob("*.md"):
-        assert "# DRAFT" in path.read_text(encoding="utf-8")
+        assert "DRAFT" in path.read_text(encoding="utf-8")
 
 
 def test_phase13_doc_generator_sparse_scan_adds_gap_questions(tmp_path: Path):

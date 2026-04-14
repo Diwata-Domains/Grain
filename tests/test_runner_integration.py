@@ -120,9 +120,11 @@ def test_activation_chain_workflow_next_sees_activation(tmp_path):
     assert exit_code == 0
     assert "workflow run: ok" in output
 
-    # After activation: workflow next reports task_execute with active task set
+    # After activation: workflow next gates until results.md is written
+    # (in_progress without results.md means execution is still in flight)
     data_after = _invoke_json(tmp_path, "workflow", "next")
-    assert data_after["evaluation"]["next_action"] == "task_execute"
+    assert data_after["evaluation"]["ok"] is False
+    assert data_after["evaluation"]["stop_reason"] == "execution_in_flight"
     assert data_after["evaluation"]["active_task_id"] == "TASK-0069"
 
 

@@ -112,6 +112,91 @@ def test_task_close_missing_results_md_exits_three(tmp_path):
     assert result.returncode == 3
 
 
+def test_task_close_quick_exits_zero(packet_repo):
+    runner = CliRunner()
+    runner.invoke(
+        main,
+        ["--repo", str(packet_repo), "task", "create", "--phase", "3", "--task-num", "12"],
+    )
+    result = runner.invoke(
+        main,
+        [
+            "--repo", str(packet_repo),
+            "task", "close",
+            "--id", "TASK-0001",
+            "--quick",
+            "--summary", "Implemented the feature",
+        ],
+    )
+    assert result.exit_code == 0, result.output
+
+
+def test_task_close_quick_sets_status_done(packet_repo):
+    runner = CliRunner()
+    runner.invoke(
+        main,
+        ["--repo", str(packet_repo), "task", "create", "--phase", "3", "--task-num", "12"],
+    )
+    runner.invoke(
+        main,
+        [
+            "--repo", str(packet_repo),
+            "task", "close",
+            "--id", "TASK-0001",
+            "--quick",
+            "--summary", "Feature done",
+        ],
+    )
+    from grain.domain.packets import parse_task_metadata
+    packet_dir = packet_repo / "tasks" / "P3-T12-TASK-0001"
+    metadata = parse_task_metadata(packet_dir / "task.md")
+    assert metadata["status"] == "done"
+
+
+def test_task_close_quick_writes_results_md(packet_repo):
+    runner = CliRunner()
+    runner.invoke(
+        main,
+        ["--repo", str(packet_repo), "task", "create", "--phase", "3", "--task-num", "12"],
+    )
+    runner.invoke(
+        main,
+        [
+            "--repo", str(packet_repo),
+            "task", "close",
+            "--id", "TASK-0001",
+            "--quick",
+            "--summary", "All done",
+            "--files", "src/foo.py",
+            "--files", "src/bar.py",
+        ],
+    )
+    packet_dir = packet_repo / "tasks" / "P3-T12-TASK-0001"
+    results = (packet_dir / "results.md").read_text(encoding="utf-8")
+    assert "All done" in results
+    assert "src/foo.py" in results
+    assert "src/bar.py" in results
+
+
+def test_task_close_quick_requires_summary(packet_repo):
+    runner = CliRunner()
+    runner.invoke(
+        main,
+        ["--repo", str(packet_repo), "task", "create", "--phase", "3", "--task-num", "12"],
+    )
+    result = runner.invoke(
+        main,
+        [
+            "--repo", str(packet_repo),
+            "task", "close",
+            "--id", "TASK-0001",
+            "--quick",
+        ],
+    )
+    assert result.exit_code != 0
+    assert "summary" in result.output.lower() or "summary" in str(result.exception).lower()
+
+
 def test_task_close_idempotent_fail_after_done(tmp_path):
     # Once done, trying to close again should fail (done->done not in transition map)
     repo = _setup_subprocess_repo(tmp_path)

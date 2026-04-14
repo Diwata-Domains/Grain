@@ -2,10 +2,44 @@
 
 from __future__ import annotations
 
+import json
 from collections import Counter
 from pathlib import Path
 
 from grain.domain.scan_result import ScanResult
+
+# Maximum characters to read from any single doc to keep drafts manageable.
+_CONTENT_CAP = 2000
+
+# Well-known doc paths scanned for content, in priority order.
+# All compared case-insensitively against the relative path.
+_README_NAMES: frozenset[str] = frozenset(
+    {"readme.md", "readme.rst", "readme.txt", "readme"}
+)
+_ARCHITECTURE_NAMES: frozenset[str] = frozenset(
+    {
+        "architecture.md",
+        "architecture.rst",
+        "docs/architecture.md",
+        "docs/architecture.rst",
+        "docs/design.md",
+        "docs/design.rst",
+        "design.md",
+    }
+)
+_SCOPE_NAMES: frozenset[str] = frozenset(
+    {
+        "product_scope.md",
+        "scope.md",
+        "docs/product_scope.md",
+        "docs/scope.md",
+        "vision.md",
+        "docs/vision.md",
+    }
+)
+_CONTRIBUTING_NAMES: frozenset[str] = frozenset(
+    {"contributing.md", "contributing.rst", ".github/contributing.md"}
+)
 
 _IGNORED_DIRS: frozenset[str] = frozenset(
     {
@@ -167,6 +201,9 @@ class CodebaseScanner:
             has_devops_signal=has_devops_signal,
         )
 
+        existing_doc_content = self._read_existing_doc_content(all_files=key_files + documentation_files)
+        detected_modules = self._detect_modules()
+
         return ScanResult(
             root=str(self.root.resolve()),
             primary_languages=primary_languages,
@@ -176,7 +213,121 @@ class CodebaseScanner:
             ci_configs=sorted(set(ci_configs)),
             documentation_files=sorted(set(documentation_files)),
             custom_adapter_hints=custom_adapter_hints,
+            existing_doc_content=existing_doc_content,
+            detected_modules=detected_modules,
         )
+
+    def _read_existing_doc_content(self, all_files: list[str]) -> dict[str, str]:
+        """Read content from well-known existing docs and structured config files."""
+        content: dict[str, str] = {}
+        seen_lower: set[str] = set()
+
+        def _add(rel: str) -> None:
+            lower = rel.lower()
+            if lower in seen_lower:
+                return
+            seen_lower.add(lower)
+            text = self._read_text_file(rel)
+            if text:
+                content[rel] = text
+
+        # Priority 1: README
+        for rel in sorted(all_files):
+            if rel.lower() in _README_NAMES or Path(rel).name.lower() in _README_NAMES:
+                _add(rel)
+                break  # first README only
+
+        # Priority 2: Architecture docs
+        for rel in sorted(all_files):
+            if rel.lower() in _ARCHITECTURE_NAMES or Path(rel).name.lower() in _ARCHITECTURE_NAMES:
+                _add(rel)
+                break
+
+        # Priority 3: Scope/vision docs
+        for rel in sorted(all_files):
+            if rel.lower() in _SCOPE_NAMES or Path(rel).name.lower() in _SCOPE_NAMES:
+                _add(rel)
+                break
+
+        # Priority 4: Contributing docs
+        for rel in sorted(all_files):
+            if rel.lower() in _CONTRIBUTING_NAMES or Path(rel).name.lower() in _CONTRIBUTING_NAMES:
+                _add(rel)
+                break
+
+        # Priority 5: package.json — extract name, description, dependencies
+        pkg_json = self.root / "package.json"
+        if pkg_json.exists():
+            text = self._read_package_json(pkg_json)
+            if text:
+                content["package.json"] = text
+
+        # Priority 6: pyproject.toml — extract name, description, dependencies
+        pyproject = self.root / "pyproject.toml"
+        if pyproject.exists():
+            text = self._read_pyproject_toml(pyproject)
+            if text:
+                content["pyproject.toml"] = text
+
+        return content
+
+    def _read_text_file(self, rel: str) -> str:
+        """Read a text file, cap at _CONTENT_CAP chars, return empty string on error."""
+        path = self.root / rel
+        try:
+            text = path.read_text(encoding="utf-8", errors="replace")
+            if len(text) > _CONTENT_CAP:
+                text = text[:_CONTENT_CAP] + "\n… (truncated)"
+            return text.strip()
+        except Exception:
+            return ""
+
+    def _read_package_json(self, path: Path) -> str:
+        """Extract name, description, and top-level dependency names from package.json."""
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except Exception:
+            return ""
+
+        lines: list[str] = []
+        if name := data.get("name"):
+            lines.append(f"name: {name}")
+        if description := data.get("description"):
+            lines.append(f"description: {description}")
+        if version := data.get("version"):
+            lines.append(f"version: {version}")
+
+        all_deps = {
+            **data.get("dependencies", {}),
+            **data.get("devDependencies", {}),
+        }
+        if all_deps:
+            top = sorted(all_deps.keys())[:20]
+            lines.append(f"dependencies: {', '.join(top)}")
+
+        return "\n".join(lines)
+
+    def _read_pyproject_toml(self, path: Path) -> str:
+        """Extract name, description, and dependencies from pyproject.toml."""
+        try:
+            import tomllib  # Python 3.11+
+            data = tomllib.loads(path.read_text(encoding="utf-8"))
+        except Exception:
+            return ""
+
+        project = data.get("project", {})
+        lines: list[str] = []
+        if name := project.get("name"):
+            lines.append(f"name: {name}")
+        if description := project.get("description"):
+            lines.append(f"description: {description}")
+        if version := project.get("version"):
+            lines.append(f"version: {version}")
+        if deps := project.get("dependencies", []):
+            top = sorted(str(d).split(">")[0].split("<")[0].split("=")[0].strip() for d in deps)[:20]
+            lines.append(f"dependencies: {', '.join(top)}")
+
+        return "\n".join(lines)
 
     def _iter_files(self) -> list[str]:
         if not self.root.exists() or not self.root.is_dir():
@@ -203,6 +354,59 @@ class CodebaseScanner:
             return rel_path.name.lower() == "config.yml"
 
         return False
+
+    def _detect_modules(self) -> list[str]:
+        """Detect top-level code modules/packages to surface code-ahead-of-backlog warnings.
+
+        Checks common source roots (src/, lib/, app/, and repo root) for Python
+        packages (__init__.py), JS/TS packages (package.json or index.*), and
+        generic named directories containing code files.
+        """
+        modules: list[str] = []
+        seen: set[str] = set()
+
+        # Source roots to check, in priority order
+        source_roots = [
+            self.root / "src",
+            self.root / "lib",
+            self.root / "app",
+            self.root,
+        ]
+
+        code_extensions = frozenset(_LANGUAGE_BY_EXTENSION.keys())
+
+        for source_root in source_roots:
+            if not source_root.is_dir():
+                continue
+            for candidate in sorted(source_root.iterdir()):
+                if not candidate.is_dir():
+                    continue
+                if candidate.name.startswith(".") or candidate.name in _IGNORED_DIRS:
+                    continue
+                # Skip the source root itself when checking repo root
+                if source_root == self.root and candidate.name in {"src", "lib", "app", "tests", "test", "docs", "tasks"}:
+                    continue
+                rel = candidate.relative_to(self.root).as_posix()
+                if rel in seen:
+                    continue
+                # Check if this looks like a code module
+                has_init = (candidate / "__init__.py").exists()
+                has_pkg_json = (candidate / "package.json").exists()
+                has_index = any(
+                    (candidate / f"index{ext}").exists()
+                    for ext in (".js", ".ts", ".jsx", ".tsx", ".mjs")
+                )
+                has_code = any(
+                    f.suffix.lower() in code_extensions
+                    for f in candidate.iterdir()
+                    if f.is_file()
+                ) if not (has_init or has_pkg_json or has_index) else True
+
+                if has_init or has_pkg_json or has_index or has_code:
+                    seen.add(rel)
+                    modules.append(rel)
+
+        return modules
 
     def _detect_custom_adapter_hints(
         self,

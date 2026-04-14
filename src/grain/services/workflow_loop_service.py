@@ -56,6 +56,107 @@ def run_workflow_loop(
         if evaluation is None:
             return result, None
 
+        # execution_in_flight: task is in_progress with no results.md.
+        # For `workflow next` this is a hard gate; for the loop, the executor
+        # should run so the agent can write results.md and advance the state.
+        if not evaluation.ok and evaluation.stop_reason == "execution_in_flight":
+            if len(progress) >= steps_requested:
+                return (
+                    CommandResult(ok=True, command="workflow loop", repo=str(root)),
+                    _payload(
+                        supervision_level=config.supervision_level,
+                        steps_requested=steps_requested,
+                        steps_completed=len(progress),
+                        stop_reason="steps_limit_reached",
+                        active_phase=evaluation.active_phase,
+                        active_task_id=evaluation.active_task_id,
+                        recommended_prompt=evaluation.recommended_prompt or "prompts/task.execute.md",
+                        steps=progress,
+                        blocking_reasons=[],
+                    ),
+                )
+
+            if config.supervision_level == "supervised":
+                return (
+                    CommandResult(ok=True, command="workflow loop", repo=str(root)),
+                    _payload(
+                        supervision_level=config.supervision_level,
+                        steps_requested=steps_requested,
+                        steps_completed=len(progress),
+                        stop_reason="supervision_required",
+                        active_phase=evaluation.active_phase,
+                        active_task_id=evaluation.active_task_id,
+                        recommended_prompt=evaluation.recommended_prompt or "prompts/task.execute.md",
+                        steps=progress,
+                        blocking_reasons=["operator approval required before action: task_execute"],
+                    ),
+                )
+
+            # gated / autonomous: invoke executor so agent can complete the task
+            stage_config = config.stages.for_stage("executor")
+            prompt_path = evaluation.recommended_prompt or "prompts/task.execute.md"
+            started = time.perf_counter()
+            invocation = _invoke_stage(stage_config, prompt_path, root)
+            duration_ms = int((time.perf_counter() - started) * 1000)
+
+            step_record: dict[str, Any] = {
+                "index": len(progress) + 1,
+                "action": "task_execute",
+                "stage": "executor",
+                "prompt": prompt_path,
+                "command": invocation["command"],
+                "exit_code": invocation["exit_code"],
+                "changed_state": False,
+                "dry_run": False,
+                "duration_ms": duration_ms,
+                "detail": "execution_in_flight — agent completing task",
+            }
+            progress.append(step_record)
+
+            if invocation["exit_code"] != 0:
+                return (
+                    CommandResult(ok=False, command="workflow loop", repo=str(root),
+                                  errors=[f"stage invocation failed for executor"]),
+                    _payload(
+                        supervision_level=config.supervision_level,
+                        steps_requested=steps_requested,
+                        steps_completed=len(progress),
+                        stop_reason="invocation_failed",
+                        active_phase=evaluation.active_phase,
+                        active_task_id=evaluation.active_task_id,
+                        recommended_prompt=prompt_path,
+                        steps=progress,
+                        blocking_reasons=[invocation.get("stderr", "").strip() or "non-zero exit"],
+                    ),
+                )
+
+            _, new_evaluation = evaluate_workflow_state(root)
+            if new_evaluation is None:
+                return (
+                    CommandResult(ok=False, command="workflow loop", repo=str(root),
+                                  errors=["workflow state unavailable after invocation"]),
+                    None,
+                )
+
+            changed = _state_signature(evaluation) != _state_signature(new_evaluation)
+            step_record["changed_state"] = changed
+            if not changed:
+                return (
+                    CommandResult(ok=True, command="workflow loop", repo=str(root)),
+                    _payload(
+                        supervision_level=config.supervision_level,
+                        steps_requested=steps_requested,
+                        steps_completed=len(progress),
+                        stop_reason="no_state_change",
+                        active_phase=new_evaluation.active_phase,
+                        active_task_id=new_evaluation.active_task_id,
+                        recommended_prompt=new_evaluation.recommended_prompt,
+                        steps=progress,
+                        blocking_reasons=["stage invocation completed but workflow state did not change"],
+                    ),
+                )
+            continue
+
         if not evaluation.ok:
             if evaluation.stop_reason == "conflicting_next_actions":
                 selected_ref = _select_task_ref_from_accepted_plan(root, evaluation)
@@ -77,25 +178,26 @@ def run_workflow_loop(
                     if activate_result.ok:
                         continue
 
-            return (
-                CommandResult(
-                    ok=False,
-                    command="workflow loop",
-                    repo=str(root),
-                    errors=list(evaluation.blocking_reasons),
-                ),
-                _payload(
-                    supervision_level=config.supervision_level,
-                    steps_requested=steps_requested,
-                    steps_completed=len(progress),
-                    stop_reason="state_gate",
-                    active_phase=evaluation.active_phase,
-                    active_task_id=evaluation.active_task_id,
-                    recommended_prompt=evaluation.recommended_prompt,
-                    steps=progress,
-                    blocking_reasons=list(evaluation.blocking_reasons),
-                ),
-            )
+            if not evaluation.ok:
+                return (
+                    CommandResult(
+                        ok=False,
+                        command="workflow loop",
+                        repo=str(root),
+                        errors=list(evaluation.blocking_reasons),
+                    ),
+                    _payload(
+                        supervision_level=config.supervision_level,
+                        steps_requested=steps_requested,
+                        steps_completed=len(progress),
+                        stop_reason="state_gate",
+                        active_phase=evaluation.active_phase,
+                        active_task_id=evaluation.active_task_id,
+                        recommended_prompt=evaluation.recommended_prompt,
+                        steps=progress,
+                        blocking_reasons=list(evaluation.blocking_reasons),
+                    ),
+                )
 
         if len(progress) >= steps_requested:
             return (

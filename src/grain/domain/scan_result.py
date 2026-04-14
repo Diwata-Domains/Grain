@@ -17,4 +17,10 @@ class ScanResult:
     ci_configs: list[str] = field(default_factory=list)
     documentation_files: list[str] = field(default_factory=list)
     custom_adapter_hints: list[str] = field(default_factory=list)
+    existing_doc_content: dict[str, str] = field(default_factory=dict)
+    """Content extracted from well-known existing docs (README, package.json, etc.).
+    Keys are relative file paths; values are truncated plain-text content."""
+    detected_modules: list[str] = field(default_factory=list)
+    """Top-level code modules/packages detected in the repo (e.g. src/grain, lib/core).
+    Used to surface code-ahead-of-backlog warnings during onboarding."""
 

@@ -164,3 +164,98 @@ def test_scanner_no_custom_hints_for_standard_project(tmp_path: Path):
 
     assert result.custom_adapter_hints == []
 
+
+
+# --- existing doc content extraction ---
+
+def test_scanner_reads_readme_content(tmp_path: Path):
+    (tmp_path / "README.md").write_text("# My App\n\nDoes great things.", encoding="utf-8")
+
+    result = CodebaseScanner(tmp_path).scan()
+
+    assert "README.md" in result.existing_doc_content
+    assert "Does great things." in result.existing_doc_content["README.md"]
+
+
+def test_scanner_reads_package_json_fields(tmp_path: Path):
+    import json
+    (tmp_path / "package.json").write_text(
+        json.dumps({"name": "my-app", "description": "A cool app", "version": "1.2.3",
+                    "dependencies": {"react": "^18", "axios": "^1"}}),
+        encoding="utf-8",
+    )
+
+    result = CodebaseScanner(tmp_path).scan()
+
+    assert "package.json" in result.existing_doc_content
+    pkg = result.existing_doc_content["package.json"]
+    assert "my-app" in pkg
+    assert "A cool app" in pkg
+    assert "react" in pkg
+
+
+def test_scanner_reads_pyproject_toml_fields(tmp_path: Path):
+    (tmp_path / "pyproject.toml").write_text(
+        '[project]\nname = "grain-kit"\ndescription = "A workflow toolkit"\nversion = "0.1.7"\n'
+        'dependencies = ["click>=8.1", "PyYAML>=6.0"]\n',
+        encoding="utf-8",
+    )
+
+    result = CodebaseScanner(tmp_path).scan()
+
+    assert "pyproject.toml" in result.existing_doc_content
+    assert "grain-kit" in result.existing_doc_content["pyproject.toml"]
+    assert "A workflow toolkit" in result.existing_doc_content["pyproject.toml"]
+
+
+def test_scanner_caps_readme_content_at_limit(tmp_path: Path):
+    (tmp_path / "README.md").write_text("x" * 5000, encoding="utf-8")
+
+    result = CodebaseScanner(tmp_path).scan()
+
+    assert len(result.existing_doc_content["README.md"]) < 2200  # cap + truncation marker
+
+
+def test_scanner_reads_architecture_doc(tmp_path: Path):
+    arch_dir = tmp_path / "docs"
+    arch_dir.mkdir()
+    (arch_dir / "architecture.md").write_text("## Subsystems\n\n- API\n- DB", encoding="utf-8")
+
+    result = CodebaseScanner(tmp_path).scan()
+
+    assert "docs/architecture.md" in result.existing_doc_content
+    assert "API" in result.existing_doc_content["docs/architecture.md"]
+
+
+def test_scanner_returns_empty_content_when_no_known_docs(tmp_path: Path):
+    (tmp_path / "main.py").write_text("print('hello')", encoding="utf-8")
+
+    result = CodebaseScanner(tmp_path).scan()
+
+    assert result.existing_doc_content == {}
+
+
+def test_scanner_detects_modules_in_src_directory(tmp_path: Path):
+    _write(tmp_path / "src" / "myapp" / "__init__.py")
+    _write(tmp_path / "src" / "myapp" / "core.py")
+
+    result = CodebaseScanner(tmp_path).scan()
+
+    assert any("myapp" in m for m in result.detected_modules)
+
+
+def test_scanner_detects_modules_at_repo_root(tmp_path: Path):
+    _write(tmp_path / "grain" / "__init__.py")
+    _write(tmp_path / "grain" / "cli.py")
+
+    result = CodebaseScanner(tmp_path).scan()
+
+    assert any("grain" in m for m in result.detected_modules)
+
+
+def test_scanner_detected_modules_empty_when_no_code_dirs(tmp_path: Path):
+    _write(tmp_path / "README.md", "# Project")
+
+    result = CodebaseScanner(tmp_path).scan()
+
+    assert result.detected_modules == []

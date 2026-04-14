@@ -300,3 +300,27 @@ def test_workflow_run_does_not_mutate_state_on_gate(tmp_path):
 
     after = (tmp_path / "docs" / "working" / "current_task.md").read_text()
     assert original == after, "current_task.md must not be mutated on a gate"
+
+
+def test_workflow_next_clears_gate_once_results_md_written(tmp_path):
+    """Once results.md exists, in_progress task no longer gates workflow next."""
+    _base_repo(tmp_path)
+    _packet(tmp_path, "P8-T08", "TASK-0068", "in_progress", with_results=True)
+    _active_task(tmp_path, "TASK-0068", "P8-T08", "in_progress")
+    _write(
+        tmp_path / "docs" / "working" / "backlog.md",
+        (
+            "## 10. Phase 8 — Workflow Automation Runner Foundation\n\n"
+            "### P8-T08 — Example task\n"
+            "- **Status:** in_progress\n"
+        ),
+    )
+
+    runner = CliRunner()
+    result = runner.invoke(main, ["--repo", str(tmp_path), "--format", "json", "workflow", "next"])
+
+    assert result.exit_code == 0, result.output
+    import json
+    data = json.loads(result.output)
+    assert data["evaluation"]["ok"] is True
+    assert data["evaluation"]["next_action"] == "task_execute"

@@ -275,14 +275,43 @@ def task_validate(ctx, task_id, validate_all):
 
 @task_group.command("close")
 @click.option("--id", "task_id", required=True, metavar="TASK-####", help="Packet ID to close.")
+@click.option(
+    "--quick",
+    is_flag=True,
+    default=False,
+    help="Minimal closure: writes results.md from --summary and marks done without full validation.",
+)
+@click.option(
+    "--summary",
+    default="",
+    metavar="TEXT",
+    help="One-line summary for quick closure (required with --quick).",
+)
+@click.option(
+    "--files",
+    "files_list",
+    multiple=True,
+    metavar="PATH",
+    help="Files changed (repeatable). Used with --quick to populate results.md.",
+)
 @click.pass_context
-def task_close(ctx, task_id):
-    """Attempt closure validation for a packet."""
+def task_close(ctx, task_id, quick, summary, files_list):
+    """Attempt closure validation for a packet.
+
+    Use --quick for conversational or voice workflows: writes a minimal results.md
+    from --summary (and optional --files) and marks the packet done without
+    requiring handoff.md or efficiency metrics.
+    """
     repo = ctx.obj.get("repo") if ctx.obj else None
     fmt = ctx.obj.get("fmt", "text") if ctx.obj else "text"
     root = resolve_repo_root(repo)
 
-    result = task_service.close_packet(root, task_id)
+    if quick:
+        if not summary:
+            raise click.UsageError("--quick requires --summary TEXT")
+        result = task_service.quick_close_packet(root, task_id, summary, list(files_list) or None)
+    else:
+        result = task_service.close_packet(root, task_id)
 
     if not result.ok:
         if any("not found" in e for e in result.errors):
@@ -299,5 +328,7 @@ def task_close(ctx, task_id):
     else:
         click.echo(f"task close: ok")
         click.echo(f"  {task_id}  ->  done")
-        for path in result.files_updated:
+        for path in result.files_created or []:
+            click.echo(f"  created   {path}")
+        for path in result.files_updated or []:
             click.echo(f"  updated   {path}")
