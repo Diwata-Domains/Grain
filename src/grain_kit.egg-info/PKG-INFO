@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: grain-kit
-Version: 0.1.2
+Version: 0.1.5
 Summary: CLI-first workflow toolkit for structured AI-assisted software development.
 License-Expression: LicenseRef-Proprietary
 Project-URL: Homepage, https://github.com/Diwata-Labs/Grain
@@ -32,230 +32,87 @@ Requires-Dist: twine>=5.1; extra == "release"
 
 # Grain
 
-Grain is a CLI-first workflow system for structured AI-assisted software development.
+[![PyPI](https://img.shields.io/pypi/v/grain-kit)](https://pypi.org/project/grain-kit/)
+[![License](https://img.shields.io/badge/license-proprietary-red)](https://github.com/Diwata-Labs/Grain)
+[![CI](https://github.com/Diwata-Labs/Grain/actions/workflows/publish-pypi.yml/badge.svg)](https://github.com/Diwata-Labs/Grain/actions)
+
+**Structured AI-assisted development with task packets, minimal context, and explicit review gates.**
+
+Grain is a CLI-first workflow system for working with coding agents without relying on hidden state, oversized prompts, or loose execution loops.
 
 It gives you:
-- canonical docs as source of truth
-- working docs for sequencing and planning
-- task packets as the execution unit
-- explicit review and close loops
-- minimal-context execution instead of broad repo dumping
-- more useful work per agent context window by reducing drift, retries, and unnecessary rereads
+- task packets as the unit of execution
+- file-backed workflow state
+- minimal context assembly per task
+- explicit execute, review, and close gates
+- stable prompt entrypoints for agent CLIs
 
-Grain is not a coding model by itself.
-It is the workflow and file system that external agent CLIs operate against.
-It exists in part to help agent-CLI users avoid burning through token windows on broad, repetitive, underspecified conversations.
+Grain does not replace coding agents.
+It gives them a tighter operating system.
 
 ---
 
-## Who It Is For
+## Why use it
 
-Grain is for developers and technical operators who:
-- use agent CLIs such as Codex or Claude Code
-- want inspectable markdown files instead of opaque orchestration
-- want scoped task execution, review, and closure
-- want less context drift and lower token waste than ad hoc prompting
-- regularly hit context or usage limits before useful work is complete
+Ad hoc agent-driven development usually degrades into:
+- repeated explanations
+- broad repo dumps
+- context drift across sessions
+- inconsistent outputs
+- unclear review boundaries
 
----
+Grain addresses that with a simple rule set:
+- one task packet at a time
+- only load the context the task needs
+- keep state in repo files
+- require explicit review before closure
 
-## Quickstart
+Mental model:
 
-### New project
-
-```bash
-# 1. Install
-uv tool install grain-kit
-
-# 2. Create a repo and initialize
-mkdir my-project && cd my-project
-git init
-grain init
-```
-
-After `grain init` your repo has:
-```
-docs/canonical/    ← source-of-truth decisions (you fill these in)
-docs/working/      ← backlog, current task, open questions
-docs/runtime/      ← workflow rules, manifest, adapter profiles
-tasks/             ← one folder per task packet
-prompts/           ← workflow entrypoints for your agent CLI
-```
-
-```bash
-# 3. Open prompts/workflow.onboard.new.md in your agent CLI
-#    Fill in the Project Context section at the top
-#    The agent generates your canonical docs, backlog, and first task
-
-# 4. Check what to do next
-grain workflow next
-```
-
-Output looks like:
-```
-workflow next: ok
-  phase             1
-  active_task_id    P1-T01-TASK-0001
-  next_action       task_execute
-  recommended_prompt  prompts/task.execute.md
-```
-
-```bash
-# 5. Run prompts/task.execute.md in your agent CLI — it executes the task
-# 6. Run prompts/task.review.md — review the work
-# 7. Run prompts/task.close.md — close the task and move to the next one
-# 8. Repeat from step 4
-```
-
-That is the full loop. `grain workflow next` always tells you exactly where you are and what to do next.
-
----
-
-### Existing project
-
-```bash
-# 1. Install (if not already done)
-uv tool install grain-kit
-
-# 2. Scaffold Grain into your existing repo
-cd your-existing-project
-grain onboard
-```
-
-Output looks like:
-```
-onboard: ok
-  root              /your-existing-project
-Created:
-- docs/canonical
-- docs/working
-- docs/runtime
-- tasks
-- prompts
-- docs/canonical/product_scope.md
-- docs/canonical/architecture.md
-- docs/working/backlog.md
-- docs/working/current_focus.md
-- docs/working/open_questions.md
-Skipped:
-- (any files that already existed are listed here)
-```
-
-```bash
-# 3. Open prompts/workflow.onboard.existing.md in your agent CLI
-#    The agent scans your codebase, fills in the DRAFT docs, and records
-#    gaps as open questions — review everything before treating it as canonical
-
-# 4. grain workflow next — start the workflow loop from there
+```text
+Idea -> Task Packet -> Context -> Execute -> Review -> Close
 ```
 
 ---
 
-## Core Idea
+## What Grain manages
 
-Grain separates work into layers:
+Grain separates work into a few visible layers:
 
 - `docs/canonical/`
-  - source-of-truth decisions
+  - source-of-truth project decisions
 - `docs/working/`
-  - current plan, backlog, questions, proposals, metrics
+  - backlog, current focus, open questions, proposals
 - `docs/runtime/`
-  - execution rules, manifest, context-loading rules, model profiles
+  - workflow rules, adapter profiles, context-loading rules
 - `tasks/`
-  - one packet per task
+  - one folder per task packet
 - `prompts/`
-  - stable workflow entrypoints for agent CLIs
+  - stable prompt files for your agent CLI
+
+The workflow is file-backed and inspectable. There is no hidden daemon, database, or background service.
 
 ---
 
-## Adapter Inventory
-
-Grain uses a contract-driven adapter model to tune workflow behavior for different domains.
-
-The workflow loop is the same for every domain. Adapters change context selection, validation hints, and review focus — not workflow law.
-
-### Official Adapters (Supported Today)
-
-- `code_adapter`
-  - Python, Rust, backend services, CLI tooling
-- `frontend_adapter`
-  - TypeScript, JavaScript, React, Storybook, Tauri UI
-
-### Official Adapters (Supported)
-
-- `docs_adapter`
-  - Markdown documentation systems, Word documents (.docx), PDF files
-- `spreadsheet_adapter`
-  - Excel (.xlsx/.xls) and CSV spreadsheet workflows
-
-### Custom Adapters
-
-Users may define custom adapter profiles locally for any domain.
-
-Examples of valid custom adapter domains:
-- DevOps workflows — VPS provisioning, deployment setup, service configuration
-- System administration — reverse-proxy setup, firewall and SSH hardening, backup planning, monitoring
-- Local ops — machine-admin repos, dotfile management, workstation automation
-- Containerization — Docker/Compose setup, rollback procedures
-- Content pipelines — editorial systems, publishing workflows
-- Any operational domain expressible through repo artifacts and task packets
-
-Custom adapters follow the same contract as official adapters. Add them to `docs/runtime/adapter_profiles.md` and declare them in the manifest. No plugin system or marketplace is required.
-
-### Future Possibilities
-
-- shareable community adapter profiles
-- adapter-aware template sets per domain
-
-If you are managing content with Grain, `docs_adapter` is the natural direction because it fits markdown-first editorial, knowledge-base, and documentation workflows. If you are managing infrastructure or operations work, define a `devops_adapter` or `local_ops_adapter` with the file patterns and validation hints relevant to your domain.
-
----
-
-## Recursive Build Principle
-
-Grain is intended to be used to build Grain itself, then to build Assay on top of it.
-
-**Assay** is a planned independent verification layer. It will check work produced through Grain — test coverage, correctness signals, drift detection — without being part of the execution loop itself. The intended end state is: structure the work with Grain, execute the work with an agent CLI, verify the result with Assay.
-
-That recursive use is deliberate.
-It is one of the main ways the product is validated in real work:
-
-- if Grain cannot manage its own build cleanly, its workflow claims are weak
-- if Grain reduces token waste, drift, and retries while building itself, that is stronger evidence than a synthetic demo
-- if Assay can later verify work produced through Grain, the loop becomes: structure the work, execute the work, verify the result
-
-Recursive building is validation, not proof of universal fit.
-Grain still needs to work outside its own repo shape and outside its creator's habits.
-
----
-
-## Installation
+## Install
 
 Requirements:
 - Python 3.11+
-- `uv` (recommended) or `pip`
+- `uv` recommended, `pip` supported
 
-### Recommended: uv tool install
+Install from PyPI:
 
 ```bash
 uv tool install grain-kit
 ```
 
-This installs `grain` into uv's global tool path. No virtual environment needed.
-
-### Alternative: pip install
+or:
 
 ```bash
 pip install grain-kit
 ```
 
-### Local source install (development or testing)
-
-```bash
-uv tool install --from . grain
-```
-
-Fallback using a local venv:
+For local development:
 
 ```bash
 python3 -m venv .venv
@@ -263,352 +120,261 @@ source .venv/bin/activate
 pip install -e .
 ```
 
-### Verify
+Verify:
 
 ```bash
 grain --version
-grain init --help
 ```
-
-Expected output:
-- `grain, version <x.y.z>`
-- `Usage: grain init [OPTIONS]`
 
 ---
 
-## Updating
+## Quick start
 
-### uv tool install
+Grain has two real entry paths today:
+- start a new repo with `grain init`
+- add Grain to an existing repo with `grain onboard`
 
-```bash
-uv tool upgrade grain-kit
-```
-
-### pip install
+### New project
 
 ```bash
-pip install --upgrade grain-kit
+mkdir my-project && cd my-project
+git init
+grain init
 ```
 
-### Local source install
+That creates the baseline Grain structure:
+
+```text
+docs/canonical/
+docs/working/
+docs/runtime/
+tasks/
+prompts/
+```
+
+Then use the onboarding prompt:
 
 ```bash
-uv tool install --from . grain --force
+grain workflow next
+grain prompt show
 ```
 
-or for a venv-based install:
+Open `prompts/workflow.onboard.new.md` in your agent CLI, fill in the project context section, and let the agent generate the initial docs and backlog.
+
+From there, the normal loop is:
 
 ```bash
-pip install -e . --upgrade
+grain workflow next
+grain prompt show
 ```
+
+Then run the recommended prompt in your agent CLI, review the repo changes, and continue through execute, review, and close.
+
+### Existing project
+
+```bash
+cd your-existing-project
+grain onboard
+grain workflow next
+grain prompt show
+```
+
+Then open `prompts/workflow.onboard.existing.md` in your agent CLI. That prompt is intended to scan the existing repo, draft the canonical docs, and identify open questions. Review those docs before treating them as authoritative.
+
+---
+
+## Using Grain with agent CLIs
+
+Grain is designed to be used through an agent CLI such as Claude Code or Codex.
+
+In practice, the agent should use Grain as the workflow layer for the repository:
+- use `grain` commands to determine the next legal step
+- use prompt files under `prompts/` as stable workflow entrypoints
+- operate within the execute, review, and close loop
+- respect explicit review and closure gates
+
+Example instruction for an agent:
+
+```text
+You have access to the Grain CLI.
+
+Use Grain to onboard this repository and follow the workflow.
+Always use Grain commands to determine the next workflow step.
+Use the prompt files Grain recommends.
+Respect review and closure gates before marking work complete.
+```
+
+That keeps agent-driven work:
+- structured
+- lower-context
+- inspectable
+- repeatable
+
+---
+
+## The daily loop
+
+The practical loop is:
+
+1. Ask Grain what the next legal action is.
+2. Run the recommended prompt in your agent CLI.
+3. Review the proposed work.
+4. Close the task only when the packet is complete.
+
+Typical commands:
+
+```bash
+grain workflow next
+grain prompt show
+grain review check --id TASK-0001
+grain task close --id TASK-0001
+```
+
+If you want Grain to execute one legal state transition and stop at gates:
+
+```bash
+grain workflow run
+```
+
+If you want repeated state-driven execution:
+
+```bash
+grain workflow loop --steps 3
+```
+
+---
+
+## Task packets
+
+A task packet is the unit of execution. Each task lives in its own directory under `tasks/`.
+
+Packet files include:
+- `task.md`
+- `context.md`
+- `plan.md`
+- `deliverable_spec.md`
+- `results.md`
+- `handoff.md` when needed
+
+Useful commands:
+
+```bash
+grain task list
+grain task show --id TASK-0001
+grain task prepare --id TASK-0001
+grain task validate --id TASK-0001
+```
+
+To create a packet directly:
+
+```bash
+grain task create --phase 3 --task-num 4 --title "Add packet validator"
+```
+
+---
+
+## Context control
+
+Grain is built around minimal context loading instead of dumping the whole repo into every interaction.
+
+Build or inspect the context bundle for a task:
+
+```bash
+grain context build --id TASK-0001
+grain context show --id TASK-0001
+grain context export --id TASK-0001
+```
+
+The context system can also include selected working docs and adapter-specific hints when relevant.
+
+---
+
+## Review and closure
+
+Grain keeps review explicit.
+
+Use:
+
+```bash
+grain review check --id TASK-0001
+grain review summary --id TASK-0001
+grain review handoff --id TASK-0001
+grain task close --id TASK-0001
+```
+
+The goal is simple: intelligence may propose changes, but closure should be deliberate and inspectable.
+
+---
+
+## Adapters
+
+Grain uses adapters to tune context selection and review focus for different types of work while keeping the workflow loop the same.
+
+Current adapter surface includes:
+- `code_adapter`
+- `frontend_adapter`
+- `docs_adapter`
+- `spreadsheet_adapter`
+
+Inspect adapters with:
+
+```bash
+grain adapter list
+grain adapter show --id code_adapter
+```
+
+---
+
+## Orchestration
+
+Grain can also generate plan proposals for larger scopes without silently mutating the repo plan.
+
+```bash
+grain orchestrate scope --scope "Add authentication system"
+grain orchestrate plan --scope "Add authentication system"
+grain orchestrate accept --plan OP-XXXXXXXX
+```
+
+These outputs are proposals. They are meant to support sequencing, not bypass review.
+
+---
+
+## What Grain is not
+
+Grain is not:
+- a coding model
+- a GUI project manager
+- a hidden orchestration service
+- a database-backed autonomy layer
+
+It is a disciplined filesystem-first workflow layer for agent-assisted work.
 
 ---
 
 ## Troubleshooting
 
-If `grain` is not found after `uv tool install`:
-- run `uv tool dir --bin` and add that directory to your `PATH`
-- macOS/Linux: `export PATH="$(uv tool dir --bin):$PATH"`
-- Windows PowerShell: `$env:Path = "$(uv tool dir --bin);$env:Path"`
-
-If you have a Python version mismatch:
-- check: `python --version` (Grain requires Python 3.11+)
-- install with a specific interpreter: `uv tool install --python 3.11 grain`
-
-If venv conflicts cause unexpected behavior:
-- check: `which grain` (or `where grain` on Windows) to confirm the active path
-- reinstall: `uv tool uninstall grain-kit && uv tool install grain-kit`
-- for local source testing, use isolated env vars:
-  - point `UV_TOOL_DIR`, `UV_CACHE_DIR`, and `HOME` at temp directories
-
----
-
-## Contributing / Feedback
-
-Found a bug, have a feature request, or want to share feedback?
-
-Open an issue at: https://github.com/Diwata-Labs/Grain/issues
-
-When reporting a bug, include:
-- the command you ran
-- the output or error message
-- your Python version and install method (`uv tool install` or `pip install`)
-
----
-
-## Should You Use Grain For Your Machine?
-
-Yes, sometimes.
-
-Good use cases:
-- managing dotfiles or local automation as a project
-- maintaining workstation setup scripts
-- organizing home-lab, local tooling, or machine-admin workflows
-- managing content repositories, docs sites, and markdown-first knowledge bases
-- treating your local environment as an inspectable system with tasks, review, and change history
-
-Bad default:
-- treating your entire home directory or whole machine as one Grain project
-
-Better pattern:
-- create a dedicated repo such as:
-  - `local-ops`
-  - `machine-admin`
-  - `personal-systems`
-- use Grain inside that repo
-
-Reason:
-- keeps scope bounded
-- keeps context smaller
-- keeps tasks coherent
-- avoids mixing unrelated files and projects into one authority tree
-
----
-
-## How New Users Should Start
-
-Use the `README` as the entrypoint and the prompts as the workflow engine.
-
-There are two starting modes:
-
-1. new project
-2. existing project
-
-### New Project
-
-1. create or enter the project repo
-2. run `grain init`
-3. open `prompts/workflow.onboard.new.md`
-4. fill in the `Project Context`
-5. paste that prompt into your agent CLI
-6. let the agent generate the initial docs, manifest, backlog, and open questions
-7. review those generated docs before treating canonical content as approved
-
-Optional onboarding-aware init flags:
+If `grain` is not found after install:
 
 ```bash
-grain init --primary-adapter code_adapter --secondary-adapter frontend_adapter --bootstrap
+uv tool dir --bin
 ```
 
-- `--primary-adapter` sets the default adapter context for onboarding
-- `--secondary-adapter` can be repeated for additional adapters
-- `--bootstrap` creates a starter task packet and initializes `docs/working/current_task.md`
+Add that directory to your `PATH`.
 
-Compatibility note:
-- `prompts/workflow.init.md` is kept as an alias for users who still invoke the old onboarding name.
+If you hit Python version issues, use Python 3.11+ and reinstall with the interpreter you intend to use.
 
-After onboarding, use the normal loop:
-
-1. `prompts/task.plan.next.md` only when a task must be selected or split
-2. `prompts/task.execute.md`
-3. `prompts/task.review.md`
-4. `prompts/task.close.md`
-
-### Existing Project
-
-1. run `grain onboard` inside the existing repo (or pass a path)
-2. open `prompts/workflow.onboard.existing.md`
-3. paste that prompt into your agent CLI
-4. the agent reviews the scaffold manifest, scans the codebase, and generates draft canonical docs
-5. review all generated docs before treating them as canonical — all output is marked `# DRAFT`
-
-Optional flags:
+If you want a local editable install, prefer a dedicated virtual environment:
 
 ```bash
-grain onboard                  # scaffold into current directory
-grain onboard /path/to/repo    # scaffold into a specific path
-grain onboard --dry-run        # preview what would be created without writing
-grain onboard --format json    # get a machine-readable manifest of created/skipped files
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -e .
 ```
 
-`grain onboard` is additive only — it never overwrites existing files. Any file already present is skipped and listed in the manifest.
-
 ---
 
-## Agent CLI Usage
+## Feedback
 
-Grain is designed to be used from an agent CLI.
+Issues and feedback:
 
-The basic pattern is:
-
-1. run the Grain CLI when filesystem scaffolding or validation is needed
-2. run a prompt from `prompts/`
-3. let the agent update the repo files
-4. continue through the structured loop
-
-### Recommended Stable Prompt Surface
-
-Phase planning:
-- `prompts/phase.plan.next.md`
-- `prompts/phase.review.md`
-- `prompts/phase.review_and_close.md`
-
-Task planning and execution:
-- `prompts/task.plan.next.md`
-- `prompts/task.execute.md`
-- `prompts/task.review.md`
-- `prompts/task.close.md`
-
-Project bootstrap:
-- `prompts/workflow.onboard.new.md` — new project onboarding
-- `prompts/workflow.onboard.existing.md` — existing project adoption
-- `prompts/workflow.init.md` (compatibility alias for new-project onboarding)
-
-### Recommended Daily Loop
-
-Use this loop continuously inside the active phase:
-
-1. `task.plan.next` — only when the next task must be selected, split, or added
-2. `task.execute`
-3. `task.review`
-4. `task.close`
-
-Do not run `task.plan.next` every time if a ready task already exists.
-
-### Recommended Planning Loop
-
-Use this less often:
-
-1. `phase.plan.next`
-2. `phase.review` or `phase.review_and_close` at phase boundaries
-
----
-
-## Customization
-
-Grain is meant to be customized to the project it is managing.
-
-Users should customize:
-- canonical docs for the project domain and scope
-- working docs for sequencing, backlog, and open questions
-- adapter selection and adapter profiles
-- model strategy and agent preferences
-- onboarding outputs for new or existing projects
-
-Users should try to keep stable:
-- the core workflow loop: plan → execute → review → close
-- file-backed workflow state
-- authority boundaries between canonical, working, runtime, and task layers
-- explicit review and change-proposal gates
-
-Good customization:
-- adapt Grain to Python, Rust, React, docs, spreadsheets, local-ops, or mixed projects
-- add project-specific constraints, risks, adapters, and backlog structure
-
-Bad customization:
-- silently bypass review
-- hide state outside the repo
-- collapse canonical and working docs into one layer
-- make every project invent its own incompatible workflow loop
-
-In short:
-- customize the project model
-- keep the workflow model disciplined
-
----
-
-## Minimal CLI Reference
-
-```bash
-# Setup
-grain init                                    # initialize a new project
-grain onboard [path]                          # scaffold into an existing repo (additive)
-grain onboard --dry-run                       # preview scaffold without writing
-
-# Docs and validation
-grain docs validate                           # validate doc manifest and structure
-grain task validate --id TASK-####           # validate one task packet
-
-# Task management
-grain task create --title "..."
-grain task list
-grain task show --id TASK-####
-grain task status --id TASK-#### --status done
-grain task next                               # which task to work on
-grain task prepare --id TASK-####            # assemble context prerequisites
-
-# Workflow automation
-grain workflow next                           # next legal step + blockers
-grain workflow next --format json             # machine-readable for agent CLIs
-grain workflow run                            # execute one step, stop at gates
-grain workflow loop                           # run full execute→review→close cycle
-grain workflow loop --supervision gated       # stop at review/close gates (default)
-grain workflow loop --supervision supervised  # approve every action
-grain workflow loop --dry-run                 # preview loop plan without execution
-
-# Context assembly
-grain context build --id TASK-####
-grain context build --id TASK-#### --format json
-
-# Orchestration
-grain orchestrate scope --scope "..."
-grain orchestrate plan --scope "..."
-grain orchestrate accept --plan <id>          # mark a plan accepted for loop ordering
-
-# Adapter inspection
-grain adapter list
-grain adapter show --id <id>
-
-# Prompts
-grain prompt show                             # recommended prompt for current state
-```
-
-In normal Grain usage, the prompts drive most of the workflow and the CLI handles scaffolding, validation, and command surfaces.
-
----
-
-## Important Rules
-
-- do not treat prompts as canonical truth
-- do not edit canonical docs silently
-- do not execute multiple unrelated tasks in one packet
-- do not let review and close perform backlog planning implicitly
-- if prompt or workflow-contract docs change mid-conversation, restart the relevant agent conversation
-
-See:
-- `docs/runtime/PROJECT_RULES.md`
-- `docs/runtime/docs_manifest.yaml`
-
----
-
-## Current Product State
-
-- v1 core workflow complete (Phases 1–5 closed) — init, docs, task, context, model, review commands
-- Phase 6 closed — adapter system foundation (`code_adapter`, `frontend_adapter`)
-- Phase 7 closed — new-project onboarding flow (`grain init` with adapter selection and starter-packet bootstrap)
-- Phase 8 closed — workflow automation runner (`grain workflow next/run`, `grain task next/prepare`, `grain phase next`, `grain prompt show`, machine-readable JSON contract)
-- Phase 9 closed — orchestration service (`grain orchestrate scope/plan`, `grain adapter list/show`, OrchestratorPlan domain model)
-- Phase 10 closed — structural intelligence (tree-sitter extraction, knowledge graph, graph-assisted context selection)
-- Phase 11 closed — distribution and global install (`pip install grain-kit`, `uv tool install grain-kit`, PyPI publish workflow)
-- Phase 12 closed — automated workflow loop (`grain workflow loop`, supervision levels, per-step logging, `grain orchestrate accept`)
-- Phase 13 closed — existing project adoption (`grain onboard`, `CodebaseScanner`, draft canonical doc generation, `workflow.onboard.existing.md` prompt)
-- Phase 14 closed — document and spreadsheet adapters (`SpreadsheetExtractor` for xlsx/csv, `DocsExtractor` for docx/md, `PdfExtractor` for pdf with graceful degradation)
-
-Workflow loop guardrails:
-- `grain workflow loop --steps N` sets a hard loop-step limit
-- `grain workflow loop --dry-run` previews planned actions without mutating state
-- supervision levels:
-  - `supervised`: operator approval before each action
-  - `gated`: automatic run, stops at review/close gates (default)
-  - `autonomous`: minimal stops, unverified automation (Assay will provide future independent verification)
-
-See `docs/working/current_focus.md` and `docs/working/implementation_plan.md` for active phase detail.
-
----
-
-## Roadmap
-
-### v0.2.0 — Semantic Enrichment
-
-- **Semantic similarity** — embedding-based similar-task detection, doc-to-task matching, and duplicate/overlap identification. All outputs labeled as inferred, not authoritative.
-- **Ranking layer** — deterministic scoring across graph distance, semantic similarity, authority level, and packet-local priority. Applied to context selection and next-task suggestion.
-- **Assay** — independent verification layer that checks work produced through Grain. Closes the loop: structure the work, execute the work, verify the result.
-- **Homebrew tap** — `brew install` support for macOS users.
-
-These features depend on an embedding infrastructure decision (local model vs. external API) that has not yet been made. v0.2.0 planning begins after that decision is resolved.
-
-### Longer term
-
-- Community adapter profiles — shareable domain-specific adapter configurations
-- `--prefix` flag for `grain onboard` — adopt Grain into repos with existing `docs/` structures without conflict
-- TUI interface — optional terminal UI for operators who prefer visual workflow navigation
+https://github.com/Diwata-Labs/Grain/issues

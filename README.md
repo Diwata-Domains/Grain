@@ -1,7 +1,6 @@
 # Grain
 
 [![PyPI](https://img.shields.io/pypi/v/grain-kit)](https://pypi.org/project/grain-kit/)
-[![License](https://img.shields.io/badge/license-proprietary-red)](https://github.com/Diwata-Labs/Grain)
 [![CI](https://github.com/Diwata-Labs/Grain/actions/workflows/publish-pypi.yml/badge.svg)](https://github.com/Diwata-Labs/Grain/actions)
 
 **Structured AI-assisted development with task packets, minimal context, and explicit review gates.**

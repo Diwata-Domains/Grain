@@ -22,6 +22,7 @@ src/grain/cli/phase.py
 src/grain/cli/prompt.py
 src/grain/cli/review.py
 src/grain/cli/task.py
+src/grain/cli/upgrade.py
 src/grain/cli/workflow.py
 src/grain/data/prompts/README.md
 src/grain/data/prompts/close.md
@@ -72,6 +73,7 @@ src/grain/data/runtime/agent_profiles.md
 src/grain/data/runtime/context_loading.md
 src/grain/data/runtime/docs_index.md
 src/grain/data/runtime/docs_manifest.yaml
+src/grain/data/runtime/implementation_plan.md
 src/grain/data/runtime/workflow_loop.yaml
 src/grain/data/templates/tasks/context.md
 src/grain/data/templates/tasks/deliverable_spec.md
@@ -112,6 +114,7 @@ src/grain/services/spreadsheet_extractor.py
 src/grain/services/structural_intelligence_service.py
 src/grain/services/task_prepare_service.py
 src/grain/services/task_service.py
+src/grain/services/upgrade_service.py
 src/grain/services/workflow_loop_config_service.py
 src/grain/services/workflow_loop_service.py
 src/grain/services/workflow_run_service.py
@@ -211,6 +214,7 @@ tests/test_task_show_cmd.py
 tests/test_task_status_cmd.py
 tests/test_task_validate_cmd.py
 tests/test_template_loader.py
+tests/test_upgrade_cmd.py
 tests/test_workflow_loop_cmd.py
 tests/test_workflow_loop_config_service.py
 tests/test_workflow_next_cmd.py
