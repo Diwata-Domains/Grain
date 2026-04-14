@@ -565,6 +565,66 @@ Make Grain context-aware for Excel, Word, and PDF files. Extract readable conten
 
 ---
 
+---
+
+## Phase 15 — Semantic Enrichment Layer
+
+### Objective
+Replace static file-pattern context selection with scored, relevance-ranked candidate selection. Introduce an `EmbeddingProvider` protocol that supports four pluggable backends — BM25 (default, no deps), Ollama (local server), Local (sentence-transformers), and OpenAI (cloud API). Wire scoring into the existing context assembly pipeline.
+
+### Background
+Grain's current context selection uses tree-sitter graph edges and adapter file-pattern rules to build context bundles. This is structural — it understands shape but not meaning. A task about "authentication middleware" may miss semantically relevant files if they aren't directly linked in the graph or matched by file pattern.
+
+The semantic layer adds relevance scoring: given the active task's objective, rank candidate files by how relevant they are to that task. BM25 covers keyword-based relevance (no new infrastructure). Ollama, Local, and OpenAI providers add embedding-based semantic similarity when the operator configures them.
+
+The provider model follows the same pattern as `AdapterProfile` and `ModelProfile` — resolved from `grain.embedding_provider` in `docs_manifest.yaml`, gracefully degrades to BM25 if the configured provider is unavailable.
+
+### Provider Summary
+
+| Provider | Config value | Dependencies | Notes |
+|----------|-------------|--------------|-------|
+| BM25 | `none` (default) | none | Keyword scoring, always available, deterministic |
+| Ollama | `ollama` | Ollama running at `localhost:11434` | Local server, no API key, recommended for local-first setups |
+| Local | `local` | `sentence-transformers` (optional dep) | Downloads model on first use (~100–300MB), runs on CPU/GPU |
+| OpenAI | `openai` | `openai` SDK + `GRAIN_OPENAI_API_KEY` env var | Cloud API, highest quality, per-call cost |
+
+### Major Deliverables
+- `EmbeddingProvider` protocol (`src/grain/domain/embedding.py`) — defines `score(query, candidates) -> list[ScoredCandidate]` interface
+- `BM25Provider` — keyword scoring using TF-IDF, no new dependencies, always the fallback
+- `OllamaProvider` — calls `http://localhost:11434/api/embeddings`, graceful degradation if server not running
+- `LocalProvider` — `sentence-transformers` optional dependency, lazy model load on first use, graceful degradation if not installed
+- `OpenAIProvider` — `openai` SDK optional dependency, reads `GRAIN_OPENAI_API_KEY`, graceful degradation if key absent
+- `EmbeddingProviderResolver` — reads `grain.embedding_provider` from manifest config, instantiates correct provider, falls back to BM25 on any error
+- Context service integration — scored candidates replace/augment the current glob-pattern candidate list in `context_service.py`
+- `grain embedding show` command — reports active provider, reachability status, model in use, and whether fallback is active
+- Integration tests covering all four providers, graceful degradation paths, and context selection with scoring
+
+### Task Sequence
+
+- **P15-T01** — `EmbeddingProvider` protocol, `ScoredCandidate` domain model, `EmbeddingProviderResolver`, config wiring
+- **P15-T02** — `BM25Provider` — TF-IDF keyword scoring, no new deps, deterministic output
+- **P15-T03** — `OllamaProvider` — local server integration, graceful degradation when server unreachable
+- **P15-T04** — `LocalProvider` — sentence-transformers optional dep, lazy load, graceful degradation when not installed
+- **P15-T05** — `OpenAIProvider` — openai SDK optional dep, env-var key, graceful degradation when key absent
+- **P15-T06** — Context service integration — wire `EmbeddingProviderResolver` into `context_service.py`, scored candidates augment graph-assisted selection
+- **P15-T07** — `grain embedding show` command — active provider, reachability, model, fallback status
+- **P15-T08** — Phase 15 integration tests (≥ 16 tests across all providers, degradation paths, and context selection)
+
+### Architectural Notes
+- All providers implement the same `score(query: str, candidates: list[str]) -> list[ScoredCandidate]` interface — context service never knows which provider is active
+- Scoring is additive and advisory — it reranks existing candidates, never invents new ones
+- BM25 fallback is always silent — no warnings unless `--verbose` is passed
+- Optional dependencies (`sentence-transformers`, `openai`) are not added to `pyproject.toml` core deps — they are extras or runtime-checked imports
+- `OllamaProvider` uses `nomic-embed-text` as the default model; configurable via `grain.ollama_embedding_model` in manifest
+- `OpenAIProvider` uses `text-embedding-3-small` as the default model; configurable via `grain.openai_embedding_model` in manifest
+
+### Dependencies
+- requires Phase 14 close (stable context assembly pipeline) ✓
+- requires stable `load_grain_config()` from v0.1.7 ✓
+- `grain.embedding_provider` config field already in place ✓
+
+---
+
 ## 10. Post-v1 Transition Planning
 
 With Phase 5 closed, v2 items may now be promoted into active implementation when they are:
@@ -580,10 +640,7 @@ Rules:
 - prefer CLI/state-runner primitives and machine-readable command outputs before interface-layer work
 - do not begin TUI/GUI work before workflow automation runner primitives exist
 
-Primary planning docs:
-- `docs/working/v2_plan.md`
-- `docs/working/v2_adapters.md`
-- `docs/working/v2_onboarding.md`
+v0.2.0 planning is active. See Phase 15 above and `docs/working/current_focus.md` for current status.
 
 ---
 
