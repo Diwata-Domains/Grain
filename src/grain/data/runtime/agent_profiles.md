@@ -1,7 +1,7 @@
 # Agent Profiles
 
 ## Purpose
-Defines model classes and routing behavior for Grain.
+Defines model classes and routing behavior for this project.
 
 ## Model Classes
 

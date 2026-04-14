@@ -4,8 +4,6 @@
 
 These rules govern all agent and tool behavior in this repository.
 
-The project is a CLI-first toolkit for structuring AI-assisted software development workflows. It is a workflow orchestrator, not a coding agent.
-
 ---
 
 ## 2. Core Operating Rules

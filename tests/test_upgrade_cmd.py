@@ -7,7 +7,7 @@ from pathlib import Path
 from click.testing import CliRunner
 
 from grain.cli import main
-from grain.services.upgrade_service import upgrade_repo, _UPGRADE_TARGETS, _ADDITIVE_TARGETS, _PROTECTED
+from grain.services.upgrade_service import upgrade_repo, _UPGRADE_TARGETS, _ADDITIVE_TARGETS, _PROTECTED, _unified_diff
 
 
 def _run(tmp_path: Path, *args: str):
@@ -141,3 +141,87 @@ def test_upgrade_cmd_idempotent_on_second_run(tmp_path: Path):
     result = _run(tmp_path, "upgrade")
     assert result.exit_code == 0
     assert "(none)" in result.output  # nothing updated or added second time
+
+
+# --- diff tests ---
+
+def test_upgrade_diff_flag_shows_diff_without_writing(tmp_path: Path):
+    target = tmp_path / "prompts" / "task.execute.md"
+    _write(target, "old content that differs from bundled")
+
+    result = _run(tmp_path, "upgrade", "--diff")
+
+    assert result.exit_code == 0
+    assert "upgrade: diff" in result.output
+    assert "prompts/task.execute.md" in result.output
+    assert not target.read_text(encoding="utf-8") == ""  # still has old content
+    assert target.read_text(encoding="utf-8") == "old content that differs from bundled"
+
+
+def test_upgrade_diff_shows_removed_and_added_lines(tmp_path: Path):
+    target = tmp_path / "prompts" / "task.execute.md"
+    _write(target, "old line that will be removed\n")
+
+    result = _run(tmp_path, "upgrade", "--diff")
+
+    assert result.exit_code == 0
+    assert "-old line that will be removed" in result.output
+
+
+def test_upgrade_diff_json_includes_diffs_key(tmp_path: Path):
+    import json
+    target = tmp_path / "prompts" / "task.execute.md"
+    _write(target, "stale content")
+
+    result = _run(tmp_path, "upgrade", "--diff", "--format", "json")
+
+    assert result.exit_code == 0
+    data = json.loads(result.output)
+    assert "diffs" in data
+    assert "prompts/task.execute.md" in data["diffs"]
+    assert data["diffs"]["prompts/task.execute.md"] != ""
+
+
+def test_upgrade_include_diffs_populates_result(tmp_path: Path):
+    target = tmp_path / "prompts" / "task.execute.md"
+    _write(target, "stale content")
+
+    result = upgrade_repo(tmp_path, dry_run=True, include_diffs=True)
+
+    assert "prompts/task.execute.md" in result.diffs
+    diff = result.diffs["prompts/task.execute.md"]
+    assert "-stale content" in diff
+    assert "+++" in diff
+
+
+def test_upgrade_no_diffs_when_flag_not_set(tmp_path: Path):
+    target = tmp_path / "prompts" / "task.execute.md"
+    _write(target, "stale content")
+
+    result = upgrade_repo(tmp_path)
+
+    assert result.diffs == {}
+
+
+def test_unified_diff_helper_shows_delta():
+    diff = _unified_diff("some/file.md", "line A\nline B\n", "line A\nline C\n")
+    assert "-line B" in diff
+    assert "+line C" in diff
+
+
+# --- content quality tests ---
+
+def test_project_rules_does_not_contain_grain_description(tmp_path: Path):
+    """Bundled PROJECT_RULES.md must not describe Grain itself."""
+    upgrade_repo(tmp_path)
+    content = (tmp_path / "docs" / "runtime" / "PROJECT_RULES.md").read_text(encoding="utf-8")
+    assert "CLI-first toolkit" not in content
+    assert "workflow orchestrator" not in content
+
+
+def test_agent_profiles_does_not_say_for_grain(tmp_path: Path):
+    """Bundled agent_profiles.md must say 'for this project', not 'for Grain'."""
+    upgrade_repo(tmp_path)
+    content = (tmp_path / "docs" / "runtime" / "agent_profiles.md").read_text(encoding="utf-8")
+    assert "for Grain" not in content
+    assert "for this project" in content

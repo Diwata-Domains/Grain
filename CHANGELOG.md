@@ -7,6 +7,19 @@ Versioning: [Semantic Versioning](https://semver.org/)
 
 ---
 
+## [0.1.6] — 2026-04-14
+
+### Added
+- `grain upgrade --diff` — shows unified diffs (red/green lines) for stale files without writing anything
+- `grain upgrade --interactive` (`-i`) — walks each stale file, shows its diff, and prompts accept/skip/quit per file; only accepted files are written
+- `grain upgrade --format json` now includes a `diffs` key with per-file diff strings when used with `--diff`
+
+### Fixed
+- Bundled `PROJECT_RULES.md` no longer contains "The project is a CLI-first toolkit..." — that line described Grain itself and was wrong in user project contexts
+- Bundled `agent_profiles.md` no longer says "routing behavior for Grain" — changed to "for this project"
+
+---
+
 ## [0.1.5] — 2026-04-13
 
 ### Added

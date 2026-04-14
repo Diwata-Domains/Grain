@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import difflib
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -65,15 +66,32 @@ class UpgradeResult:
     added: list[str] = field(default_factory=list)
     unchanged: list[str] = field(default_factory=list)
     protected: list[str] = field(default_factory=list)
+    diffs: dict[str, str] = field(default_factory=dict)  # rel_path -> unified diff string
 
 
-def upgrade_repo(root: Path, *, dry_run: bool = False) -> UpgradeResult:
+def _unified_diff(rel: str, current: str, bundled: str) -> str:
+    lines = list(
+        difflib.unified_diff(
+            current.splitlines(keepends=True),
+            bundled.splitlines(keepends=True),
+            fromfile=f"current/{rel}",
+            tofile=f"bundled/{rel}",
+        )
+    )
+    return "".join(lines)
+
+
+def upgrade_repo(root: Path, *, dry_run: bool = False, include_diffs: bool = False) -> UpgradeResult:
     """Update Grain-managed files to the current bundled versions.
 
     - Updates prompts, task templates, and safe runtime docs.
     - Adds files that are missing entirely.
     - Never touches user-owned files (canonical docs, working docs, task packets,
       docs_manifest.yaml, adapter_profiles.md).
+
+    Args:
+        dry_run: Preview changes without writing.
+        include_diffs: Populate ``result.diffs`` with unified diff strings for stale files.
     """
     result = UpgradeResult()
 
@@ -89,6 +107,8 @@ def upgrade_repo(root: Path, *, dry_run: bool = False) -> UpgradeResult:
                 result.unchanged.append(rel)
             else:
                 result.updated.append(rel)
+                if include_diffs:
+                    result.diffs[rel] = _unified_diff(rel, current, bundled)
                 if not dry_run:
                     target.write_text(bundled, encoding="utf-8")
         else:
