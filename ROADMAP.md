@@ -32,6 +32,16 @@ The intelligence and domain expansion release.
 - Replace static adapter priority rules with weighted, evidence-backed selection
 - Depends on the Semantic Enrichment Layer
 
+### Adapter Write-Back
+Close the read→write loop for the currently supported extractors. Agents can already *read* structured files via context; write-back lets them deliver changes back into those formats as a formal task output.
+
+- `SpreadsheetExtractor.write(changes)` — agent-produced row/cell changes applied back to `.xlsx` / `.csv`
+- `DocsExtractor.write(changes)` — paragraph, heading, and table updates applied back to `.docx`
+- `NotebookExtractor.write(changes)` — cell content updates applied back to `.ipynb`
+- PDF remains read-only (no write-back planned)
+- Deliverable handler in `grain task close` — routes structured agent output to the correct writer based on declared deliverable type in `deliverable_spec.md`
+- Write-back is gated behind task closure, not mid-execution — changes only apply when the agent formally closes the task
+
 ### Data Adapter
 - First-class support for data science and ML workflows
 - Richer `.ipynb` context: cell outputs, dataset references, model training artifacts

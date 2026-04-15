@@ -625,6 +625,45 @@ The provider model follows the same pattern as `AdapterProfile` and `ModelProfil
 
 ---
 
+---
+
+## Phase 16 — Adapter Write-Back
+
+### Objective
+Close the read→write loop for all currently supported extractors. Agents can read structured files via context; this phase lets them deliver changes back into those formats as a formal task output, gated behind task closure.
+
+### Major Deliverables
+- `SpreadsheetExtractor.write()` — applies row/cell changes back to `.xlsx` / `.csv` via `openpyxl`
+- `DocsExtractor.write()` — applies paragraph, heading, and table updates back to `.docx` via `python-docx`
+- `NotebookExtractor.write()` — applies cell content updates back to `.ipynb`
+- Deliverable handler in `grain task close` — reads `deliverable_spec.md` for declared output type, routes to the correct writer
+- Structured change format — shared schema agents use to declare changes (JSON patch-style: target file, target element, new content)
+- `grain task close --apply-deliverable` flag — explicit opt-in to run write-back during closure
+- Integration tests covering round-trip read→write for each supported format
+
+### Task Sequence
+- **P16-T01** — Define shared change schema and `WritableExtractor` protocol
+- **P16-T02** — `SpreadsheetExtractor.write()` — xlsx/csv write-back with openpyxl
+- **P16-T03** — `DocsExtractor.write()` — docx write-back with python-docx
+- **P16-T04** — `NotebookExtractor.write()` — ipynb cell write-back
+- **P16-T05** — Deliverable handler in `task_service.close_packet()` — detects declared deliverable type, dispatches to writer
+- **P16-T06** — `grain task close --apply-deliverable` CLI flag
+- **P16-T07** — Phase 16 integration tests (round-trip read→write for each format, invalid change handling, missing file graceful failure)
+
+### Architectural Notes
+- Write-back is strictly gated behind task closure — writers are never invoked mid-execution
+- The change schema is agent-agnostic — any agent that can produce structured JSON can use it
+- Writers validate the change schema before applying; bad schema returns a closure error, not a partial write
+- `openpyxl` and `python-docx` are already in scope as optional deps (used by existing extractors); no new core dependencies
+- PDF remains read-only — no write-back planned
+
+### Dependencies
+- requires Phase 14 close (stable context assembly pipeline) ✓
+- requires existing extractor implementations (`SpreadsheetExtractor`, `DocsExtractor`, `NotebookExtractor`) ✓
+- can run in parallel with Phase 15 (Semantic Enrichment) — no shared dependencies
+
+---
+
 ## 10. Post-v1 Transition Planning
 
 With Phase 5 closed, v2 items may now be promoted into active implementation when they are:
