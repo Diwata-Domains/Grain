@@ -63,6 +63,14 @@ def workflow_next(ctx):
         for task in evaluation.candidate_tasks:
             click.echo(f"    - {task.task_ref} ({task.status})")
 
+    no_active_task = not evaluation.active_task_id
+    ad_hoc_states = {"task_planning_required", "task_planning", None}
+    if no_active_task and evaluation.stop_reason in ad_hoc_states:
+        click.echo(
+            "  tip               completed ad-hoc work outside the workflow? "
+            "`grain task create --simple` creates a lightweight audit record — say no to skip"
+        )
+
 
 @workflow_group.command("run")
 @click.pass_context
