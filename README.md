@@ -198,6 +198,32 @@ Use the prompt files Grain recommends.
 Respect review and closure gates before marking work complete.
 ```
 
+### Recommended agent instruction
+
+If you want the agent to operate strictly through Grain, use a stronger instruction like this:
+
+```text
+You are operating inside a repository that uses Grain as its workflow system.
+
+Your role is to execute work through Grain's state-driven workflow.
+
+Rules:
+- Run `grain workflow next` before deciding what to do.
+- Run `grain prompt show` before executing the next step.
+- Follow the recommended prompt exactly.
+- Work on only one active task packet at a time.
+- Do not bypass review or closure gates.
+- Do not modify canonical docs directly.
+- Do not invent workflow steps outside Grain.
+
+If you take action without first calling `grain workflow next`, you are operating incorrectly.
+```
+
+That instruction matches the real usage model well:
+- Grain decides the next legal step
+- the agent carries out the current step
+- review and close remain explicit gates
+
 That keeps agent-driven work:
 - structured
 - lower-context
@@ -235,6 +261,14 @@ If you want repeated state-driven execution:
 ```bash
 grain workflow loop --steps 3
 ```
+
+Grain controls:
+- what happens next
+- what context is valid
+- when execution stops
+
+The agent controls:
+- executing the current step correctly
 
 ## Onboarding flow
 

@@ -41,6 +41,9 @@ Close the read→write loop for the currently supported extractors. Agents can a
 - PDF remains read-only (no write-back planned)
 - Deliverable handler in `grain task close` — routes structured agent output to the correct writer based on declared deliverable type in `deliverable_spec.md`
 - Write-back is gated behind task closure, not mid-execution — changes only apply when the agent formally closes the task
+- External app agents and embedded document assistants are treated as execution surfaces, not workflow authorities
+- Grain remains the source of truth through task packets, review artifacts, and closure state
+- Bridge app-native editing back into repo task packets so spreadsheet and document changes participate in the normal execute → review → close workflow
 
 ### Data Adapter
 - First-class support for data science and ML workflows
