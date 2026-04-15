@@ -3,32 +3,33 @@
 [![PyPI](https://img.shields.io/pypi/v/grain-kit)](https://pypi.org/project/grain-kit/)
 [![CI](https://github.com/Diwata-Labs/Grain/actions/workflows/publish-pypi.yml/badge.svg)](https://github.com/Diwata-Labs/Grain/actions)
 
-**Structured AI-assisted development with task packets, minimal context, and explicit review gates.**
+**Deterministic workflow for agent CLIs.**
 
-Grain is a CLI-first workflow system for working with coding agents without relying on hidden state, oversized prompts, or loose execution loops.
+Grain is a workflow layer for Codex, Claude Code, and similar agent CLIs. It gives coding agents explicit task packets, minimal context, and review gates so development stays structured, inspectable, and repeatable.
 
-It gives you:
+It gives agents:
 - task packets as the unit of execution
 - file-backed workflow state
 - minimal context assembly per task
 - explicit execute, review, and close gates
-- stable prompt entrypoints for agent CLIs
+- stable prompt entrypoints for agent-driven work
 
 Grain does not replace coding agents.
-It gives them a tighter operating system.
+It gives them structure.
 
 ---
 
-## Why use it
+## Why Grain exists
 
 Ad hoc agent-driven development usually degrades into:
 - repeated explanations
-- broad repo dumps
+- oversized repo context
+- hidden state across conversations
 - context drift across sessions
 - inconsistent outputs
 - unclear review boundaries
 
-Grain addresses that with a simple rule set:
+Grain makes the workflow explicit:
 - one task packet at a time
 - only load the context the task needs
 - keep state in repo files
@@ -39,6 +40,23 @@ Mental model:
 ```text
 Idea -> Task Packet -> Context -> Execute -> Review -> Close
 ```
+
+This is most useful when you are already working inside an agent CLI and want the agent to follow a deterministic workflow instead of an open-ended conversation.
+
+---
+
+## How it is used
+
+Grain is meant to be used through an agent CLI.
+
+The operating loop is:
+
+```text
+grain workflow next -> grain prompt show -> agent executes one step -> review -> close
+```
+
+Use Grain to determine the next legal step.
+Use the agent CLI to carry it out.
 
 ---
 
@@ -101,6 +119,12 @@ Grain has two real entry paths today:
 - start a new repo with `grain init`
 - add Grain to an existing repo with `grain onboard`
 
+In both cases, the intended operator is an agent CLI:
+1. run the Grain command
+2. ask Grain for the next workflow step
+3. open the recommended prompt in the agent CLI
+4. let the agent work inside the Grain loop
+
 ### New project
 
 ```bash
@@ -119,7 +143,7 @@ tasks/
 prompts/
 ```
 
-Then use the onboarding prompt:
+Then start onboarding through your agent CLI:
 
 ```bash
 grain workflow next
@@ -128,7 +152,7 @@ grain prompt show
 
 Open `prompts/workflow.onboard.new.md` in your agent CLI, fill in the project context section, and let the agent generate the initial docs and backlog.
 
-From there, the normal loop is:
+After onboarding, the normal loop is:
 
 ```bash
 grain workflow next
@@ -160,6 +184,9 @@ In practice, the agent should use Grain as the workflow layer for the repository
 - operate within the execute, review, and close loop
 - respect explicit review and closure gates
 
+The CLI is the delivery surface.
+The product value is the workflow structure it gives the agent.
+
 Example instruction for an agent:
 
 ```text
@@ -177,8 +204,6 @@ That keeps agent-driven work:
 - inspectable
 - repeatable
 
----
-
 ## The daily loop
 
 The practical loop is:
@@ -187,6 +212,8 @@ The practical loop is:
 2. Run the recommended prompt in your agent CLI.
 3. Review the proposed work.
 4. Close the task only when the packet is complete.
+
+That is the main operating model for the app today.
 
 Typical commands:
 
@@ -208,6 +235,38 @@ If you want repeated state-driven execution:
 ```bash
 grain workflow loop --steps 3
 ```
+
+## Onboarding flow
+
+Onboarding is one of the most important workflows in Grain because it gives the agent the initial structure it will follow later.
+
+For a new repo:
+
+```bash
+grain init
+grain workflow next
+grain prompt show
+```
+
+Then run the recommended onboarding prompt in your agent CLI.
+
+For an existing repo:
+
+```bash
+grain onboard
+grain workflow next
+grain prompt show
+```
+
+Then run the recommended onboarding prompt in your agent CLI.
+
+The onboarding goal is to establish:
+- canonical docs
+- working docs
+- the current backlog shape
+- the next valid task flow
+
+Review onboarding output before treating it as project truth.
 
 ---
 
