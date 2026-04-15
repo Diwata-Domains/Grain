@@ -6,7 +6,7 @@ project:
   mode: single_user
   storage: filesystem
   authority_model: explicit_hierarchy
-  minimum_grain_version: "0.1.3"
+  minimum_grain_version: "0.1.9"
 
 canonical:
   - id: product_scope
@@ -200,6 +200,7 @@ tasks:
     - in_progress
     - blocked
     - review
+    - needs_fix
     - done
   id_format: "P<N>-T<NN>-TASK-####"
 
@@ -228,3 +229,6 @@ rules:
     require_defined_deliverable: true
     require_results_recorded: true
     require_rule_check: true
+    require_user_approval: true
+    require_verification_pass: false
+    allow_close_when_verification_not_run: true

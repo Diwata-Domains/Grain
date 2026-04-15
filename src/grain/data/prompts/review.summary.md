@@ -35,6 +35,8 @@ Summarize:
 * packet identity
 * current status
 * deliverable state
+* user review state
+* verification state
 * unresolved blockers
 * review findings
 * likely next status

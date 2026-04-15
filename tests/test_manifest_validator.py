@@ -45,7 +45,7 @@ def _minimal_valid_manifest() -> dict:
             "root": "tasks/",
             "packet_files": [{"name": "task", "filename": "task.md", "required": True}],
             "patch_dir": "patches/",
-            "status_values": ["draft", "ready", "done"],
+            "status_values": ["draft", "ready", "in_progress", "blocked", "review", "needs_fix", "done"],
             "id_format": "TASK-####",
         },
         "rules": {
@@ -70,6 +70,9 @@ def _minimal_valid_manifest() -> dict:
                 "require_defined_deliverable": True,
                 "require_results_recorded": True,
                 "require_rule_check": True,
+                "require_user_approval": True,
+                "require_verification_pass": False,
+                "allow_close_when_verification_not_run": True,
             },
         },
     }

@@ -71,6 +71,32 @@ def test_evaluate_workflow_state_stops_for_blocked_active_task(tmp_path: Path):
     assert evaluation.active_task_id == "TASK-0001"
 
 
+def test_evaluate_workflow_state_stops_for_needs_fix_active_task(tmp_path: Path):
+    _base_docs(
+        tmp_path,
+        (
+            "# Current Task\n\n"
+            "Task ID: TASK-0001\n"
+            "Task Path: tasks/P8-T02-TASK-0001/\n"
+            "Status: needs_fix\n"
+        ),
+        (
+            "## 10. Phase 8 — Workflow Automation Runner Foundation\n\n"
+            "### P8-T02 — Implement workflow state evaluator service\n"
+            "- **Status:** needs_fix\n"
+        ),
+    )
+    packet_dir = _packet(tmp_path, "P8-T02-TASK-0001", "TASK-0001", "needs_fix")
+    _write(packet_dir / "results.md", "# Results: TASK-0001\n")
+
+    result, evaluation = evaluate_workflow_state(tmp_path)
+
+    assert result.ok is False
+    assert evaluation is not None
+    assert evaluation.stop_reason == "task_needs_fix"
+    assert evaluation.active_task_id == "TASK-0001"
+
+
 def test_evaluate_workflow_state_stops_for_incomplete_review_artifacts(tmp_path: Path):
     _base_docs(
         tmp_path,

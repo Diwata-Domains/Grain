@@ -47,6 +47,8 @@ def review_check(ctx, task_id):
         click.echo(f"  packet_status     {report.packet_status or '(missing)'}")
         click.echo(f"  review_ready      {'yes' if report.review_ready else 'no'}")
         click.echo(f"  completion_ready  {'yes' if report.completion_ready else 'no'}")
+        click.echo(f"  user_review_state {report.user_review_state or 'pending'}")
+        click.echo(f"  verification_state {report.verification_state or 'not_run'}")
         if report.blockers:
             click.echo("  blockers")
             for blocker in report.blockers:
@@ -161,6 +163,8 @@ def review_summary(ctx, task_id):
     click.echo(f"  phase             {summary.phase or '(missing)'}")
     click.echo(f"  review_ready      {'yes' if summary.review_ready else 'no'}")
     click.echo(f"  completion_ready  {'yes' if summary.completion_ready else 'no'}")
+    click.echo(f"  user_review_state {summary.user_review_state or 'pending'}")
+    click.echo(f"  verification_state {summary.verification_state or 'not_run'}")
     click.echo(f"  recommended_next_status  {summary.recommended_next_status}")
     click.echo("  packet_summary")
     packet_summary_lines = summary.packet_summary.splitlines() or ["(none)"]

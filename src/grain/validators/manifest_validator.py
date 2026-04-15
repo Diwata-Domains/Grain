@@ -23,7 +23,14 @@ _REQUIRED_POLICY_FIELDS = {
     "canonical_change_policy": ["direct_agent_edits_allowed", "require_human_approval", "proposal_location"],
     "context_policy": ["load_minimum_required_docs", "prefer_task_packet_context", "avoid_full_repo_context"],
     "execution_policy": ["use_task_packets", "one_task_one_packet", "patch_over_rewrite", "preserve_doc_separation"],
-    "completion_policy": ["require_defined_deliverable", "require_results_recorded", "require_rule_check"],
+    "completion_policy": [
+        "require_defined_deliverable",
+        "require_results_recorded",
+        "require_rule_check",
+        "require_user_approval",
+        "require_verification_pass",
+        "allow_close_when_verification_not_run",
+    ],
 }
 
 _DOC_LAYERS = ["canonical", "working", "runtime"]

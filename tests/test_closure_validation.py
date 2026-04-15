@@ -22,11 +22,42 @@ Something.
 _RESULTS_CONTENT = """\
 # Results: TASK-0042
 
-## Status
-done
-
 ## Summary
 Work completed.
+
+## User Review
+- **State:** approved
+- **Summary:** Work accepted.
+- **Resolution Mode:** close_task
+
+### Required Fixes
+- None
+
+### Open Questions To Log
+- None
+
+### Proposal Candidates To Log
+- None
+
+### Follow-Ups To Log
+- None
+
+### Residual Risks
+- None
+
+## Verification Review
+- **State:** not_run
+- **Summary:** No verifier configured.
+
+### Findings
+- None
+
+## Closure Decision
+- **Decision:** pending
+- **Reason:** Ready for closure.
+
+### Closure Blockers
+- None
 """
 
 

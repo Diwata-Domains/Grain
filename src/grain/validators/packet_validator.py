@@ -1,10 +1,12 @@
 from pathlib import Path
 
+from grain.domain.completion_policy import CompletionPolicy
 from grain.domain.packets import (
     ALLOWED_TRANSITIONS,
     VALID_STATUSES,
     parse_task_metadata,
 )
+from grain.domain.review_bundle import parse_review_bundle
 
 _REQUIRED_FILES = ("task.md", "context.md", "plan.md", "deliverable_spec.md")
 
@@ -78,7 +80,7 @@ def validate_packet(packet_dir: Path) -> list[str]:
     return errors
 
 
-def validate_closure(packet_dir: Path) -> list[str]:
+def validate_closure(packet_dir: Path, policy: CompletionPolicy | None = None) -> list[str]:
     """Validate that a packet meets the machine-checkable requirements for closure to done.
 
     v1 rules:
@@ -87,6 +89,7 @@ def validate_closure(packet_dir: Path) -> list[str]:
     - current status must be 'review' (the only allowed predecessor to 'done')
     """
     errors: list[str] = []
+    policy = policy or CompletionPolicy()
 
     errors.extend(validate_packet_files(packet_dir))
 
@@ -95,6 +98,21 @@ def validate_closure(packet_dir: Path) -> list[str]:
         errors.append("results.md is required for closure but is missing")
     elif not results_md.read_text(encoding="utf-8").strip():
         errors.append("results.md exists but is empty — closure requires recorded results")
+    else:
+        bundle = parse_review_bundle(results_md.read_text(encoding="utf-8"))
+        if policy.require_user_approval and bundle.user_review_state != "approved":
+            errors.append(
+                "user review state must be 'approved' before closing to 'done'"
+            )
+        if policy.require_verification_pass:
+            if bundle.verification_state not in {"passed", "waived"}:
+                errors.append(
+                    "verification state must be 'passed' or 'waived' before closing to 'done'"
+                )
+        elif not policy.allow_close_when_verification_not_run and bundle.verification_state == "not_run":
+            errors.append(
+                "verification state is 'not_run' — completion policy requires verification before closure"
+            )
 
     task_md = packet_dir / "task.md"
     if task_md.exists():

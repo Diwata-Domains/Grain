@@ -215,6 +215,10 @@ grain workflow loop --steps 3
 
 A task packet is the unit of execution. Each task lives in its own directory under `tasks/`.
 
+That includes small fixes and hotfixes. Grain does not have a separate packetless patch mode today:
+- if you want the change tracked by Grain, give it a packet
+- if the fix is tiny, keep the packet small and use `grain task close --quick` for low-overhead closure
+
 Packet files include:
 - `task.md`
 - `context.md`
@@ -236,6 +240,15 @@ To create a packet directly:
 
 ```bash
 grain task create --phase 3 --task-num 4 --title "Add packet validator"
+```
+
+Example small-fix flow:
+
+```bash
+grain task create --phase 3 --task-num 5 --title "Fix CLI help typo"
+grain workflow next
+grain prompt show
+grain task close --id TASK-0002 --quick --summary "Fixed the CLI help typo."
 ```
 
 ---

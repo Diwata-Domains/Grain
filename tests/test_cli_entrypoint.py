@@ -47,7 +47,7 @@ tasks:
   root: tasks/
   packet_files: []
   patch_dir: patches/
-  status_values: [draft]
+  status_values: [draft, ready, in_progress, blocked, review, needs_fix, done]
   id_format: "TASK-####"
 rules:
   authority_order: [docs/runtime/PROJECT_RULES.md]
@@ -68,6 +68,9 @@ rules:
     require_defined_deliverable: true
     require_results_recorded: true
     require_rule_check: true
+    require_user_approval: true
+    require_verification_pass: false
+    allow_close_when_verification_not_run: true
 """.strip()
         + "\n",
         encoding="utf-8",

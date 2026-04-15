@@ -6,6 +6,7 @@ from typing import Literal
 
 import yaml
 
+from grain.domain.completion_policy import CompletionPolicy
 from grain.domain.errors import ConfigError, MissingPathError
 
 MANIFEST_PATH = "docs/runtime/docs_manifest.yaml"
@@ -79,4 +80,32 @@ def load_grain_config(root: Path) -> GrainConfig:
         default_format=_pick("default_format", _FORMAT, "text"),  # type: ignore[arg-type]
         upgrade_check=_pick("upgrade_check", _UPGRADE, "silent"),  # type: ignore[arg-type]
         embedding_provider=_pick("embedding_provider", _EMBEDDING, "none"),  # type: ignore[arg-type]
+    )
+
+
+def load_completion_policy(root: Path) -> CompletionPolicy:
+    try:
+        manifest = load_manifest(root)
+    except Exception:
+        return CompletionPolicy()
+
+    rules = manifest.get("rules")
+    if not isinstance(rules, dict):
+        return CompletionPolicy()
+
+    raw = rules.get("completion_policy")
+    if not isinstance(raw, dict):
+        return CompletionPolicy()
+
+    def _bool(key: str, default: bool) -> bool:
+        value = raw.get(key, default)
+        return value if isinstance(value, bool) else default
+
+    return CompletionPolicy(
+        require_defined_deliverable=_bool("require_defined_deliverable", True),
+        require_results_recorded=_bool("require_results_recorded", True),
+        require_rule_check=_bool("require_rule_check", True),
+        require_user_approval=_bool("require_user_approval", True),
+        require_verification_pass=_bool("require_verification_pass", False),
+        allow_close_when_verification_not_run=_bool("allow_close_when_verification_not_run", True),
     )

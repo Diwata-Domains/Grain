@@ -7,6 +7,29 @@ Versioning: [Semantic Versioning](https://semver.org/)
 
 ---
 
+## [0.1.9] — 2026-04-14
+
+### Added
+- first-class review hardening for conversational workflows:
+  - `needs_fix` packet state in the seeded manifest and task lifecycle contract
+  - structured `User Review`, `Verification Review`, and `Closure Decision` sections in `results.md`
+  - explicit completion-policy fields for user approval and optional verification gating
+- review and handoff services now surface `user_review_state` and `verification_state` as first-class output fields
+
+### Changed
+- seeded runtime manifests now define the stable close policy explicitly:
+  - `require_user_approval: true`
+  - `require_verification_pass: false`
+  - `allow_close_when_verification_not_run: true`
+- task templates and bundled prompts now use the structured review bundle instead of the older `Review Intake` wording
+- `grain task close --quick` now writes a closure-ready structured review bundle compatible with the stricter completion policy
+
+### Fixed
+- closure, review, and handoff flows now agree on the same review-state model instead of mixing legacy prose-only review fields with newer parser logic
+- bundled docs and canonical data-contract docs now document `needs_fix` and the expanded completion policy expected by the stable runtime
+
+---
+
 ## [0.1.8] — 2026-04-14
 
 ### Added

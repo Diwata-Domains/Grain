@@ -122,6 +122,9 @@ If the project maintains a canonical interface or command-contract doc, this rul
 ### Task unit
 - Every implementation action must map to a specific task packet.
 - One packet should represent one coherent task.
+- Small fixes and hotfixes still use task packets.
+- Use smaller packet scope for tiny fixes instead of bypassing the task system.
+- Prefer `grain task close --quick` for low-overhead closure when the fix is straightforward and the review bundle can stay minimal.
 
 ### Before execution
 Confirm:

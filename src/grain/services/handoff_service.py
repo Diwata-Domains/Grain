@@ -8,6 +8,7 @@ import re
 
 from grain.cli.output import CommandResult
 from grain.domain.packets import find_packet_dir, parse_task_metadata
+from grain.domain.review_bundle import parse_results_sections, parse_review_bundle
 
 _REQUIRED_HEADINGS = (
     "# Handoff:",
@@ -46,6 +47,8 @@ class HandoffArtifact:
     proposal_candidates_to_log: list[str] = field(default_factory=list)
     followups_to_log: list[str] = field(default_factory=list)
     review_readiness: str = ""
+    user_review_state: str = ""
+    verification_state: str = ""
 
 
 def build_handoff_artifact(
@@ -90,7 +93,8 @@ def build_handoff_artifact(
     packet_phase = metadata.get("phase", "")
     title = _parse_task_title(task_md.read_text(encoding="utf-8"))
     results_text = results_md.read_text(encoding="utf-8")
-    results_sections = _parse_results_sections(results_text)
+    results_sections = parse_results_sections(results_text)
+    bundle = parse_review_bundle(results_text)
 
     ready_for_handoff = packet_status in {"review", "done"} and bool(results_text.strip())
     if not ready_for_handoff:
@@ -116,19 +120,6 @@ def build_handoff_artifact(
         summary = ""
     files_changed = results_sections.get("Files Changed", [])
     review_notes = results_sections.get("Review Notes", [])
-    review_intake = results_sections.get("Review Intake", {})
-
-    if isinstance(review_intake, dict):
-        open_questions = review_intake.get("Open Questions To Log", [])
-        proposal_candidates = review_intake.get("Proposal Candidates To Log", [])
-        followups = review_intake.get("Follow-Ups To Log", [])
-        residual_risks = review_intake.get("Residual Risks", [])
-    else:
-        open_questions = []
-        proposal_candidates = []
-        followups = []
-        residual_risks = []
-
     artifact = HandoffArtifact(
         task_id=task_id,
         packet_dir=packet_dir,
@@ -139,14 +130,16 @@ def build_handoff_artifact(
         recommended_next_status="done" if packet_status == "done" else "review",
         summary=summary or "Handoff artifact generated from packet results.",
         what_was_built=_summarize_what_was_built(files_changed),
-        what_was_not_done=followups if followups else [],
-        known_issues_or_followups=residual_risks,
+        what_was_not_done=bundle.followups_to_log if bundle.followups_to_log else [],
+        known_issues_or_followups=bundle.residual_risks,
         files_changed=files_changed,
         reviewer_notes=review_notes,
-        open_questions_to_log=open_questions,
-        proposal_candidates_to_log=proposal_candidates,
-        followups_to_log=followups,
-        review_readiness="ready" if packet_status == "review" else "completed",
+        open_questions_to_log=bundle.open_questions_to_log,
+        proposal_candidates_to_log=bundle.proposal_candidates_to_log,
+        followups_to_log=bundle.followups_to_log,
+        review_readiness=_handoff_review_readiness(packet_status, bundle.user_review_state),
+        user_review_state=bundle.user_review_state,
+        verification_state=bundle.verification_state,
     )
 
     return (
@@ -223,6 +216,8 @@ def render_handoff_markdown(root: Path, artifact: HandoffArtifact) -> str:
         "",
         "### Outcome",
         f"- **Review Readiness:** {artifact.review_readiness or 'unknown'}",
+        f"- **User Review State:** {artifact.user_review_state or 'pending'}",
+        f"- **Verification State:** {artifact.verification_state or 'not_run'}",
         f"- **Recommended Next Status:** {artifact.recommended_next_status}",
         f"- **Short Summary:** {artifact.summary}",
         "",
@@ -322,69 +317,6 @@ def validate_handoff_markdown(content: str) -> list[str]:
 def _parse_task_title(text: str) -> str:
     match = re.search(r"^# Task:\s*(.+)$", text, flags=re.MULTILINE)
     return match.group(1).strip() if match else ""
-
-
-def _parse_results_sections(text: str) -> dict[str, object]:
-    lines = text.splitlines()
-    sections: dict[str, object] = {}
-    current_heading: str | None = None
-    current_lines: list[str] = []
-    current_subsection: str | None = None
-    subsection_lines: list[str] = []
-    review_intake_map: dict[str, list[str]] = {}
-
-    def flush_section() -> None:
-        nonlocal current_heading, current_lines, current_subsection, subsection_lines, review_intake_map
-        if current_heading is None:
-            return
-        if current_heading == "Review Intake":
-            if current_subsection is not None:
-                review_intake_map[current_subsection] = _bullets(subsection_lines)
-            sections[current_heading] = dict(review_intake_map)
-            review_intake_map = {}
-        elif current_heading == "Summary":
-            sections[current_heading] = [line.strip() for line in current_lines if line.strip()]
-        else:
-            sections[current_heading] = _bullets(current_lines)
-        current_heading = None
-        current_lines = []
-        current_subsection = None
-        subsection_lines = []
-
-    index = 0
-    while index < len(lines):
-        line = lines[index].rstrip()
-        if line.startswith("## "):
-            flush_section()
-            current_heading = line[3:].strip()
-            current_lines = []
-            current_subsection = None
-            subsection_lines = []
-            index += 1
-            continue
-        if current_heading is None:
-            index += 1
-            continue
-        if current_heading == "Review Intake" and line.startswith("### "):
-            if current_subsection is not None:
-                review_intake_map[current_subsection] = _bullets(subsection_lines)
-            current_subsection = line[4:].strip()
-            subsection_lines = []
-            index += 1
-            continue
-        if current_heading == "Review Intake":
-            subsection_lines.append(line)
-        else:
-            current_lines.append(line)
-        index += 1
-
-    flush_section()
-    if current_heading == "Review Intake" and current_subsection is not None:
-        review_intake_map[current_subsection] = _bullets(subsection_lines)
-        sections["Review Intake"] = dict(review_intake_map)
-    return sections
-
-
 def _bullets(lines: list[str]) -> list[str]:
     items: list[str] = []
     for line in lines:
@@ -412,3 +344,13 @@ def _final_state_line(artifact: HandoffArtifact) -> str:
     if artifact.packet_status == "done":
         return f"`{artifact.title or artifact.task_id}` is implemented, reviewed, and closed."
     return f"`{artifact.title or artifact.task_id}` is ready for handoff."
+
+
+def _handoff_review_readiness(packet_status: str, user_review_state: str) -> str:
+    if packet_status == "done":
+        return "completed"
+    if user_review_state == "approved":
+        return "ready"
+    if user_review_state in {"needs_fix", "misunderstood"}:
+        return "needs fixes"
+    return "blocked"

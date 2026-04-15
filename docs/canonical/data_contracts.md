@@ -211,6 +211,7 @@ tasks:
     - in_progress
     - blocked
     - review
+    - needs_fix
     - done
   id_format: "P<N>-T<NN>-TASK-####"
 ```
@@ -256,6 +257,9 @@ Required fields:
 - `require_defined_deliverable`
 - `require_results_recorded`
 - `require_rule_check`
+- `require_user_approval`
+- `require_verification_pass`
+- `allow_close_when_verification_not_run`
 
 ---
 

@@ -131,6 +131,22 @@ def evaluate_workflow_state(
             )
             return _result_with_evaluation(root, evaluation)
 
+        if active_task_status == "needs_fix":
+            evaluation = WorkflowEvaluation(
+                ok=False,
+                stop_reason="task_needs_fix",
+                blocking_reasons=[f"active task needs fixes before closure: {active_task_id}"],
+                affected_artifacts=[
+                    _DEFAULT_CURRENT_TASK_DOC,
+                    str(packet_dir.relative_to(root) / "task.md"),
+                    str(packet_dir.relative_to(root) / "results.md"),
+                ],
+                active_phase=current_phase,
+                active_task_id=active_task_id,
+                recommended_prompt="prompts/task.execute.md",
+            )
+            return _result_with_evaluation(root, evaluation)
+
         if active_task_status == "review":
             missing_review_artifacts = _missing_review_artifacts(packet_dir)
             if missing_review_artifacts:

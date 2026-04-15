@@ -46,6 +46,47 @@ def _current_status(packet_repo, dir_name) -> str:
     return parse_task_metadata(task_md).get("status", "")
 
 
+_APPROVED_RESULTS = """# Results: TASK-0001
+
+## Summary
+All done.
+
+## User Review
+- **State:** approved
+- **Summary:** Ready to close.
+- **Resolution Mode:** close_task
+
+### Required Fixes
+- None
+
+### Open Questions To Log
+- None
+
+### Proposal Candidates To Log
+- None
+
+### Follow-Ups To Log
+- None
+
+### Residual Risks
+- None
+
+## Verification Review
+- **State:** not_run
+- **Summary:** No verifier configured.
+
+### Findings
+- None
+
+## Closure Decision
+- **Decision:** pending
+- **Reason:** Awaiting close command.
+
+### Closure Blockers
+- None
+"""
+
+
 # ---------------------------------------------------------------------------
 # Happy-path full lifecycle
 # ---------------------------------------------------------------------------
@@ -65,9 +106,7 @@ def test_full_lifecycle_happy_path(packet_repo):
     _status(packet_repo, "TASK-0001", "review")
     assert _current_status(packet_repo, "P3-T13-TASK-0001") == "review"
 
-    (packet_repo / "tasks" / "P3-T13-TASK-0001" / "results.md").write_text(
-        "# Results\n\nAll done.\n"
-    )
+    (packet_repo / "tasks" / "P3-T13-TASK-0001" / "results.md").write_text(_APPROVED_RESULTS)
 
     result = _invoke(packet_repo, "task", "close", "--id", "TASK-0001")
     assert result.exit_code == 0, result.output
@@ -79,7 +118,7 @@ def test_full_lifecycle_list_reflects_done(packet_repo):
     _invoke(packet_repo, "task", "create", "--phase", "3", "--task-num", "13")
     for s in ("ready", "in_progress", "review"):
         _status(packet_repo, "TASK-0001", s)
-    (packet_repo / "tasks" / "P3-T13-TASK-0001" / "results.md").write_text("# Results\nDone.\n")
+    (packet_repo / "tasks" / "P3-T13-TASK-0001" / "results.md").write_text(_APPROVED_RESULTS)
     _invoke(packet_repo, "task", "close", "--id", "TASK-0001")
 
     result = _invoke(packet_repo, "task", "list")
@@ -117,7 +156,7 @@ def test_lifecycle_blocked_and_recovered(packet_repo):
     _status(packet_repo, "TASK-0001", "ready")
     _status(packet_repo, "TASK-0001", "in_progress")
     _status(packet_repo, "TASK-0001", "review")
-    (packet_repo / "tasks" / "P3-T13-TASK-0001" / "results.md").write_text("# Results\nDone.\n")
+    (packet_repo / "tasks" / "P3-T13-TASK-0001" / "results.md").write_text(_APPROVED_RESULTS)
 
     result = _invoke(packet_repo, "task", "close", "--id", "TASK-0001")
     assert result.exit_code == 0
@@ -139,7 +178,24 @@ def test_lifecycle_review_rework(packet_repo):
     assert _current_status(packet_repo, "P3-T13-TASK-0001") == "in_progress"
 
     _status(packet_repo, "TASK-0001", "review")
-    (packet_repo / "tasks" / "P3-T13-TASK-0001" / "results.md").write_text("# Results\nDone.\n")
+    (packet_repo / "tasks" / "P3-T13-TASK-0001" / "results.md").write_text(_APPROVED_RESULTS)
+
+    result = _invoke(packet_repo, "task", "close", "--id", "TASK-0001")
+    assert result.exit_code == 0
+
+
+def test_lifecycle_needs_fix_round_trip(packet_repo):
+    """review → needs_fix → in_progress → review → close"""
+    _invoke(packet_repo, "task", "create", "--phase", "3", "--task-num", "14")
+    for s in ("ready", "in_progress", "review"):
+        _status(packet_repo, "TASK-0001", s)
+
+    _status(packet_repo, "TASK-0001", "needs_fix")
+    assert _current_status(packet_repo, "P3-T14-TASK-0001") == "needs_fix"
+
+    _status(packet_repo, "TASK-0001", "in_progress")
+    _status(packet_repo, "TASK-0001", "review")
+    (packet_repo / "tasks" / "P3-T14-TASK-0001" / "results.md").write_text(_APPROVED_RESULTS)
 
     result = _invoke(packet_repo, "task", "close", "--id", "TASK-0001")
     assert result.exit_code == 0
@@ -217,7 +273,7 @@ def _advance_to(repo: Path, task_id: str, target: str) -> None:
         for d in dirs:
             m = re.search(r"TASK-\d{4}", d.name)
             if m and m.group(0) == task_id:
-                (d / "results.md").write_text("# Results\nDone.\n")
+                (d / "results.md").write_text(_APPROVED_RESULTS)
                 break
         _run_forge("--repo", str(repo), "task", "close", "--id", task_id)
 
@@ -231,7 +287,7 @@ def test_validate_passes_before_close(packet_repo):
     _invoke(packet_repo, "task", "create", "--phase", "3", "--task-num", "13")
     for s in ("ready", "in_progress", "review"):
         _status(packet_repo, "TASK-0001", s)
-    (packet_repo / "tasks" / "P3-T13-TASK-0001" / "results.md").write_text("# Results\nDone.\n")
+    (packet_repo / "tasks" / "P3-T13-TASK-0001" / "results.md").write_text(_APPROVED_RESULTS)
 
     result = _invoke(packet_repo, "task", "validate", "--id", "TASK-0001")
     assert result.exit_code == 0

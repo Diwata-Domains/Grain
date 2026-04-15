@@ -41,7 +41,14 @@ Implemented handoff support.
 ## Review Notes
 - Verify generated handoff output.
 
-## Review Intake
+## User Review
+- **State:** approved
+- **Summary:** Review accepted.
+- **Resolution Mode:** close_task
+
+### Required Fixes
+- None
+
 ### Open Questions To Log
 - None
 
@@ -49,6 +56,23 @@ Implemented handoff support.
 - None
 
 ### Follow-Ups To Log
+- None
+
+### Residual Risks
+- None
+
+## Verification Review
+- **State:** not_run
+- **Summary:** No verifier configured.
+
+### Findings
+- None
+
+## Closure Decision
+- **Decision:** pending
+- **Reason:** Awaiting close.
+
+### Closure Blockers
 - None
 """,
         encoding="utf-8",

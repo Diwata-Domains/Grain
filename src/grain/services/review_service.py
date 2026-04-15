@@ -3,8 +3,10 @@
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from grain.adapters.manifest import load_completion_policy
 from grain.cli.output import CommandResult
 from grain.domain.packets import find_packet_dir, parse_task_metadata
+from grain.domain.review_bundle import parse_review_bundle
 from grain.validators.packet_validator import validate_closure, validate_packet
 
 
@@ -17,6 +19,8 @@ class ReviewReport:
     packet_status: str
     review_ready: bool
     completion_ready: bool
+    user_review_state: str = ""
+    verification_state: str = ""
     warnings: list[str] = field(default_factory=list)
     blockers: list[str] = field(default_factory=list)
     missing_files: list[str] = field(default_factory=list)
@@ -32,6 +36,8 @@ class ReviewSummary:
     packet_status: str
     review_ready: bool
     completion_ready: bool
+    user_review_state: str
+    verification_state: str
     recommended_next_status: str
     packet_summary: str
     validation_findings: list[str] = field(default_factory=list)
@@ -65,7 +71,8 @@ def check_packet_review_readiness(
         )
 
     packet_errors = validate_packet(packet_dir)
-    closure_errors = validate_closure(packet_dir)
+    bundle = _load_review_bundle(packet_dir / "results.md")
+    closure_errors = validate_closure(packet_dir, policy=load_completion_policy(root))
     metadata = parse_task_metadata(packet_dir / "task.md") if (packet_dir / "task.md").exists() else {}
     packet_status = metadata.get("status", "")
 
@@ -95,6 +102,8 @@ def check_packet_review_readiness(
         packet_status=packet_status,
         review_ready=review_ready,
         completion_ready=completion_ready,
+        user_review_state=bundle.user_review_state,
+        verification_state=bundle.verification_state,
         warnings=warnings,
         blockers=blockers,
         missing_files=missing_files,
@@ -148,6 +157,8 @@ def build_packet_review_summary(
         packet_status=packet_status,
         review_ready=report.review_ready,
         completion_ready=report.completion_ready,
+        user_review_state=report.user_review_state,
+        verification_state=report.verification_state,
         recommended_next_status=_recommended_next_status(packet_status, report),
         packet_summary=packet_summary,
         validation_findings=list(report.blockers),
@@ -190,11 +201,23 @@ def _read_results_summary(results_md_path: Path) -> str:
     return "\n".join(summary_lines).strip()
 
 
+def _load_review_bundle(results_md_path: Path):
+    if not results_md_path.exists():
+        return parse_review_bundle("")
+    return parse_review_bundle(results_md_path.read_text(encoding="utf-8"))
+
+
 def _fallback_summary(packet_status: str, report: ReviewReport) -> str:
     if packet_status == "done":
         return "Packet is already closed."
     if report.review_ready:
         return "Packet is ready for handoff."
+    if report.user_review_state == "needs_fix":
+        return "Packet was reviewed and requires fixes."
+    if report.user_review_state == "misunderstood":
+        return "Packet intent needs replanning before more execution."
+    if report.user_review_state == "followup_requested":
+        return "Packet is acceptable but requires a follow-up task."
     if report.blockers:
         return "Packet has validation findings that need attention."
     if report.completion_ready:
@@ -207,6 +230,10 @@ def _recommended_next_status(packet_status: str, report: ReviewReport) -> str:
         return "done"
     if report.review_ready:
         return "done"
+    if report.user_review_state == "needs_fix":
+        return "needs_fix"
+    if report.user_review_state == "misunderstood":
+        return "draft"
     if report.blockers:
         return "blocked"
     if report.completion_ready:
@@ -221,6 +248,21 @@ def _next_actions(packet_status: str, report: ReviewReport) -> list[str]:
         return [
             "Run `grain review handoff` to generate or validate the handoff artifact.",
             "After reviewer approval, move the packet to `done`.",
+        ]
+    if report.user_review_state == "needs_fix":
+        return [
+            "Transition the packet to `needs_fix` and revise the current task.",
+            "Preserve the review bundle so the next execution pass addresses the recorded fixes.",
+        ]
+    if report.user_review_state == "misunderstood":
+        return [
+            "Replan the current task before more implementation work.",
+            "Do not keep revising against the wrong task intent.",
+        ]
+    if report.user_review_state == "followup_requested":
+        return [
+            "Keep the current task review bundle intact.",
+            "Create a follow-up task proposal for the newly requested scope.",
         ]
     if report.blockers:
         return [

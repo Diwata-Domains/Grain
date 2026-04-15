@@ -5,7 +5,7 @@ from pathlib import Path
 TASK_ID_PATTERN = re.compile(r"TASK-(\d{4})")
 
 VALID_STATUSES: frozenset[str] = frozenset(
-    {"draft", "ready", "in_progress", "blocked", "review", "done"}
+    {"draft", "ready", "in_progress", "blocked", "review", "needs_fix", "done"}
 )
 
 ALLOWED_TRANSITIONS: dict[str, frozenset[str]] = {
@@ -13,7 +13,8 @@ ALLOWED_TRANSITIONS: dict[str, frozenset[str]] = {
     "ready": frozenset({"in_progress"}),
     "in_progress": frozenset({"blocked", "review"}),
     "blocked": frozenset({"draft", "ready"}),
-    "review": frozenset({"in_progress", "done"}),
+    "review": frozenset({"in_progress", "needs_fix", "done"}),
+    "needs_fix": frozenset({"in_progress", "blocked"}),
     "done": frozenset(),
 }
 

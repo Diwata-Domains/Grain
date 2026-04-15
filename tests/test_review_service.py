@@ -15,6 +15,47 @@ def _packet_dir(packet_repo):
     return packet_repo / "tasks" / "P5-T01-TASK-0001"
 
 
+_APPROVED_RESULTS = """# Results: TASK-0001
+
+## Summary
+Implemented review-ready task.
+
+## User Review
+- **State:** approved
+- **Summary:** Ready to close.
+- **Resolution Mode:** close_task
+
+### Required Fixes
+- None
+
+### Open Questions To Log
+- None
+
+### Proposal Candidates To Log
+- None
+
+### Follow-Ups To Log
+- None
+
+### Residual Risks
+- None
+
+## Verification Review
+- **State:** not_run
+- **Summary:** No verifier configured.
+
+### Findings
+- None
+
+## Closure Decision
+- **Decision:** pending
+- **Reason:** Awaiting close command.
+
+### Closure Blockers
+- None
+"""
+
+
 def test_review_service_reports_ready_packet(packet_repo):
     _create_review_packet(packet_repo)
     packet_dir = _packet_dir(packet_repo)
@@ -22,7 +63,7 @@ def test_review_service_reports_ready_packet(packet_repo):
         (packet_dir / "task.md").read_text(encoding="utf-8").replace("draft", "review", 1),
         encoding="utf-8",
     )
-    (packet_dir / "results.md").write_text("# Results\nDone.\n", encoding="utf-8")
+    (packet_dir / "results.md").write_text(_APPROVED_RESULTS, encoding="utf-8")
 
     result, report = check_packet_review_readiness(packet_repo, "TASK-0001")
 
@@ -80,7 +121,14 @@ Implemented review summary support.
 ## Review Notes
 - Verify summary output and next actions.
 
-## Review Intake
+## User Review
+- **State:** approved
+- **Summary:** Review accepted.
+- **Resolution Mode:** close_task
+
+### Required Fixes
+- None
+
 ### Open Questions To Log
 - None
 
@@ -88,6 +136,23 @@ Implemented review summary support.
 - None
 
 ### Follow-Ups To Log
+- None
+
+### Residual Risks
+- None
+
+## Verification Review
+- **State:** not_run
+- **Summary:** No verifier configured.
+
+### Findings
+- None
+
+## Closure Decision
+- **Decision:** pending
+- **Reason:** Awaiting close.
+
+### Closure Blockers
 - None
 """,
         encoding="utf-8",

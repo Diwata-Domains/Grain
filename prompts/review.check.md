@@ -49,10 +49,10 @@ Check:
 
 Determine whether the packet is:
 
-* ready
+* approved and ready to close
 * needs fixes
+* misunderstood and needs replanning
 * blocked
-* unclear due to spec conflict
 
 ---
 
