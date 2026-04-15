@@ -96,8 +96,8 @@ def _maybe_warn_if_grain_outdated(repo: str | None, invoked_subcommand: str | No
 
 def _maybe_warn_if_upgrade_needed(root_path, invoked_subcommand: str | None) -> None:
     """If grain.upgrade_check = warn in docs_manifest.yaml, surface a hint when stale files exist."""
-    if invoked_subcommand == "upgrade":
-        return  # don't warn inside the upgrade command itself
+    if invoked_subcommand in {"upgrade", "onboard"}:
+        return  # onboard seeds managed files itself; warning before it runs is noise
 
     try:
         cfg = load_grain_config(root_path)

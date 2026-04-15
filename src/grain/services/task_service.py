@@ -27,15 +27,23 @@ _REQUIRED_TEMPLATES = [
     "tasks/deliverable_spec.md",
 ]
 
+_SIMPLE_TEMPLATES = [
+    "tasks/task.md",
+    "tasks/results.md",
+]
+
 
 def create_packet_directory(
-    root: Path, phase: int, task_num: int, title: str = ""
+    root: Path, phase: int, task_num: int, title: str = "", simple: bool = False
 ) -> CommandResult:
     """Create a new packet directory under tasks/ with required template files.
 
     Allocates the next available TASK-#### ID, constructs a P<N>-T<NN>-TASK-####
-    directory name, creates the directory, and populates it with the four required
-    template files (task.md, context.md, plan.md, deliverable_spec.md).
+    directory name, creates the directory, and populates it with template files.
+
+    In normal mode: task.md, context.md, plan.md, deliverable_spec.md.
+    In simple mode (--simple): task.md + results.md only. Suitable for small,
+    mechanical tasks where planning files add overhead without value.
 
     Returns:
         CommandResult with ok=True, task_id set, and files_created populated on
@@ -57,13 +65,19 @@ def create_packet_directory(
 
     files_created = [str(packet_dir.relative_to(root))]
 
-    for template_name in _REQUIRED_TEMPLATES:
+    templates = _SIMPLE_TEMPLATES if simple else _REQUIRED_TEMPLATES
+    for template_name in templates:
         content = get_template(template_name, root)
         filename = Path(template_name).name
         if filename == "task.md":
             content = content.replace("TASK-####", task_id)
             if title:
                 content = content.replace("[Title]", title)
+            if simple:
+                content = content.replace(
+                    "- **Status:** draft",
+                    "- **Status:** draft\n- **Mode:** simple",
+                )
         dest = packet_dir / filename
         dest.write_text(content, encoding="utf-8")
         files_created.append(str(dest.relative_to(root)))

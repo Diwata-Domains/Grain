@@ -25,6 +25,12 @@ def test_task_prepare_reports_ok_when_prereqs_exist(packet_repo):
     _create_packet(packet_repo)
     _write(packet_repo / "prompts" / "task.execute.md", "# Prompt\n")
 
+    # Fill in non-stub content so planning files pass stub detection.
+    packet_dir = packet_repo / "tasks" / "P8-T06-TASK-0001"
+    _write(packet_dir / "context.md", "# Context: TASK-0001\n\nFilled in.\n")
+    _write(packet_dir / "plan.md", "# Plan: TASK-0001\n\nFilled in.\n")
+    _write(packet_dir / "deliverable_spec.md", "# Deliverable Spec: TASK-0001\n\nFilled in.\n")
+
     runner = CliRunner()
     result = runner.invoke(
         main,
@@ -57,6 +63,12 @@ def test_task_prepare_json_output(packet_repo):
     _create_packet(packet_repo)
     _write(packet_repo / "prompts" / "task.execute.md", "# Prompt\n")
 
+    # Fill in non-stub content.
+    packet_dir = packet_repo / "tasks" / "P8-T06-TASK-0001"
+    _write(packet_dir / "context.md", "# Context: TASK-0001\n\nFilled in.\n")
+    _write(packet_dir / "plan.md", "# Plan: TASK-0001\n\nFilled in.\n")
+    _write(packet_dir / "deliverable_spec.md", "# Deliverable Spec: TASK-0001\n\nFilled in.\n")
+
     runner = CliRunner()
     result = runner.invoke(
         main,
@@ -78,3 +90,38 @@ def test_task_prepare_missing_packet_exits_two(packet_repo):
     )
 
     assert result.exit_code == 2
+
+
+def test_task_prepare_detects_stub_planning_files(packet_repo):
+    """Fresh packets contain TASK-#### in planning file headers — flag as stubs."""
+    _create_packet(packet_repo)
+    _write(packet_repo / "prompts" / "task.execute.md", "# Prompt\n")
+
+    runner = CliRunner()
+    result = runner.invoke(
+        main,
+        ["--repo", str(packet_repo), "task", "prepare", "--id", "TASK-0001"],
+    )
+
+    assert result.exit_code == 0, result.output
+    assert "task prepare: missing_inputs" in result.output
+    assert "stub packet file" in result.output
+
+
+def test_task_prepare_simple_mode_skips_planning_file_check(packet_repo):
+    """--simple tasks only have task.md + results.md; planning files are not required."""
+    runner = CliRunner()
+    runner.invoke(
+        main,
+        ["--repo", str(packet_repo), "task", "create", "--phase", "1", "--task-num", "1", "--simple"],
+    )
+    _write(packet_repo / "prompts" / "task.execute.md", "# Prompt\n")
+
+    result = runner.invoke(
+        main,
+        ["--repo", str(packet_repo), "task", "prepare", "--id", "TASK-0001"],
+    )
+
+    assert result.exit_code == 0, result.output
+    assert "task prepare: ok" in result.output
+    assert "missing_inputs    0" in result.output

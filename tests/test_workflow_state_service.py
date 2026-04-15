@@ -46,6 +46,30 @@ def test_evaluate_workflow_state_stops_when_required_docs_missing(tmp_path: Path
     assert "docs/working/current_focus.md" in evaluation.affected_artifacts
 
 
+def test_evaluate_workflow_state_returns_bootstrap_incomplete_after_onboard(tmp_path: Path):
+    """After `grain onboard`, current_focus.md has Phase 0 bootstrap marker.
+
+    The workflow runner should return bootstrap_incomplete instead of a hard
+    parse error, guiding the operator to run the onboarding prompt.
+    """
+    _write(
+        tmp_path / "docs" / "working" / "current_focus.md",
+        "# Current Focus\n\nPhase 0 — Bootstrap\n\n# DRAFT - run the onboarding prompt\n",
+    )
+    _write(
+        tmp_path / "docs" / "working" / "current_task.md",
+        "# Current Task\n\nTask ID: none\nTask Path: none\nStatus: unset\n",
+    )
+    _write(tmp_path / "docs" / "working" / "backlog.md", "# Backlog\n\n# DRAFT\n")
+
+    result, evaluation = evaluate_workflow_state(tmp_path)
+
+    assert result.ok is False
+    assert evaluation is not None
+    assert evaluation.stop_reason == "bootstrap_incomplete"
+    assert evaluation.recommended_prompt == "prompts/workflow.onboard.existing.md"
+
+
 def test_evaluate_workflow_state_stops_for_blocked_active_task(tmp_path: Path):
     _base_docs(
         tmp_path,

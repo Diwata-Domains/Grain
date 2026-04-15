@@ -69,6 +69,27 @@ def evaluate_workflow_state(
             evaluation,
         )
 
+    if current_phase == "0":
+        evaluation = WorkflowEvaluation(
+            ok=False,
+            stop_reason="bootstrap_incomplete",
+            blocking_reasons=[
+                "working docs are in bootstrap state — run the onboarding prompt to populate "
+                "project-specific content before using the workflow runner"
+            ],
+            affected_artifacts=required,
+            recommended_prompt="prompts/workflow.onboard.existing.md",
+        )
+        return (
+            _command_result(
+                ok=False,
+                command="workflow evaluate",
+                repo=str(root),
+                errors=list(evaluation.blocking_reasons),
+            ),
+            evaluation,
+        )
+
     current_task = _read_current_task(root / _DEFAULT_CURRENT_TASK_DOC)
     if current_task is None:
         evaluation = WorkflowEvaluation(

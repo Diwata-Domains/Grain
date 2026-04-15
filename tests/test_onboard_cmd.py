@@ -102,13 +102,35 @@ def test_onboard_rejects_nonexistent_path(tmp_path: Path):
     assert "existing directory" in result.output
 
 
+def test_onboard_creates_tooling_notes_with_table_header(tmp_path: Path):
+    result = _run(tmp_path, "onboard", str(tmp_path))
+    assert result.exit_code == 0, result.output
+
+    tooling_notes = tmp_path / "docs" / "working" / "tooling_notes.md"
+    assert tooling_notes.exists()
+    content = tooling_notes.read_text(encoding="utf-8")
+    assert "| Date | Command | Observation | Severity |" in content
+
+
+def test_onboard_creates_workflow_metrics(tmp_path: Path):
+    result = _run(tmp_path, "onboard", str(tmp_path))
+    assert result.exit_code == 0, result.output
+    assert (tmp_path / "docs" / "working" / "workflow_metrics.md").exists()
+
+
 def test_all_stub_files_contain_draft_marker(tmp_path: Path):
     result = _run(tmp_path, "onboard", str(tmp_path))
     assert result.exit_code == 0, result.output
+
+    # These files are functional inboxes/state files, not draft documentation.
+    # They do not carry a # DRAFT marker by design.
+    _RUNTIME_STATE_FILES = {"current_task.md", "tooling_notes.md"}
 
     # Only canonical and working stubs carry the DRAFT marker.
     # Runtime docs are seeded from bundled sources and are not DRAFT.
     stub_dirs = ["docs/canonical", "docs/working"]
     for stub_dir in stub_dirs:
         for path in (tmp_path / stub_dir).rglob("*.md"):
+            if path.name in _RUNTIME_STATE_FILES:
+                continue
             assert "# DRAFT" in path.read_text(encoding="utf-8"), path

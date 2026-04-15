@@ -7,6 +7,29 @@ Versioning: [Semantic Versioning](https://semver.org/)
 
 ---
 
+## [0.1.10] — 2026-04-15
+
+### Added
+- `grain task create --simple`: minimal packet mode (task.md + results.md only) for small mechanical tasks; sets `Mode: simple` in task metadata so `grain task prepare` skips planning file requirements
+- `docs/working/tooling_notes.md` bundled in every onboarded project: lightweight agent-writable inbox for mid-session workflow friction and tool observations (pre-formatted markdown table)
+- `docs/working/workflow_metrics.md` now created by `grain onboard` — was missing, causing `docs validate` to fail on freshly onboarded repos
+
+### Changed
+- `grain task prepare` now detects stub planning files: if `context.md`, `plan.md`, or `deliverable_spec.md` still contain `TASK-####` template placeholders, they are reported as `stub packet file: <name>` and block `ok` status
+- `grain task prepare` outputs a tip suggesting the execute prompt when stub files are detected — non-blocking, user choice
+- `grain onboard` no longer triggers the managed-file upgrade staleness hint: suppressed for `onboard` invocations since files are seeded fresh from the current bundled version
+- `grain workflow next` now returns `stop_reason: bootstrap_incomplete` with `recommended_prompt: prompts/workflow.onboard.existing.md` after fresh onboarding, instead of a hard parse error
+- `docs/working/current_task.md` onboard stub now uses machine-parseable bootstrap fields (`Task ID: none / Task Path: none / Status: unset`) instead of prose placeholder
+- `docs/working/current_focus.md` onboard stub now includes `Phase 0 — Bootstrap` marker so the workflow engine parses it cleanly
+- `prompts/workflow.onboard.existing.md` now documents the two-phase onboarding boundary and expected bootstrap-state outputs
+
+### Fixed
+- `docs validate` no longer fails immediately after `grain onboard` due to missing `workflow_metrics.md`
+- `grain workflow next` no longer hard-errors on bootstrap state after fresh onboarding
+- Managed-file drift warnings no longer appear at the top of `grain onboard` output
+
+---
+
 ## [0.1.9] — 2026-04-14
 
 ### Added

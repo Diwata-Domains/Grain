@@ -19,14 +19,20 @@ def task_group():
 @click.option("--phase", type=int, required=True, help="Phase number (e.g. 3).")
 @click.option("--task-num", type=int, required=True, help="Task number within phase (e.g. 4).")
 @click.option("--title", default="", help="Task title (replaces [Title] placeholder in task.md).")
+@click.option(
+    "--simple",
+    is_flag=True,
+    default=False,
+    help="Minimal packet: task.md + results.md only. For small mechanical tasks where planning files add no value.",
+)
 @click.pass_context
-def task_create(ctx, phase, task_num, title):
+def task_create(ctx, phase, task_num, title, simple):
     """Create a new task packet."""
     repo = ctx.obj.get("repo") if ctx.obj else None
     fmt = ctx.obj.get("fmt", "text") if ctx.obj else "text"
     root = resolve_repo_root(repo)
 
-    result = task_service.create_packet_directory(root, phase, task_num, title=title)
+    result = task_service.create_packet_directory(root, phase, task_num, title=title, simple=simple)
     print_result(result, fmt=fmt)
 
     if not result.ok:
@@ -195,6 +201,13 @@ def task_prepare(ctx, task_id):
     click.echo(f"  missing_inputs    {len(payload['missing_inputs'])}")
     for item in payload["missing_inputs"]:
         click.echo(f"    - {item}")
+
+    has_stubs = any("stub packet file" in item for item in payload["missing_inputs"])
+    if has_stubs:
+        click.echo(
+            f"  tip               planning files have unresolved placeholders — "
+            f"consider using {payload['recommended_prompt']} in a fresh conversation for best results"
+        )
 
 
 @task_group.command("status")

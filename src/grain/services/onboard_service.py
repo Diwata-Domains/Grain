@@ -18,11 +18,34 @@ _STUB_FILES: dict[str, str] = {
     "docs/canonical/product_scope.md": "# Product Scope\n\n# DRAFT - replace with real content\n",
     "docs/canonical/architecture.md": "# Architecture\n\n# DRAFT - replace with real content\n",
     "docs/working/backlog.md": "# Backlog\n\n# DRAFT - replace with real content\n",
-    "docs/working/current_focus.md": "# Current Focus\n\n# DRAFT - replace with real content\n",
-    "docs/working/current_task.md": "# Current Task\n\n# DRAFT - replace with real content\n",
+    # current_focus.md uses a parse-safe bootstrap marker so `grain workflow next`
+    # returns a structured bootstrap_incomplete state instead of a hard parse error.
+    "docs/working/current_focus.md": (
+        "# Current Focus\n\n"
+        "Phase 0 — Bootstrap\n\n"
+        "# DRAFT - run the onboarding prompt to replace with project-specific content\n"
+    ),
+    # current_task.md requires Task ID / Task Path / Status fields for workflow parsing.
+    "docs/working/current_task.md": (
+        "# Current Task\n\n"
+        "Task ID: none\n"
+        "Task Path: none\n"
+        "Status: unset\n"
+    ),
     "docs/working/open_questions.md": "# Open Questions\n\n# DRAFT - replace with real content\n",
     "docs/working/change_proposals.md": "# Change Proposals\n\n# DRAFT - replace with real content\n",
     "docs/working/implementation_plan.md": "# Implementation Plan\n\n# DRAFT - replace with real content\n",
+    # workflow_metrics.md is required by docs_manifest.yaml; must exist for docs validate to pass.
+    "docs/working/workflow_metrics.md": "# Workflow Metrics\n\n# DRAFT - replace with project metrics\n",
+    # tooling_notes.md: lightweight inbox for workflow friction and tool observations.
+    # Agents write here mid-session; user reviews and escalates upstream as needed.
+    "docs/working/tooling_notes.md": (
+        "# Tooling Notes\n\n"
+        "Lightweight inbox for workflow friction, tool bugs, or observations noticed mid-session.\n"
+        "Agents write here; user reviews and escalates to the appropriate tracker.\n\n"
+        "| Date | Command | Observation | Severity |\n"
+        "|------|---------|-------------|----------|\n"
+    ),
 }
 
 # Bundled runtime and prompt files seeded additively — mirrors init_service seeding.

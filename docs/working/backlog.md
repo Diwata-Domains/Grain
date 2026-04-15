@@ -560,6 +560,93 @@ Default status for new backlog items in this file: `draft`
 
 ---
 
+## 22. v0.1.x — Field-Reported Bugs (Assay + Obsidian, 2026-04-15) ✓ FIXED
+
+Bugs discovered while using Grain in the Assay project and an Obsidian vault.
+Fixed in v0.1.10 patch.
+
+### GB-001 — `grain task prepare` did not detect stub packet files ✓ FIXED
+- **Status:** done
+- **Description:** `grain task prepare` reported `ok` with `missing_inputs: 0` even when
+  `context.md`, `plan.md`, `deliverable_spec.md` were unedited template stubs containing
+  `TASK-####` placeholders. Fixed by adding `_is_stub()` detection in `task_prepare_service.py`.
+  Stubs are now surfaced as `stub packet file: <name> (contains unresolved placeholders)`.
+- **Files:** `src/grain/services/task_prepare_service.py`, `tests/test_task_prepare_cmd.py`
+
+### GB-002 — No lightweight packet mode for small tasks ✓ FIXED
+- **Status:** done
+- **Description:** `grain task create` always generated a full 7-file packet. For small mechanical
+  tasks, `context.md`, `plan.md`, `deliverable_spec.md` add overhead without value. Fixed by
+  adding `--simple` flag: generates `task.md` + `results.md` only, sets `Mode: simple` in task
+  metadata. `grain task prepare` detects simple mode and skips planning file requirements.
+- **Files:** `src/grain/cli/task.py`, `src/grain/services/task_service.py`,
+  `src/grain/services/task_prepare_service.py`, `tests/`
+
+### GB-003 — Execute prompt fragile when AI session is already in progress
+- **Status:** partially addressed by GB-001
+- **Description:** GB-001 fix means `grain task prepare` now flags stub planning files before
+  execution, surfacing the problem at the prepare gate. Remaining friction (AI jumping to
+  implementation without reading execute prompt) is a user choice — starting a fresh session
+  is not required, just recommended for complex tasks.
+- **Suggested improvement:** `grain task prepare` output could nudge the user toward the
+  execute prompt when stubs are detected, e.g. "tip: for best results, use prompts/task.execute.md
+  in a fresh conversation." Non-blocking suggestion only.
+
+### OB-001 — `grain onboard` did not create `workflow_metrics.md` ✓ FIXED
+- **Status:** done
+- **Description:** `docs validate` failed after onboarding because `workflow_metrics.md` was
+  listed in `docs_manifest.yaml` but not created by `onboard_service.py`. Fixed by adding it
+  to `_STUB_FILES`.
+- **Files:** `src/grain/services/onboard_service.py`, `tests/test_onboard_cmd.py`
+
+### OB-002 — Scaffolded working docs were not machine-parseable ✓ FIXED
+- **Status:** done
+- **Description:** `current_task.md` stub had only `# DRAFT` prose, causing `workflow next`
+  to hard-fail (missing `Task ID:`, `Task Path:`, `Status:` fields). `current_focus.md` stub
+  had no phase line, causing phase parse failure. Fixed by updating stubs to parse-safe bootstrap
+  defaults: `current_task.md` now has `Task ID: none / Task Path: none / Status: unset`;
+  `current_focus.md` now has `Phase 0 — Bootstrap` marker.
+- **Files:** `src/grain/services/onboard_service.py`
+
+### OB-003 — `workflow next` hard-errored on bootstrap state ✓ FIXED
+- **Status:** done
+- **Description:** After `grain onboard`, `grain workflow next` returned `required_docs_invalid`
+  instead of a structured bootstrap state. Fixed by detecting `Phase 0` in `workflow_service.py`
+  and returning `stop_reason: bootstrap_incomplete` with `recommended_prompt: prompts/workflow.onboard.existing.md`.
+- **Files:** `src/grain/services/workflow_service.py`, `tests/test_workflow_state_service.py`
+
+### OB-004 — Onboarding prompt had stop-condition conflict ✓ FIXED
+- **Status:** done
+- **Description:** The prompt said "stop on any command failure" but `docs validate` and
+  `workflow next` both produce expected non-zero results during bootstrap state, blocking the
+  draft-fill phase. Fixed by adding an "expected bootstrap results" section to the prompt
+  distinguishing bootstrap failures (continue) from real failures (stop).
+- **Files:** `prompts/workflow.onboard.existing.md`
+
+### OB-005 — Implicit scaffold-to-draft handoff boundary ✓ FIXED
+- **Status:** done
+- **Description:** It was unclear whether onboarding was "complete" after `grain onboard` or after
+  the agent filled stubs. Fixed by adding an explicit "Onboarding Phases" section to the prompt
+  clarifying that both CLI scaffold and agent draft are required.
+- **Files:** `prompts/workflow.onboard.existing.md`
+
+### OB-006 — Managed-file drift warnings during onboarding ✓ FIXED
+- **Status:** done
+- **Description:** `_maybe_warn_if_upgrade_needed` fired at CLI startup for every invocation
+  including `grain onboard`, producing stale-file hints before the command had a chance to seed
+  the files. Fixed by adding `"onboard"` to the skip list in `cli/__init__.py` (mirrors the
+  existing `"upgrade"` skip). After `grain onboard` runs, files are at the current bundled
+  version, so the next invocation's upgrade check will correctly report no drift.
+- **Files:** `src/grain/cli/__init__.py`
+
+### OB-007 — Template defaults too weak for stateful workflow system
+- **Status:** done (subsumed by OB-002)
+- **Description:** Addressed by OB-002 fix — `current_task.md` and `current_focus.md` now use
+  parse-safe bootstrap defaults. All other working doc stubs remain human-readable prose stubs
+  since they are not parsed by the workflow engine.
+
+---
+
 ## 7. Backlog Maintenance Rules
 
 1. backlog items must remain concrete and implementable

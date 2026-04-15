@@ -5,7 +5,16 @@ from pathlib import Path
 from grain.cli.output import CommandResult
 from grain.domain.packets import find_packet_dir, parse_task_metadata
 
-_REQUIRED_PACKET_FILES = ("task.md", "context.md", "plan.md", "deliverable_spec.md")
+_PLANNING_FILES = ("context.md", "plan.md", "deliverable_spec.md")
+_STUB_MARKER = "TASK-####"
+
+
+def _is_stub(file_path: Path) -> bool:
+    """Return True if file exists but still contains unresolved template placeholders."""
+    try:
+        return _STUB_MARKER in file_path.read_text(encoding="utf-8")
+    except OSError:
+        return False
 
 
 def prepare_task_packet(root: Path, task_id: str) -> tuple[CommandResult, dict | None]:
@@ -27,14 +36,27 @@ def prepare_task_packet(root: Path, task_id: str) -> tuple[CommandResult, dict |
     task_md = packet_dir / "task.md"
     metadata = parse_task_metadata(task_md) if task_md.exists() else {}
     task_status = metadata.get("status", "")
+    task_mode = metadata.get("mode", "")
+    is_simple = task_mode == "simple"
+
     recommended_prompt = "prompts/task.execute.md"
     if task_status == "review":
         recommended_prompt = "prompts/task.close.md"
 
     missing_inputs: list[str] = []
-    for filename in _REQUIRED_PACKET_FILES:
-        if not (packet_dir / filename).exists():
-            missing_inputs.append(f"missing packet file: {filename}")
+
+    if not task_md.exists():
+        missing_inputs.append("missing packet file: task.md")
+
+    if not is_simple:
+        for filename in _PLANNING_FILES:
+            fpath = packet_dir / filename
+            if not fpath.exists():
+                missing_inputs.append(f"missing packet file: {filename}")
+            elif _is_stub(fpath):
+                missing_inputs.append(
+                    f"stub packet file: {filename} (contains unresolved placeholders — fill in before executing)"
+                )
 
     prompt_path = root / recommended_prompt
     if not prompt_path.exists():

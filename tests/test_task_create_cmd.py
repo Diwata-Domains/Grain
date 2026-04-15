@@ -87,6 +87,30 @@ def test_task_create_json_output(packet_repo):
     assert any("task.md" in f for f in data["files_created"])
 
 
+def test_task_create_simple_creates_minimal_files(packet_repo):
+    runner = CliRunner()
+    runner.invoke(
+        main,
+        ["--repo", str(packet_repo), "task", "create", "--phase", "1", "--task-num", "1", "--simple"],
+    )
+    packet_dir = packet_repo / "tasks" / "P1-T01-TASK-0001"
+    assert (packet_dir / "task.md").exists()
+    assert (packet_dir / "results.md").exists()
+    assert not (packet_dir / "context.md").exists()
+    assert not (packet_dir / "plan.md").exists()
+    assert not (packet_dir / "deliverable_spec.md").exists()
+
+
+def test_task_create_simple_sets_mode_in_task_md(packet_repo):
+    runner = CliRunner()
+    runner.invoke(
+        main,
+        ["--repo", str(packet_repo), "task", "create", "--phase", "1", "--task-num", "1", "--simple"],
+    )
+    task_md = (packet_repo / "tasks" / "P1-T01-TASK-0001" / "task.md").read_text(encoding="utf-8")
+    assert "**Mode:** simple" in task_md
+
+
 def test_task_create_increments_id_on_second_call(packet_repo):
     runner = CliRunner()
     runner.invoke(

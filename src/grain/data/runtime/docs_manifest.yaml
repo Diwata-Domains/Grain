@@ -95,6 +95,14 @@ working:
       - closing_phase
       - reviewing_workflow_health
 
+  - id: tooling_notes
+    path: docs/working/tooling_notes.md
+    purpose: Lightweight inbox for workflow friction, tool bugs, and mid-session observations
+    authority: informational
+    editable_by_agents: true
+    read_when:
+      - never
+
 runtime:
   - id: project_rules
     path: docs/runtime/PROJECT_RULES.md

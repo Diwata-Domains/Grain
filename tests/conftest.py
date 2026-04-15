@@ -68,7 +68,7 @@ def packet_repo(tmp_path: Path) -> Path:
     # Copy packet templates from the real templates directory
     dest_templates = tmp_path / "templates" / "tasks"
     dest_templates.mkdir(parents=True)
-    for name in ("task.md", "context.md", "plan.md", "deliverable_spec.md"):
+    for name in ("task.md", "context.md", "plan.md", "deliverable_spec.md", "results.md"):
         src = _TEMPLATES_DIR / "tasks" / name
         (dest_templates / name).write_text(src.read_text(encoding="utf-8"))
 
