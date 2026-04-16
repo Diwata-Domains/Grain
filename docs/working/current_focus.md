@@ -1,7 +1,7 @@
 # Current Focus
 
 ## Current Phase
-v0.2.0 ACTIVE — Phase 15: Semantic Enrichment Layer
+v0.2.0 ACTIVE — Phase 15: Workflow Hardening and Automation
 
 ## V1 Status
 Complete. All 5 phases closed. 53 tasks done. 379 tests passing at v1 close.
@@ -34,18 +34,27 @@ CLOSED. All 5 tasks done (T01-T05). 638/638 tests passing (+43 new tests from Ph
 CLOSED. All 4 tasks done (T01-T04). 662/662 tests passing (+24 new tests from Phase 13 close). Delivered: `SpreadsheetExtractor` (xlsx/xls/csv via openpyxl), `DocsExtractor` (docx + md via python-docx), `PdfExtractor` (pdf via pdfplumber, graceful degradation), context assembly integration, adapter profiles updated, Phase 14 integration tests (12 tests). Phase closed 2026-04-12. **v0.1.0 scope complete.**
 
 ## v0.1.x Patch Series Status
-COMPLETE. Released v0.1.0 through v0.1.7. 700+ tests passing. PyPI published.
+COMPLETE. Released v0.1.0 through v0.1.11. 713+ tests passing. PyPI published.
 - v0.1.2 — Jupyter notebook support (NotebookExtractor)
 - v0.1.3 — grain onboard seeding fixes, custom adapter hints
 - v0.1.4 — hollow wrapper prompt fixes, implementation_plan seeding
 - v0.1.5 — grain upgrade command
 - v0.1.6 — grain upgrade --diff / --interactive, bundled doc content fixes
 - v0.1.7 — grain: config block, upgrade_check wiring, bundled doc cleanup
+- v0.1.8 — grain task close --quick, execution_in_flight gate, code-ahead-of-backlog detection
+- v0.1.9 — review state hardening (needs_fix, structured review bundle, completion policy)
+- v0.1.10 — grain task create --simple, stub detection in task prepare, bootstrap state fix
+- v0.1.11 — tooling_notes structure, upgrade customization guard, empty-phase fix
 
 ## v0.2.0 Status
-PLANNING COMPLETE — Phase 15 task sequence defined. Ready to begin implementation in dev branch.
+PLANNING COMPLETE — Phase sequence finalized 2026-04-16. Phase 15 ready to begin on `dev` branch.
 
-### Embedding infrastructure decision: RESOLVED
+### Branching strategy (established 2026-04-16)
+- `main` — release-only; no direct commits during v0.2.0 development
+- `dev` — all v0.2.0 phase work; PR to main on release
+- `hotfix` — v0.1.x patches only; PR to main after hotfix release
+
+### Embedding infrastructure decision: RESOLVED (applies to Phase 16)
 - `none` (BM25) — default, always available, no deps
 - `ollama` — local server, recommended for local-first setups
 - `local` — sentence-transformers, optional dep, downloads model on first use
@@ -53,7 +62,7 @@ PLANNING COMPLETE — Phase 15 task sequence defined. Ready to begin implementat
 - Config field: `grain.embedding_provider` in `docs_manifest.yaml` (already shipped in v0.1.7)
 
 ## Immediate Goals
-1. Begin Phase 15 in dev branch — P15-T01: EmbeddingProvider protocol + resolver + config wiring
+1. Begin Phase 15 on `dev` branch — P15-T01: `grain phase close` command (hard lifecycle gate)
 
 ## After Phase 8 — Using the Runner with Agent CLIs
 
@@ -124,17 +133,21 @@ Phase 14 completes v0.1.0 by making Grain context-aware for binary/formatted doc
 - All three feed extracted text into existing context assembly pipeline via updated adapter profiles
 
 ## v0.2.0 Scope
-- **Phase 15** — Semantic Enrichment Layer (EmbeddingProvider protocol, BM25 + Ollama + Local + OpenAI providers, context scoring) ← active
-- **Phase 16** — Ranking and Decision Layer (weighted candidate scoring, replaces static adapter priority rules, depends on Phase 15)
-- **Data Adapter** — richer .ipynb context, ML artifact patterns, .ipynb migrated from code_adapter
-- **Community Adapter Registry** — grain adapter install, schema validation, discovery pipeline
+All five phases must ship for v0.2.0 to close.
+
+- **Phase 15** — Workflow Hardening and Automation (`grain phase close`, `grain workflow run` auto-packet, `grain workflow reconcile`) ← active
+- **Phase 16** — Semantic Enrichment Layer (EmbeddingProvider protocol, BM25 + Ollama + Local + OpenAI providers, context scoring)
+- **Phase 17** — Ranking and Decision Layer (weighted candidate scoring, replaces static adapter priority rules, depends on Phase 16)
+- **Phase 18** — Data Adapter (richer .ipynb context, ML artifact patterns, .ipynb migrated from code_adapter)
+- **Phase 19** — Community Adapter Registry (`grain adapter install`, schema validation, discovery pipeline)
 - **Phase 11-T05 (deferred)** — Homebrew formula, resume when tap/release flow is prioritized
 
 ## Upcoming Phase Sequence
-1. **Phase 15** — Semantic Enrichment Layer ← starting now
-2. **Phase 16** — Ranking and Decision Layer (depends on Phase 15)
-3. **Data Adapter** — can begin after Phase 15 or in parallel
-4. **Community Adapter Registry** — after adapter contract review
+1. **Phase 15** — Workflow Hardening and Automation ← starting now (on `dev`)
+2. **Phase 16** — Semantic Enrichment Layer (depends on Phase 15)
+3. **Phase 17** — Ranking and Decision Layer (depends on Phase 16)
+4. **Phase 18** — Data Adapter (can begin after Phase 16 or in parallel)
+5. **Phase 19** — Community Adapter Registry (after adapter contract review)
 
 ## Active Constraints
 - use local filesystem only
@@ -147,9 +160,9 @@ Phase 14 completes v0.1.0 by making Grain context-aware for binary/formatted doc
 ## Do Not Work On Right Now
 - P11-T05 Homebrew formula until tap/release flow is prioritized
 - Assay — independent companion project, separate repo, not a Grain feature
-- Phase 16 until Phase 15 is stable
-- Community Adapter Registry until adapter contract is reviewed for v0.2.0 readiness
+- Phase 16 until Phase 15 is closed
+- Phase 17 until Phase 16 is stable
+- Phase 19 until adapter contract is reviewed for v0.2.0 readiness
 - telemetry automation (v2 — FR-011)
 - autonomous multi-step execution without explicit operator gate
 - TUI/GUI implementation (future paid tier, separate codebase)
-- `grain workflow reconcile` CLI implementation (deferred — QD-01)
