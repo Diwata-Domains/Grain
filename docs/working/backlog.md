@@ -480,34 +480,73 @@ Default status for new backlog items in this file: `draft`
 
 ---
 
-## 18. Phase 15 — Semantic Enrichment Layer (seeded, not yet planned)
+## 18. Phase 15 — Workflow Hardening and Automation (seeded, not yet started)
 
-> **Status:** seeded — not yet started. Depends on Phase 14 close and an embedding infrastructure decision. FR-015 Layer 2. v0.2.0 scope.
+> **Status:** seeded — ready to begin on `dev` branch. v0.2.0 scope. Depends on Phase 14 close (complete).
 
 ### P15 Planning Notes
-- Scope: embeddings for semantic similarity, similar-task detection, doc-to-task matching, duplicate/overlap detection. All outputs labeled as inferred — not authoritative.
-- Key decision gate: embedding provider choice (local model, external API, or hybrid) must be resolved as a canonical change proposal before P15 tasks are written. Do not seed task stubs until this decision is made.
-- Depends on: stable Phase 14 close and Phase 10 knowledge graph (graph provides the structural backbone; embeddings add semantic enrichment on top)
+- Scope: close known workflow gaps from field use before building intelligence layers on top
+- Promoted from: Assay TN #5 (phase close gate), Vault TN #6 (auto-packet), QD-01 (`workflow reconcile`)
+- Depends on: stable Phase 14 close (complete)
+
+### P15-T01 — `grain phase close` command
+- **Status:** ready
+- **Description:** Implement a hard lifecycle gate that requires explicit `grain phase close` invocation before the workflow engine routes to the next phase. Currently a phase boundary is only a `stop_reason`; a determined operator can bypass it by manually editing `current_focus.md`. This task: (1) adds `grain phase close` CLI command that validates all phase tasks are done and no active task is open; (2) writes a phase-close marker to `current_focus.md`; (3) updates the workflow state evaluator to check for this marker before allowing next-phase routing; (4) blocks bypass via manual working-doc edits.
+- **Files:** `src/grain/cli/phase.py` (new), `src/grain/services/workflow_service.py`, `src/grain/domain/workflow.py`
+- **Model:** frontier_model
+- **Dependencies:** none
+
+### P15-T02 — `grain workflow run` auto-packet bootstrap
+- **Status:** ready
+- **Description:** When `grain workflow run` or `grain workflow next` resolves `next_action: task_execute` but the candidate task has no packet directory, offer to create one inline rather than stopping dead with a tip. Behavior: if candidate task has no packet, prompt operator to confirm (or accept `--yes`); if confirmed, call task create with defaults (or `--simple` if task is flagged as lightweight). Closes Vault TN #6.
+- **Files:** `src/grain/cli/workflow.py`, `src/grain/services/workflow_service.py`, `src/grain/services/task_service.py`
+- **Model:** frontier_model
+- **Dependencies:** P15-T01
+
+### P15-T03 — `grain workflow reconcile`
+- **Status:** ready
+- **Description:** Implement `grain workflow reconcile` to detect drift across working docs and optionally repair it. Checks: (1) `backlog.md` task statuses match any existing packet `Status:` fields; (2) `current_task.md` Task ID matches the active in-progress packet (if any); (3) `current_focus.md` phase progress counts match backlog done/open counts; (4) no open `needs_fix` tasks are invisible to the workflow engine. Output: list of inconsistencies with severity. `--fix` flag auto-repairs safe drift (status sync, current_task.md pointer). Promoted from QD-01.
+- **Files:** `src/grain/cli/workflow.py`, `src/grain/services/workflow_service.py` (new `ReconcileService`)
+- **Model:** frontier_model
+- **Dependencies:** P15-T01
+
+### P15-T04 — Phase 15 integration tests
+- **Status:** ready
+- **Description:** Integration test coverage for Phase 15 deliverables: `grain phase close` happy path and bypass-prevention; `grain workflow run` auto-packet bootstrap (confirm + skip paths); `grain workflow reconcile` drift detection and `--fix` repair. Minimum 12 new tests.
+- **Files:** `tests/test_phase_close_cmd.py` (new), `tests/test_workflow_reconcile_cmd.py` (new)
+- **Model:** open_model
+- **Dependencies:** P15-T01, P15-T02, P15-T03
 
 ---
 
-## 19. Phase 16 — Ranking and Decision Layer (seeded, not yet planned)
+## 19. Phase 16 — Semantic Enrichment Layer (seeded, not yet planned)
 
-> **Status:** seeded — not yet started. Depends on Phase 15 close. FR-015 Layer 7. v0.2.0 scope.
+> **Status:** seeded — not yet started. Depends on Phase 15 close. FR-015 Layer 2. v0.2.0 scope.
 
 ### P16 Planning Notes
-- Scope: deterministic scoring across graph distance, semantic similarity, authority level, packet-local priority, and telemetry signals. Applied to context selection, next-task suggestion, and impacted-file identification.
-- Key principle: all scoring must be deterministic and inspectable — no opaque ranking decisions.
-- Depends on: stable Phase 15 semantic layer and Phase 10 graph layer.
-- Note: P16 is the layer that makes the Advisory/Intelligence Layer significantly more capable without breaking Grain's determinism model.
+- Scope: embeddings for semantic similarity, similar-task detection, doc-to-task matching, duplicate/overlap detection. All outputs labeled as inferred — not authoritative.
+- Embedding provider decision: RESOLVED — `none` (BM25, default), `ollama`, `local` (sentence-transformers), `openai` (opt-in). Config field: `grain.embedding_provider` in `docs_manifest.yaml`.
+- Depends on: stable Phase 15 close and Phase 10 knowledge graph (graph provides the structural backbone; embeddings add semantic enrichment on top)
 
 ---
 
-## 20. v0.2.1 — Data Adapter (seeded, not yet planned)
+## 20. Phase 17 — Ranking and Decision Layer (seeded, not yet planned)
 
-> **Status:** seeded — not yet started. v0.2.1 scope.
+> **Status:** seeded — not yet started. Depends on Phase 16 close. FR-015 Layer 7. v0.2.0 scope.
 
-### Planning Notes
+### P17 Planning Notes
+- Scope: deterministic scoring across graph distance, semantic similarity, authority level, packet-local priority, and telemetry signals. Applied to context selection, next-task suggestion, and impacted-file identification.
+- Key principle: all scoring must be deterministic and inspectable — no opaque ranking decisions.
+- Depends on: stable Phase 16 semantic layer and Phase 10 graph layer.
+- Note: P17 is the layer that makes the Advisory/Intelligence Layer significantly more capable without breaking Grain's determinism model.
+
+---
+
+## 21. Phase 18 — Data Adapter (seeded, not yet planned)
+
+> **Status:** seeded — not yet started. v0.2.0 scope. Promoted from v0.2.1.
+
+### P18 Planning Notes
 - Scope: a dedicated `data_adapter` for data science and ML workflows
 - Notebook support (`.ipynb`) is already delivered in v0.1.2 via `code_adapter` — `data_adapter` extends the domain with richer data science context
 - Candidate additions:
@@ -517,14 +556,15 @@ Default status for new backlog items in this file: `draft`
   - model artifact awareness: `.pkl`, `.joblib`, `.pt`, `.onnx` (metadata only — not content extraction)
   - data pipeline scripts and notebooks as first-class context sources
 - Key decision gate: scope of data file extraction (metadata-only vs. content sampling) must be resolved before tasks are written
+- Can begin after Phase 16 or in parallel with Phase 17
 
 ---
 
-## 21. v0.2.1 — Community Adapter Registry (seeded, not yet planned)
+## 22. Phase 19 — Community Adapter Registry (seeded, not yet planned)
 
-> **Status:** seeded — not yet started. Depends on Phase 15 and Phase 16 close. v0.2.1 scope.
+> **Status:** seeded — not yet started. Depends on adapter contract review. v0.2.0 scope. Promoted from v0.2.1.
 
-### Planning Notes
+### P19 Planning Notes
 - Scope: discovery, distribution, and review pipeline for community-contributed adapter profiles
 - Adapter contract is already stable — community adapters follow the same schema as official adapters
 - Three tiers:
