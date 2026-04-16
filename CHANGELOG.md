@@ -7,6 +7,20 @@ Versioning: [Semantic Versioning](https://semver.org/)
 
 ---
 
+## [0.1.11] — 2026-04-16
+
+### Added
+- `grain upgrade` now seeds missing working docs added in later Grain versions (`tooling_notes.md`, `workflow_metrics.md`) — existing projects get them on next upgrade without overwriting anything
+- `grain upgrade` now detects locally customized Grain-managed files (user-added content in prompts/templates) and warns before overwriting with a prompt to use `--interactive`; `customized` field added to JSON output
+- `grain workflow next` now distinguishes a phase with no tasks defined yet (`stop_reason: phase_has_no_tasks`) from a completed phase awaiting close (`phase_boundary_review_close_required`)
+- `grain workflow next` tips updated: suggests `grain task create` when a ready backlog task has no packet yet
+
+### Changed
+- `tooling_notes.md` now has structured columns: `Type` (`bug | friction | question | note`) and `Status` (`open | addressed | wontfix | escalated`) — enables Assay to triage entries later
+- `grain upgrade` always computes diffs internally to power customization detection; diffs only surfaced in output when `--diff` or `--interactive` is passed
+
+---
+
 ## [0.1.10] — 2026-04-15
 
 ### Added

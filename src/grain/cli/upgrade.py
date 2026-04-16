@@ -50,7 +50,11 @@ def upgrade_cmd(ctx, dry_run: bool, show_diff: bool, interactive: bool, local_fm
     effective_dry_run = dry_run or show_diff
     need_diffs = show_diff or interactive
 
-    result = upgrade_repo(root, dry_run=effective_dry_run, include_diffs=need_diffs)
+    # Always compute diffs so we can detect user-customized files even in plain mode.
+    result = upgrade_repo(root, dry_run=effective_dry_run, include_diffs=True)
+    if not need_diffs:
+        # Only expose diffs in output when explicitly requested.
+        result.diffs = {}
 
     # --- interactive mode ---
     if interactive:
@@ -66,6 +70,7 @@ def upgrade_cmd(ctx, dry_run: bool, show_diff: bool, interactive: bool, local_fm
                     "added": result.added,
                     "unchanged": result.unchanged,
                     "protected": result.protected,
+                    "customized": result.customized,
                     "dry_run": dry_run or show_diff,
                     "diffs": result.diffs,
                 },
@@ -95,9 +100,24 @@ def upgrade_cmd(ctx, dry_run: bool, show_diff: bool, interactive: bool, local_fm
         click.echo(f"Run `grain upgrade` to apply all {len(result.updated)} change(s).")
         return
 
+    if result.customized and not dry_run:
+        click.echo(
+            f"warning   {len(result.customized)} Grain-managed file(s) appear to have been "
+            "locally customized and will be overwritten:",
+            err=True,
+        )
+        for rel in result.customized:
+            click.echo(f"  - {rel}", err=True)
+        click.echo(
+            "  Run `grain upgrade --interactive` to review each change before applying, "
+            "or `grain upgrade --diff` to preview.",
+            err=True,
+        )
+
     click.echo("Updated:")
     for rel in result.updated:
-        click.echo(f"- {rel}")
+        marker = " (customized)" if rel in result.customized else ""
+        click.echo(f"- {rel}{marker}")
     if not result.updated:
         click.echo("- (none)")
 

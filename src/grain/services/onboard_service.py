@@ -39,12 +39,14 @@ _STUB_FILES: dict[str, str] = {
     "docs/working/workflow_metrics.md": "# Workflow Metrics\n\n# DRAFT - replace with project metrics\n",
     # tooling_notes.md: lightweight inbox for workflow friction and tool observations.
     # Agents write here mid-session; user reviews and escalates upstream as needed.
+    # Type: bug | friction | question | note
+    # Status: open | addressed | wontfix | escalated
     "docs/working/tooling_notes.md": (
         "# Tooling Notes\n\n"
         "Lightweight inbox for workflow friction, tool bugs, or observations noticed mid-session.\n"
         "Agents write here; user reviews and escalates to the appropriate tracker.\n\n"
-        "| Date | Command | Observation | Severity |\n"
-        "|------|---------|-------------|----------|\n"
+        "| Date | Type | Command | Observation | Severity | Status |\n"
+        "|------|------|---------|-------------|----------|--------|\n"
     ),
 }
 

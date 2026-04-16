@@ -109,7 +109,7 @@ def test_onboard_creates_tooling_notes_with_table_header(tmp_path: Path):
     tooling_notes = tmp_path / "docs" / "working" / "tooling_notes.md"
     assert tooling_notes.exists()
     content = tooling_notes.read_text(encoding="utf-8")
-    assert "| Date | Command | Observation | Severity |" in content
+    assert "| Date | Type | Command | Observation | Severity | Status |" in content
 
 
 def test_onboard_creates_workflow_metrics(tmp_path: Path):

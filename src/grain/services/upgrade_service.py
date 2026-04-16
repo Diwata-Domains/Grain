@@ -49,6 +49,8 @@ _UPGRADE_TARGETS: dict[str, str] = {
 # Files seeded if missing but never overwritten — user may have customized these.
 _ADDITIVE_TARGETS: dict[str, str] = {
     "docs/working/implementation_plan.md": "runtime/implementation_plan.md",
+    "docs/working/tooling_notes.md": "runtime/tooling_notes.md",
+    "docs/working/workflow_metrics.md": "runtime/workflow_metrics.md",
 }
 
 # Files Grain never touches — user-owned.
@@ -67,6 +69,7 @@ class UpgradeResult:
     unchanged: list[str] = field(default_factory=list)
     protected: list[str] = field(default_factory=list)
     diffs: dict[str, str] = field(default_factory=dict)  # rel_path -> unified diff string
+    customized: list[str] = field(default_factory=list)  # updated files with user-added content
 
 
 def _unified_diff(rel: str, current: str, bundled: str) -> str:
@@ -79,6 +82,18 @@ def _unified_diff(rel: str, current: str, bundled: str) -> str:
         )
     )
     return "".join(lines)
+
+
+def _has_user_additions(diff_text: str) -> bool:
+    """Return True if the diff contains lines the user added (present in current, absent in bundled).
+
+    In unified diff format, lines starting with '-' (excluding '---' headers) are content
+    in the current file that the bundled version does not have — i.e. user-added content.
+    """
+    for line in diff_text.splitlines():
+        if line.startswith("-") and not line.startswith("---"):
+            return True
+    return False
 
 
 def upgrade_repo(root: Path, *, dry_run: bool = False, include_diffs: bool = False) -> UpgradeResult:
@@ -106,9 +121,12 @@ def upgrade_repo(root: Path, *, dry_run: bool = False, include_diffs: bool = Fal
             if current == bundled:
                 result.unchanged.append(rel)
             else:
+                diff_text = _unified_diff(rel, current, bundled)
                 result.updated.append(rel)
                 if include_diffs:
-                    result.diffs[rel] = _unified_diff(rel, current, bundled)
+                    result.diffs[rel] = diff_text
+                if _has_user_additions(diff_text):
+                    result.customized.append(rel)
                 if not dry_run:
                     target.write_text(bundled, encoding="utf-8")
         else:

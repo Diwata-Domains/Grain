@@ -97,7 +97,7 @@ working:
 
   - id: tooling_notes
     path: docs/working/tooling_notes.md
-    purpose: Lightweight inbox for workflow friction, tool bugs, and mid-session observations
+    purpose: Structured inbox for workflow friction, tool bugs, and mid-session observations (Type/Status/Severity columns)
     authority: informational
     editable_by_agents: true
     read_when:

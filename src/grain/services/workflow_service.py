@@ -269,6 +269,20 @@ def evaluate_workflow_state(
         )
         return _result_with_evaluation(root, evaluation)
 
+    if not backlog_tasks:
+        evaluation = WorkflowEvaluation(
+            ok=False,
+            stop_reason="phase_has_no_tasks",
+            blocking_reasons=[
+                f"phase {current_phase} has no tasks defined in the backlog yet — "
+                "add tasks before executing"
+            ],
+            affected_artifacts=[_DEFAULT_BACKLOG_DOC],
+            active_phase=current_phase,
+            recommended_prompt="prompts/task.plan.next.md",
+        )
+        return _result_with_evaluation(root, evaluation)
+
     if not open_tasks:
         evaluation = WorkflowEvaluation(
             ok=False,
