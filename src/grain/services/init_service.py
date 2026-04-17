@@ -75,6 +75,8 @@ class InitResult:
     secondary_adapters: list[str] = field(default_factory=list)
     adapter_warnings: list[str] = field(default_factory=list)
     bootstrapped_task_id: str = ""
+    agents_md_action: str = ""   # "created" | "updated" | "appended" | "skipped"
+    claude_md_exists: bool = False
 
 
 def init_repo(
@@ -84,6 +86,7 @@ def init_repo(
     primary_adapter: str = "",
     secondary_adapters: list[str] | None = None,
     bootstrap: bool = False,
+    update_agents: bool = False,
 ) -> InitResult:
     """Scaffold the required repository structure under `root`.
 
@@ -148,6 +151,24 @@ def init_repo(
     if bootstrap:
         _run_bootstrap(root, result, dry_run)
 
+    # Always write/update AGENTS.md unless this is a pure --update-agents call
+    # (update_agents=True means only do the agents block, skip the rest — but
+    # here we run it regardless since init always includes it).
+    from grain.services.agents_md_service import write_agents_md
+    agents_result = write_agents_md(root, dry_run=dry_run)
+    result.agents_md_action = agents_result.action
+    result.claude_md_exists = agents_result.claude_md_exists
+
+    return result
+
+
+def update_agents_only(root: Path, dry_run: bool = False) -> InitResult:
+    """Update only the AGENTS.md grain block without re-running full init."""
+    from grain.services.agents_md_service import write_agents_md
+    result = InitResult()
+    agents_result = write_agents_md(root, dry_run=dry_run)
+    result.agents_md_action = agents_result.action
+    result.claude_md_exists = agents_result.claude_md_exists
     return result
 
 

@@ -10,3 +10,5 @@ class ScaffoldManifest:
     created: list[str] = field(default_factory=list)
     skipped: list[str] = field(default_factory=list)
     root: str = ""
+    agents_md_action: str = ""   # "created" | "updated" | "appended" | "skipped"
+    claude_md_exists: bool = False

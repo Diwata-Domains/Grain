@@ -518,7 +518,7 @@ Default status for new backlog items in this file: `draft`
 - **Dependencies:** P15-T01, P15-T02, P15-T03
 
 ### P15-T05 — `AGENTS.md` generation (`grain init` / `grain onboard`)
-- **Status:** draft
+- **Status:** done
 - **Description:** Emit a grain-managed `AGENTS.md` block at repo root during `grain init` and `grain onboard`. The block is delimited by `<!-- grain:workflow-instructions:start/end -->` markers so it can be updated in-place without clobbering user customizations below the markers. Content: run `grain workflow next --format json` before any code change; key commands (workflow next, workflow run, task close, workflow reconcile). Not Claude-specific — works with Codex CLI, Cursor, and any agent that reads `AGENTS.md`. Re-running `grain init --update-agents` regenerates only the grain block. Addresses the agent discipline gap where agents bypass the workflow in conversational sessions.
 - **Files:** `src/grain/services/init_service.py`, `src/grain/cli/init.py`, `src/grain/services/onboard_service.py`
 - **Model:** frontier_model

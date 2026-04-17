@@ -131,4 +131,9 @@ class OnboardService:
                 target.parent.mkdir(parents=True, exist_ok=True)
                 target.write_text(source.read_text(encoding="utf-8"), encoding="utf-8")
 
+        from grain.services.agents_md_service import write_agents_md
+        agents_result = write_agents_md(self.root, dry_run=dry_run)
+        manifest.agents_md_action = agents_result.action
+        manifest.claude_md_exists = agents_result.claude_md_exists
+
         return manifest

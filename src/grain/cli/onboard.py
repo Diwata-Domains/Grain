@@ -43,6 +43,8 @@ def onboard_cmd(ctx, path: str, dry_run: bool, local_fmt: str | None) -> None:
                     "created": manifest.created,
                     "skipped": manifest.skipped,
                     "root": manifest.root,
+                    "agents_md_action": manifest.agents_md_action,
+                    "claude_md_exists": manifest.claude_md_exists,
                 },
                 indent=2,
             )
@@ -59,3 +61,13 @@ def onboard_cmd(ctx, path: str, dry_run: bool, local_fmt: str | None) -> None:
     click.echo("Skipped:")
     for rel in manifest.skipped:
         click.echo(f"- {rel}")
+    if manifest.agents_md_action and manifest.agents_md_action != "skipped":
+        _agents_note = {
+            "created": "AGENTS.md created with grain workflow instructions",
+            "updated": "AGENTS.md grain block updated",
+            "appended": "grain workflow instructions appended to existing AGENTS.md",
+        }.get(manifest.agents_md_action, "")
+        if _agents_note:
+            click.echo(f"Note: {_agents_note}")
+        if manifest.claude_md_exists:
+            click.echo("Note: CLAUDE.md also exists — grain block is in AGENTS.md which Claude Code reads")
