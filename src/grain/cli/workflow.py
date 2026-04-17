@@ -5,6 +5,7 @@ import click
 
 from grain.adapters.filesystem import resolve_repo_root
 from grain.domain.errors import UsageError
+from grain.services.reconcile_service import reconcile
 from grain.services.workflow_loop_service import run_workflow_loop
 from grain.services.workflow_service import evaluate_workflow_state, evaluation_to_dict
 from grain.services.workflow_run_service import run_workflow_step
@@ -132,6 +133,79 @@ def workflow_run(ctx, simple):
         click.echo(f"  blocking_reasons  {len(payload.get('blocking_reasons', []))}")
         for reason in payload.get("blocking_reasons", []):
             click.echo(f"    - {reason}")
+
+
+@workflow_group.command("reconcile")
+@click.option(
+    "--fix",
+    is_flag=True,
+    default=False,
+    help="Auto-repair safe drift (backlog status sync, current_task.md stale pointer).",
+)
+@click.option(
+    "--dry-run",
+    "dry_run",
+    is_flag=True,
+    default=False,
+    help="Show what --fix would do without writing changes.",
+)
+@click.pass_context
+def workflow_reconcile(ctx, fix, dry_run):
+    """Detect drift across working docs and optionally repair it.
+
+    Checks:
+    - Backlog task statuses vs existing packet task.md Status fields.
+    - current_task.md pointer vs active packet status.
+    - Packets with Status: needs_fix not visible in current_task.md.
+
+    Use --fix to auto-repair safe drift. Use --dry-run to preview repairs.
+    """
+    repo = ctx.obj.get("repo") if ctx.obj else None
+    fmt = ctx.obj.get("fmt", "text") if ctx.obj else "text"
+    root = resolve_repo_root(repo)
+
+    result = reconcile(root, fix=fix, dry_run=dry_run)
+
+    if fmt == "json":
+        data = {
+            "ok": result.ok,
+            "dry_run": result.dry_run,
+            "issue_count": len(result.issues),
+            "issues": [
+                {
+                    "severity": i.severity,
+                    "check": i.check,
+                    "description": i.description,
+                    "fix_available": i.fix_available,
+                    "fix_description": i.fix_description,
+                }
+                for i in result.issues
+            ],
+            "fixed": result.fixed,
+        }
+        click.echo(json.dumps(data, indent=2))
+        if not result.ok:
+            raise SystemExit(1)
+        return
+
+    label = "ok" if result.ok else "issues found"
+    if result.dry_run:
+        label += " (dry-run)"
+    click.echo(f"workflow reconcile: {label}")
+    click.echo(f"  issues            {len(result.issues)}")
+    for issue in result.issues:
+        marker = "[error]" if issue.severity == "error" else "[warn] "
+        click.echo(f"    {marker}  {issue.check}: {issue.description}")
+        if issue.fix_available and not fix and not dry_run:
+            click.echo(f"             fix: {issue.fix_description}")
+    if result.fixed:
+        click.echo(f"  fixed             {len(result.fixed)}")
+        for fix_desc in result.fixed:
+            click.echo(f"    - {fix_desc}")
+    elif fix and not result.issues:
+        click.echo("  nothing to fix")
+    if not result.ok:
+        raise SystemExit(1)
 
 
 @workflow_group.command("loop")

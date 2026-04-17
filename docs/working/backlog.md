@@ -497,25 +497,32 @@ Default status for new backlog items in this file: `draft`
 - **Dependencies:** none
 
 ### P15-T02 — `grain workflow run` auto-packet bootstrap
-- **Status:** ready
+- **Status:** done
 - **Description:** When `grain workflow run` or `grain workflow next` resolves `next_action: task_execute` but the candidate task has no packet directory, offer to create one inline rather than stopping dead with a tip. Behavior: if candidate task has no packet, prompt operator to confirm (or accept `--yes`); if confirmed, call task create with defaults (or `--simple` if task is flagged as lightweight). Closes Vault TN #6.
 - **Files:** `src/grain/cli/workflow.py`, `src/grain/services/workflow_service.py`, `src/grain/services/task_service.py`
 - **Model:** frontier_model
 - **Dependencies:** P15-T01
 
 ### P15-T03 — `grain workflow reconcile`
-- **Status:** draft
+- **Status:** done
 - **Description:** Implement `grain workflow reconcile` to detect drift across working docs and optionally repair it. Checks: (1) `backlog.md` task statuses match any existing packet `Status:` fields; (2) `current_task.md` Task ID matches the active in-progress packet (if any); (3) `current_focus.md` phase progress counts match backlog done/open counts; (4) no open `needs_fix` tasks are invisible to the workflow engine. Output: list of inconsistencies with severity. `--fix` flag auto-repairs safe drift (status sync, current_task.md pointer). Promoted from QD-01.
 - **Files:** `src/grain/cli/workflow.py`, `src/grain/services/workflow_service.py` (new `ReconcileService`)
 - **Model:** frontier_model
 - **Dependencies:** P15-T01
 
 ### P15-T04 — Phase 15 integration tests
-- **Status:** draft
+- **Status:** ready
 - **Description:** Integration test coverage for Phase 15 deliverables: `grain phase close` happy path and bypass-prevention; `grain workflow run` auto-packet bootstrap (confirm + skip paths); `grain workflow reconcile` drift detection and `--fix` repair. Minimum 12 new tests.
 - **Files:** `tests/test_phase_close_cmd.py` (new), `tests/test_workflow_reconcile_cmd.py` (new)
 - **Model:** open_model
 - **Dependencies:** P15-T01, P15-T02, P15-T03
+
+### P15-T05 — `AGENTS.md` generation (`grain init` / `grain onboard`)
+- **Status:** draft
+- **Description:** Emit a grain-managed `AGENTS.md` block at repo root during `grain init` and `grain onboard`. The block is delimited by `<!-- grain:workflow-instructions:start/end -->` markers so it can be updated in-place without clobbering user customizations below the markers. Content: run `grain workflow next --format json` before any code change; key commands (workflow next, workflow run, task close, workflow reconcile). Not Claude-specific — works with Codex CLI, Cursor, and any agent that reads `AGENTS.md`. Re-running `grain init --update-agents` regenerates only the grain block. Addresses the agent discipline gap where agents bypass the workflow in conversational sessions.
+- **Files:** `src/grain/services/init_service.py`, `src/grain/cli/init.py`, `src/grain/services/onboard_service.py`
+- **Model:** frontier_model
+- **Dependencies:** P15-T04
 
 ---
 
