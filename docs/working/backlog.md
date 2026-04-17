@@ -480,7 +480,7 @@ Default status for new backlog items in this file: `draft`
 
 ---
 
-## 18. Phase 15 — Workflow Hardening and Automation (in progress)
+## 18. Phase 15 — Workflow Hardening and Automation (in progress) — archived
 
 > **Status:** seeded — ready to begin on `dev` branch. v0.2.0 scope. Depends on Phase 14 close (complete).
 

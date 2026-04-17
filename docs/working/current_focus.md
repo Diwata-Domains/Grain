@@ -1,9 +1,12 @@
 # Current Focus
 
 ## Current Phase
-Phase 15 — Workflow Hardening and Automation
+Phase 16 — Semantic Enrichment Layer
 
 v0.2.0 ACTIVE
+
+## Phase 15 Status
+CLOSED. All 6 tasks done (T01-T06). 775/775 tests passing. Delivered: `grain phase close` (hard lifecycle gate), `grain workflow run` auto-packet bootstrap, `grain workflow reconcile` (drift detection + --fix), Phase 15 integration tests, `AGENTS.md` generation (`grain init` / `grain onboard`), `grain phase archive`. Phase closed 2026-04-17.
 
 ## V1 Status
 Complete. All 5 phases closed. 53 tasks done. 379 tests passing at v1 close.
@@ -168,3 +171,5 @@ All five phases must ship for v0.2.0 to close.
 - telemetry automation (v2 — FR-011)
 - autonomous multi-step execution without explicit operator gate
 - TUI/GUI implementation (future paid tier, separate codebase)
+
+Phase 15 closed: 2026-04-17 — 6 tasks done (grain-verified)
