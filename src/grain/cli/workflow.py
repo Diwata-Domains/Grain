@@ -77,14 +77,20 @@ def workflow_next(ctx):
 
 
 @workflow_group.command("run")
+@click.option(
+    "--simple",
+    is_flag=True,
+    default=False,
+    help="When auto-creating a missing packet, use simple mode (task.md + results.md only).",
+)
 @click.pass_context
-def workflow_run(ctx):
+def workflow_run(ctx, simple):
     """Execute one legal workflow step or stop at an explicit gate."""
     repo = ctx.obj.get("repo") if ctx.obj else None
     fmt = ctx.obj.get("fmt", "text") if ctx.obj else "text"
     root = resolve_repo_root(repo)
 
-    result, payload = run_workflow_step(root)
+    result, payload = run_workflow_step(root, simple=simple)
 
     if payload is None:
         if fmt == "json":
@@ -108,6 +114,8 @@ def workflow_run(ctx):
         click.echo("workflow run: ok")
         click.echo(f"  action_taken      {action_taken}")
         click.echo(f"  task_activated    {payload.get('task_activated', '')}")
+        if payload.get("packet_created"):
+            click.echo("  packet_created    true")
         click.echo(f"  active_phase      {payload.get('active_phase', '')}")
         click.echo(f"  recommended_prompt  {payload.get('recommended_prompt', '')}")
         for path in result.files_updated:

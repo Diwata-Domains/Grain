@@ -324,3 +324,102 @@ def test_workflow_next_clears_gate_once_results_md_written(tmp_path):
     data = json.loads(result.output)
     assert data["evaluation"]["ok"] is True
     assert data["evaluation"]["next_action"] == "task_execute"
+
+
+# ---------------------------------------------------------------------------
+# P15-T02: auto-packet bootstrap
+# ---------------------------------------------------------------------------
+
+def _ready_backlog_no_packet(repo: Path, task_ref: str = "P8-T01") -> None:
+    """Seed a backlog with one ready task but no corresponding packet directory."""
+    _write(
+        repo / "docs" / "working" / "backlog.md",
+        (
+            "## 10. Phase 8 — Workflow Automation Runner Foundation\n\n"
+            f"### {task_ref} — Example task\n"
+            "- **Status:** ready\n"
+        ),
+    )
+    # Ensure tasks/ dir exists but has no packet for this task_ref
+    (repo / "tasks").mkdir(parents=True, exist_ok=True)
+
+
+def _seed_templates(repo: Path) -> None:
+    """Seed minimal task templates so create_packet_directory works."""
+    import shutil
+    from pathlib import Path as _Path
+    templates_src = _Path(__file__).resolve().parents[1] / "src" / "grain" / "data" / "templates" / "tasks"
+    templates_dst = repo / "templates" / "tasks"
+    templates_dst.mkdir(parents=True, exist_ok=True)
+    for f in templates_src.iterdir():
+        shutil.copy(f, templates_dst / f.name)
+
+
+def test_workflow_run_auto_creates_packet_when_missing(tmp_path):
+    """workflow run creates a packet for a ready task that has no packet directory."""
+    _base_repo(tmp_path)
+    _ready_backlog_no_packet(tmp_path, task_ref="P8-T01")
+    _seed_templates(tmp_path)
+
+    runner = CliRunner()
+    result = runner.invoke(main, ["--repo", str(tmp_path), "workflow", "run"])
+
+    assert result.exit_code == 0, result.output
+    assert "create_and_activate_task" in result.output
+    assert "packet_created    true" in result.output
+
+    # Packet directory was actually created
+    task_dirs = list((tmp_path / "tasks").iterdir())
+    assert len(task_dirs) == 1
+    assert task_dirs[0].name.startswith("P8-T01-")
+
+
+def test_workflow_run_auto_creates_packet_json_output(tmp_path):
+    _base_repo(tmp_path)
+    _ready_backlog_no_packet(tmp_path, task_ref="P8-T01")
+    _seed_templates(tmp_path)
+
+    runner = CliRunner()
+    result = runner.invoke(
+        main, ["--repo", str(tmp_path), "--format", "json", "workflow", "run"]
+    )
+
+    assert result.exit_code == 0, result.output
+    data = json.loads(result.output)
+    assert data["workflow_run"]["action_taken"] == "create_and_activate_task"
+    assert data["workflow_run"]["packet_created"] is True
+
+
+def test_workflow_run_simple_flag_creates_simple_packet(tmp_path):
+    """--simple flag passes through to create a simple-mode packet."""
+    _base_repo(tmp_path)
+    _ready_backlog_no_packet(tmp_path, task_ref="P8-T01")
+    _seed_templates(tmp_path)
+
+    runner = CliRunner()
+    result = runner.invoke(
+        main, ["--repo", str(tmp_path), "workflow", "run", "--simple"]
+    )
+
+    assert result.exit_code == 0, result.output
+    task_dirs = list((tmp_path / "tasks").iterdir())
+    assert len(task_dirs) == 1
+    packet_dir = task_dirs[0]
+    # Simple packet: task.md + results.md, no context/plan/deliverable_spec
+    assert (packet_dir / "task.md").exists()
+    assert (packet_dir / "results.md").exists()
+    assert not (packet_dir / "context.md").exists()
+
+
+def test_workflow_run_activates_existing_packet_unchanged(tmp_path):
+    """workflow run still activates an existing packet normally (no auto-create)."""
+    _base_repo(tmp_path)
+    _ready_backlog(tmp_path, task_ref="P8-T08")
+    _packet(tmp_path, "P8-T08", "TASK-0068", "ready")
+
+    runner = CliRunner()
+    result = runner.invoke(main, ["--repo", str(tmp_path), "workflow", "run"])
+
+    assert result.exit_code == 0, result.output
+    assert "activate_task" in result.output
+    assert "packet_created" not in result.output

@@ -22,7 +22,7 @@ _GATE_MAP: dict[str, str] = {
 }
 
 
-def run_workflow_step(root: Path) -> tuple[CommandResult, dict | None]:
+def run_workflow_step(root: Path, simple: bool = False) -> tuple[CommandResult, dict | None]:
     """Execute one legal workflow step or stop at a gate.
 
     This is the only service in the system that may mutate state.
@@ -89,34 +89,48 @@ def run_workflow_step(root: Path) -> tuple[CommandResult, dict | None]:
             candidate = evaluation.candidate_tasks[0]
             task_ref = candidate.task_ref
             packet_dir = _find_packet_dir_for_ref(root, task_ref)
+            packet_was_created = False
+
             if packet_dir is None:
-                payload = _gate_payload(
-                    action_taken="none",
-                    gate_reason="packet_not_found",
-                    gate_condition="required_docs_invalid",
-                    recommended_prompt="",
-                    blocking_reasons=[f"packet directory not found for task ref: {task_ref}"],
-                    affected_artifacts=["tasks/"],
-                    active_phase=evaluation.active_phase,
-                    active_task_id="",
-                )
-                result = CommandResult(
-                    ok=False,
-                    command="workflow run",
-                    repo=str(root),
-                    errors=[f"packet directory not found for task ref: {task_ref}"],
-                )
-                return result, payload
+                # Auto-bootstrap: create the missing packet so execution can proceed.
+                packet_dir, create_error = _create_packet_for_ref(root, task_ref, simple=simple)
+                if packet_dir is None:
+                    payload = _gate_payload(
+                        action_taken="none",
+                        gate_reason="packet_create_failed",
+                        gate_condition="required_docs_invalid",
+                        recommended_prompt="",
+                        blocking_reasons=[
+                            f"packet not found and auto-create failed for {task_ref}: {create_error}"
+                        ],
+                        affected_artifacts=["tasks/"],
+                        active_phase=evaluation.active_phase,
+                        active_task_id="",
+                    )
+                    result = CommandResult(
+                        ok=False,
+                        command="workflow run",
+                        repo=str(root),
+                        errors=[f"packet not found and auto-create failed for {task_ref}"],
+                    )
+                    return result, payload
+                packet_was_created = True
 
             task_id = _read_task_id_from_packet(packet_dir)
             task_path = f"tasks/{packet_dir.name}/"
             _write_current_task(root, task_id or task_ref, task_path, "in_progress")
 
+            action = "create_and_activate_task" if packet_was_created else "activate_task"
+            files_updated = ["docs/working/current_task.md"]
+            if packet_was_created:
+                files_updated.insert(0, task_path)
+
             payload = {
-                "action_taken": "activate_task",
+                "action_taken": action,
                 "gate_reason": "",
                 "gate_condition": "",
                 "task_activated": task_id or task_ref,
+                "packet_created": packet_was_created,
                 "recommended_prompt": evaluation.recommended_prompt or "prompts/task.execute.md",
                 "blocking_reasons": [],
                 "affected_artifacts": [
@@ -130,7 +144,7 @@ def run_workflow_step(root: Path) -> tuple[CommandResult, dict | None]:
                 ok=True,
                 command="workflow run",
                 repo=str(root),
-                files_updated=["docs/working/current_task.md"],
+                files_updated=files_updated,
             )
             return result, payload
 
@@ -231,6 +245,38 @@ def _find_packet_dir_for_ref(root: Path, task_ref: str) -> Path | None:
         if candidate.is_dir() and candidate.name.startswith(prefix):
             return candidate
     return None
+
+
+_TASK_REF_RE = re.compile(r"P(\d+)-T(\d+)")
+
+
+def _create_packet_for_ref(
+    root: Path, task_ref: str, simple: bool = False
+) -> tuple[Path | None, str]:
+    """Create a packet directory for task_ref and return (packet_dir, error).
+
+    Parses phase and task number from the task_ref (e.g. ``P15-T01``), calls
+    ``create_packet_directory``, then re-resolves the created directory by prefix.
+    Returns ``(None, error_message)`` on failure.
+    """
+    m = _TASK_REF_RE.match(task_ref)
+    if not m:
+        return None, f"cannot parse phase/task number from task ref: {task_ref}"
+
+    phase = int(m.group(1))
+    task_num = int(m.group(2))
+
+    from grain.services.task_service import create_packet_directory
+
+    create_result = create_packet_directory(root, phase=phase, task_num=task_num, simple=simple)
+    if not create_result.ok:
+        return None, "; ".join(create_result.errors)
+
+    packet_dir = _find_packet_dir_for_ref(root, task_ref)
+    if packet_dir is None:
+        return None, f"packet directory not found after creation for {task_ref}"
+
+    return packet_dir, ""
 
 
 def _read_task_id_from_packet(packet_dir: Path) -> str:
