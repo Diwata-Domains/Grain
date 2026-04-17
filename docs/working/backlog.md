@@ -490,14 +490,14 @@ Default status for new backlog items in this file: `draft`
 - Depends on: stable Phase 14 close (complete)
 
 ### P15-T01 — `grain phase close` command
-- **Status:** ready
+- **Status:** done
 - **Description:** Implement a hard lifecycle gate that requires explicit `grain phase close` invocation before the workflow engine routes to the next phase. Currently a phase boundary is only a `stop_reason`; a determined operator can bypass it by manually editing `current_focus.md`. This task: (1) adds `grain phase close` CLI command that validates all phase tasks are done and no active task is open; (2) writes a phase-close marker to `current_focus.md`; (3) updates the workflow state evaluator to check for this marker before allowing next-phase routing; (4) blocks bypass via manual working-doc edits.
 - **Files:** `src/grain/cli/phase.py` (new), `src/grain/services/workflow_service.py`, `src/grain/domain/workflow.py`
 - **Model:** frontier_model
 - **Dependencies:** none
 
 ### P15-T02 — `grain workflow run` auto-packet bootstrap
-- **Status:** ready
+- **Status:** done
 - **Description:** When `grain workflow run` or `grain workflow next` resolves `next_action: task_execute` but the candidate task has no packet directory, offer to create one inline rather than stopping dead with a tip. Behavior: if candidate task has no packet, prompt operator to confirm (or accept `--yes`); if confirmed, call task create with defaults (or `--simple` if task is flagged as lightweight). Closes Vault TN #6.
 - **Files:** `src/grain/cli/workflow.py`, `src/grain/services/workflow_service.py`, `src/grain/services/task_service.py`
 - **Model:** frontier_model
