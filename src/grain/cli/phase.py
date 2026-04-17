@@ -4,6 +4,7 @@ import json
 import click
 
 from grain.adapters.filesystem import resolve_repo_root
+from grain.services.phase_archive_service import archive_phase
 from grain.services.phase_close_service import close_phase
 from grain.services.workflow_service import evaluate_workflow_state
 
@@ -122,3 +123,56 @@ def phase_close(ctx, dry_run):
             f"  next step       update '## Current Phase' in current_focus.md "
             f"to Phase {int(result.closed_phase) + 1} to begin the next phase"
         )
+
+
+@phase_group.command("archive")
+@click.argument("phase_number")
+@click.option("--dry-run", is_flag=True, default=False, help="Show what would be moved without writing anything.")
+@click.pass_context
+def phase_archive(ctx, phase_number, dry_run):
+    """Move closed phase packets to tasks/archive/phase-N/.
+
+    PHASE_NUMBER is the phase to archive (e.g. 15).
+
+    Requires a grain-verified closed marker in current_focus.md for the given
+    phase. Use `grain phase close` to seal a phase before archiving.
+    """
+    repo = ctx.obj.get("repo") if ctx.obj else None
+    fmt = ctx.obj.get("fmt", "text") if ctx.obj else "text"
+    root = resolve_repo_root(repo)
+
+    result = archive_phase(root, phase_number, dry_run=dry_run)
+
+    if fmt == "json":
+        click.echo(
+            json.dumps(
+                {
+                    "ok": result.ok,
+                    "phase": result.phase,
+                    "packets_moved": result.packets_moved,
+                    "archive_path": result.archive_path,
+                    "dry_run": result.dry_run,
+                    "errors": result.errors,
+                },
+                indent=2,
+            )
+        )
+        if not result.ok:
+            raise SystemExit(1)
+        return
+
+    if not result.ok:
+        click.echo("phase archive: blocked", err=True)
+        for err in result.errors:
+            click.echo(f"  error   {err}", err=True)
+        raise SystemExit(1)
+
+    label = "phase archive: dry_run" if dry_run else "phase archive: ok"
+    click.echo(label)
+    click.echo(f"  phase           {result.phase}")
+    click.echo(f"  archive_path    {result.archive_path}")
+    click.echo(f"  packets_moved   {len(result.packets_moved)}")
+    for p in result.packets_moved:
+        click.echo(f"    - {p}")
+    if dry_run:
+        click.echo("  (no changes written)")
