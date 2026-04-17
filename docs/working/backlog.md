@@ -524,6 +524,13 @@ Default status for new backlog items in this file: `draft`
 - **Model:** frontier_model
 - **Dependencies:** P15-T04
 
+### P15-T06 — `grain phase archive` command
+- **Status:** draft
+- **Description:** Implement `grain phase archive <N>` to formally archive a closed phase's task packets. Validates: (1) phase N has a grain-verified closed marker in `current_focus.md`; (2) packets for phase N exist in `tasks/`; (3) target `tasks/archive/phase-N/` does not already exist. Moves all `P<N>-T*` directories from `tasks/` to `tasks/archive/phase-N/`. Updates the phase section header in `backlog.md` to append `— archived`. Text and JSON output. `--dry-run` mode. Makes archiving a first-class workflow step rather than manual housekeeping. Promoted from operator request during Phase 15.
+- **Files:** `src/grain/cli/phase.py`, new `src/grain/services/phase_archive_service.py`
+- **Model:** open_model
+- **Dependencies:** P15-T01
+
 ---
 
 ## 19. Phase 16 — Semantic Enrichment Layer (seeded, not yet planned)
