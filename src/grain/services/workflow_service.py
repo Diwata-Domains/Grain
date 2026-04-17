@@ -16,9 +16,15 @@ _TASK_HEADING = re.compile(r"^###\s+(P(\d+)-T(\d+))\s+—\s+(.+)$")
 _PHASE_HEADING = re.compile(r"^##\s+\d+\.\s+Phase\s+(\d+)\s+—")
 _BACKLOG_STATUS = re.compile(r"^- \*\*Status:\*\*\s*(\S+)")
 _CURRENT_PHASE_LINE = re.compile(r"^Phase\s+(\d+)\s+—")
+_PHASE_CLOSED_MARKER_RE = re.compile(r"^Phase\s+(\d+)\s+closed:")
 _DEFAULT_PHASE_DOC = "docs/working/current_focus.md"
 _DEFAULT_BACKLOG_DOC = "docs/working/backlog.md"
 _DEFAULT_CURRENT_TASK_DOC = "docs/working/current_task.md"
+
+# Phases >= this value require a grain-verified closed marker before the next
+# phase can be evaluated.  Phases before this were closed before grain phase
+# close existed and are grandfathered.
+_PHASE_CLOSE_MIN_ENFORCED = 15
 
 
 def evaluate_workflow_state(
@@ -89,6 +95,28 @@ def evaluate_workflow_state(
             ),
             evaluation,
         )
+
+    # Guard: if the previous phase is within the enforced range, require that it
+    # was properly sealed by `grain phase close` before routing begins.
+    # This blocks manual current_focus.md edits that skip the close gate.
+    try:
+        phase_int = int(current_phase)
+    except ValueError:
+        phase_int = 0
+    if phase_int > _PHASE_CLOSE_MIN_ENFORCED:
+        prev_phase = str(phase_int - 1)
+        if not _is_phase_properly_closed(root / _DEFAULT_PHASE_DOC, prev_phase):
+            evaluation = WorkflowEvaluation(
+                ok=False,
+                stop_reason="previous_phase_not_closed",
+                blocking_reasons=[
+                    f"Phase {prev_phase} was not sealed — check out Phase {prev_phase} "
+                    f"and run `grain phase close` to seal it before beginning Phase {current_phase}"
+                ],
+                affected_artifacts=[_DEFAULT_PHASE_DOC],
+                active_phase=current_phase,
+            )
+            return _result_with_evaluation(root, evaluation)
 
     current_task = _read_current_task(root / _DEFAULT_CURRENT_TASK_DOC)
     if current_task is None:
@@ -435,3 +463,12 @@ def _read_phase_backlog_tasks(backlog_path: Path, phase_number: str) -> list[Wor
 def evaluation_to_dict(evaluation: WorkflowEvaluation) -> dict:
     """Serialize workflow evaluation for JSON-friendly command output."""
     return asdict(evaluation)
+
+
+def _is_phase_properly_closed(current_focus_path: Path, phase_number: str) -> bool:
+    """Return True if current_focus.md contains a grain-verified closed marker for phase_number."""
+    for line in current_focus_path.read_text(encoding="utf-8").splitlines():
+        m = _PHASE_CLOSED_MARKER_RE.match(line.strip())
+        if m and m.group(1) == phase_number:
+            return True
+    return False

@@ -4,6 +4,7 @@ import json
 import click
 
 from grain.adapters.filesystem import resolve_repo_root
+from grain.services.phase_close_service import close_phase
 from grain.services.workflow_service import evaluate_workflow_state
 
 
@@ -65,3 +66,59 @@ def phase_next(ctx):
     click.echo(f"  blocking_reasons  {len(evaluation.blocking_reasons)}")
     for item in evaluation.blocking_reasons:
         click.echo(f"    - {item}")
+
+
+@phase_group.command("close")
+@click.option("--dry-run", is_flag=True, default=False, help="Validate without writing anything.")
+@click.pass_context
+def phase_close(ctx, dry_run):
+    """Validate and seal the current phase.
+
+    Writes a grain-verified closed marker to current_focus.md.
+    The workflow engine requires this marker before routing to the next phase.
+    After running this command, update '## Current Phase' in
+    docs/working/current_focus.md to begin the next phase.
+    """
+    repo = ctx.obj.get("repo") if ctx.obj else None
+    fmt = ctx.obj.get("fmt", "text") if ctx.obj else "text"
+    root = resolve_repo_root(repo)
+
+    result = close_phase(root, dry_run=dry_run)
+
+    if fmt == "json":
+        click.echo(
+            json.dumps(
+                {
+                    "ok": result.ok,
+                    "closed_phase": result.closed_phase,
+                    "tasks_done": result.tasks_done,
+                    "dry_run": result.dry_run,
+                    "marker_written": result.marker_written,
+                    "errors": result.errors,
+                },
+                indent=2,
+            )
+        )
+        if not result.ok:
+            raise SystemExit(1)
+        return
+
+    if not result.ok:
+        click.echo("phase close: blocked", err=True)
+        for err in result.errors:
+            click.echo(f"  error   {err}", err=True)
+        raise SystemExit(1)
+
+    label = "phase close: dry_run" if dry_run else "phase close: ok"
+    click.echo(label)
+    click.echo(f"  closed_phase    {result.closed_phase}")
+    click.echo(f"  tasks_done      {result.tasks_done}")
+    if result.marker_written:
+        click.echo(f"  marker_written  {result.marker_written}")
+    if dry_run:
+        click.echo("  (no changes written)")
+    else:
+        click.echo(
+            f"  next step       update '## Current Phase' in current_focus.md "
+            f"to Phase {int(result.closed_phase) + 1} to begin the next phase"
+        )
