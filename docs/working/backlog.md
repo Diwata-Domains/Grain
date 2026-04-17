@@ -511,7 +511,7 @@ Default status for new backlog items in this file: `draft`
 - **Dependencies:** P15-T01
 
 ### P15-T04 — Phase 15 integration tests
-- **Status:** ready
+- **Status:** done
 - **Description:** Integration test coverage for Phase 15 deliverables: `grain phase close` happy path and bypass-prevention; `grain workflow run` auto-packet bootstrap (confirm + skip paths); `grain workflow reconcile` drift detection and `--fix` repair. Minimum 12 new tests.
 - **Files:** `tests/test_phase_close_cmd.py` (new), `tests/test_workflow_reconcile_cmd.py` (new)
 - **Model:** open_model
