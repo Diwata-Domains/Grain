@@ -1,7 +1,9 @@
 # Current Focus
 
 ## Current Phase
-v0.2.0 ACTIVE — Phase 15: Workflow Hardening and Automation
+Phase 15 — Workflow Hardening and Automation
+
+v0.2.0 ACTIVE
 
 ## V1 Status
 Complete. All 5 phases closed. 53 tasks done. 379 tests passing at v1 close.

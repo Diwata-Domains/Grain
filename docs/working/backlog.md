@@ -480,7 +480,7 @@ Default status for new backlog items in this file: `draft`
 
 ---
 
-## 18. Phase 15 — Workflow Hardening and Automation (seeded, not yet started)
+## 18. Phase 15 — Workflow Hardening and Automation (in progress)
 
 > **Status:** seeded — ready to begin on `dev` branch. v0.2.0 scope. Depends on Phase 14 close (complete).
 
@@ -497,21 +497,21 @@ Default status for new backlog items in this file: `draft`
 - **Dependencies:** none
 
 ### P15-T02 — `grain workflow run` auto-packet bootstrap
-- **Status:** done
+- **Status:** ready
 - **Description:** When `grain workflow run` or `grain workflow next` resolves `next_action: task_execute` but the candidate task has no packet directory, offer to create one inline rather than stopping dead with a tip. Behavior: if candidate task has no packet, prompt operator to confirm (or accept `--yes`); if confirmed, call task create with defaults (or `--simple` if task is flagged as lightweight). Closes Vault TN #6.
 - **Files:** `src/grain/cli/workflow.py`, `src/grain/services/workflow_service.py`, `src/grain/services/task_service.py`
 - **Model:** frontier_model
 - **Dependencies:** P15-T01
 
 ### P15-T03 — `grain workflow reconcile`
-- **Status:** ready
+- **Status:** draft
 - **Description:** Implement `grain workflow reconcile` to detect drift across working docs and optionally repair it. Checks: (1) `backlog.md` task statuses match any existing packet `Status:` fields; (2) `current_task.md` Task ID matches the active in-progress packet (if any); (3) `current_focus.md` phase progress counts match backlog done/open counts; (4) no open `needs_fix` tasks are invisible to the workflow engine. Output: list of inconsistencies with severity. `--fix` flag auto-repairs safe drift (status sync, current_task.md pointer). Promoted from QD-01.
 - **Files:** `src/grain/cli/workflow.py`, `src/grain/services/workflow_service.py` (new `ReconcileService`)
 - **Model:** frontier_model
 - **Dependencies:** P15-T01
 
 ### P15-T04 — Phase 15 integration tests
-- **Status:** ready
+- **Status:** draft
 - **Description:** Integration test coverage for Phase 15 deliverables: `grain phase close` happy path and bypass-prevention; `grain workflow run` auto-packet bootstrap (confirm + skip paths); `grain workflow reconcile` drift detection and `--fix` repair. Minimum 12 new tests.
 - **Files:** `tests/test_phase_close_cmd.py` (new), `tests/test_workflow_reconcile_cmd.py` (new)
 - **Model:** open_model
