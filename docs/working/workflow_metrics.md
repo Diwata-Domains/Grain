@@ -460,13 +460,60 @@ Record the following in each task packet `results.md`:
 
 ---
 
+## v0.1.x Patch Series Summary (v0.1.0–v0.1.11)
+
+Released between Phase 14 close and Phase 15 start. Not tracked as formal phases — all patches were hotfix-style incremental work.
+
+* v0.1.2 — Jupyter notebook support (NotebookExtractor)
+* v0.1.3 — grain onboard seeding fixes, custom adapter hints
+* v0.1.4 — hollow wrapper prompt fixes, implementation_plan seeding
+* v0.1.5 — grain upgrade command
+* v0.1.6 — grain upgrade --diff / --interactive, bundled doc content fixes
+* v0.1.7 — grain: config block, upgrade_check wiring, bundled doc cleanup
+* v0.1.8 — grain task close --quick, execution_in_flight gate, code-ahead-of-backlog detection
+* v0.1.9 — review state hardening (needs_fix, structured review bundle, completion policy)
+* v0.1.10 — grain task create --simple, stub detection in task prepare, bootstrap state fix
+* v0.1.11 — tooling_notes structure, upgrade customization guard, empty-phase fix
+* Tests at v0.1.11: ~713 (patch series added tests alongside each fix; exact split not captured per patch)
+
+---
+
+### Phase 15
+
+* Tasks completed: 6 (P15-T01 through P15-T06)
+* Tasks blocked: 0
+* Prompt runs: 1 (single continuous session — single-agent conversational model; no separate executor/reviewer/closer conversations)
+* Avg prompt runs per completed task: n/a (single-agent model; all stages in one session)
+* Manual interventions: 4 (scope additions T05 and T06 added mid-phase; archiving request for Phases 8–14; TUI/v0.3.0 timeline decision)
+* First-pass success rate: 6/6 (multiple implementation bugs fixed inline during development — reconcile `ok` post-fix logic, `needs_fix_invisible` regex pattern — no task required a separate rework round)
+* Rework count: 0 (no separate rework rounds; all fixes applied inline during task execution)
+* Drift incidents: 1 (agent bypassed grain workflow at session start — T01/T02 briefly progressed without formal packets; corrected; AGENTS.md generation (T05) added specifically to close this bypass vector)
+* Phase duration: Session 18
+* Tests at phase close: 775 (+113 net from Phase 14 close; includes v0.1.x patch series test additions and all 6 Phase 15 tasks)
+* Conversation model: single-agent conversational (Claude Code in-session; all tasks executed, reviewed, and closed in one continuous conversation — departure from multi-agent Phases 6–14)
+* Token tracking: proxy metrics only
+
+### Phase 15 Notes
+
+* What felt efficient: T01–T06 were a tightly scoped hardening sequence; each task had a clear deliverable boundary; grain's own workflow tooling was used to build grain (workflow discipline validated against itself); T06 (phase archive) landed cleanly as the formal close ceremony for the phase
+* What created friction: agent bypassed the grain workflow at session start (no prior constraint existed for conversational sessions) — this spawned T05 (AGENTS.md); reconcile service had two subtle bugs requiring inline diagnosis (ok post-fix computation, ID regex format mismatch); integration tests required a `_seed_templates()` helper not obvious from the task spec
+* What to tighten next: AGENTS.md is now in place — monitor whether agents honor it in subsequent sessions; single-agent model lacks a natural review gate (reviewer/closer stages are collapsed); consider whether Phase 16 reintroduces multi-agent stages or formalizes the single-agent review pattern
+
+### Phase Retrospective Classification
+
+* **Fix now:** none
+* **Batch next phase:** verify AGENTS.md is honored in Phase 16 session start; confirm single-agent vs multi-agent model for v0.2.0 phases; `grain workflow reconcile` QD-01 is now delivered (closed here in T03)
+* **Ignore:** v0.1.x patch test count split (not worth retroactive reconstruction)
+
+---
+
 ## V2 Aggregate (to date)
 
-* Total v2 tasks completed: 64 (Phase 6: 7, Phase 7: 7, Phase 8: 11, Phase 9: 7, Phase 10: 6, Phase 11: 4, Phase 12: 4, Phase 13: 5, Phase 14: 4)
+* Total v2 tasks completed: 70 (Phase 6: 7, Phase 7: 7, Phase 8: 11, Phase 9: 7, Phase 10: 6, Phase 11: 4, Phase 12: 4, Phase 13: 5, Phase 14: 4, Phase 15: 6; v0.1.x patches not counted as formal tasks)
 * Total v2 blocked: 1 (P11-T05 deferred)
-* Tests at v2 Phase 6 close: 399; at Phase 7 close: 419; at Phase 8 close: 494; at Phase 9 close: 561; at Phase 10 close: 575; at Phase 11 close: 577; at Phase 12 close: 595; at Phase 13 close: 638; at Phase 14 close: 662
-* Open questions resolved during v2 (to date): Q12–Q16 (5 questions); QD-01 deferred; no new questions in Phases 9–14
-* Canonical change proposals raised during v2: 1 (P8-T10 `cli_spec.md §6.9` addition); CP-009 applied (Forge→Grain, Sentinel→Assay rename); CP-010 raised and resolved (superseded by CP-009); no new proposals in Phases 11–14
+* Tests at v2 Phase 6 close: 399; at Phase 7 close: 419; at Phase 8 close: 494; at Phase 9 close: 561; at Phase 10 close: 575; at Phase 11 close: 577; at Phase 12 close: 595; at Phase 13 close: 638; at Phase 14 close: 662; at Phase 15 close: 775
+* Open questions resolved during v2 (to date): Q12–Q16 (5 questions); QD-01 (grain workflow reconcile) delivered in Phase 15; no new questions in Phases 9–15
+* Canonical change proposals raised during v2: 1 (P8-T10 `cli_spec.md §6.9` addition); CP-009 applied (Forge→Grain, Sentinel→Assay rename); CP-010 raised and resolved (superseded by CP-009); no new proposals in Phases 11–15
 * Major Phase 6 additions: adapter profiles runtime doc, AdapterProfile domain model, adapter loader/parser, packet adapter metadata fields, adapter-aware context biasing, adapter hint surfacing in context outputs, adapter system tests
 * Major Phase 7 additions: stable new-project onboarding prompt, init seed-file scaffolding, adapter selection, starter packet bootstrap, onboarding integration tests, existing-project adoption boundary docs
 * Major Phase 8 additions: workflow state evaluator, grain workflow next/run, grain task next/prepare, grain phase next, grain prompt show, machine-readable JSON contract for automation commands, runner integration tests, Assay bridge contract (`cli_spec.md §6.9` + `v2_plan.md §11`), working-doc reconciliation approach
@@ -476,17 +523,20 @@ Record the following in each task packet `results.md`:
 * Major Phase 12 additions: per-stage agent/model config (`workflow_loop.yaml` + `WorkflowLoopConfig` domain model), `grain workflow loop` command, supervised/gated/autonomous supervision levels, `--dry-run` mode, 25-step cap, per-step structured logging, `grain orchestrate accept --plan <id>` command, accepted-plan loop ordering for conflicting ready tasks, loop safety guardrails documentation
 * Major Phase 13 additions: `grain onboard` CLI + `OnboardService` additive scaffold engine (dry-run, JSON/text output), `CodebaseScanner` (language/adapter/key-file/CI/docs detection), `OnboardDocGenerator` (draft canonical docs from scan, all marked `# DRAFT`), `workflow.onboard.existing.md` agent-driven adoption prompt, Phase 13 integration test suite (16 tests covering onboard/scanner/generator/e2e)
 * Major Phase 14 additions: `SpreadsheetExtractor` (xlsx/xls/csv via openpyxl), `DocsExtractor` (docx + md via python-docx), `PdfExtractor` (pdf via pdfplumber, graceful degradation), context assembly integration for all three, adapter profiles updated, Phase 14 integration tests (12 tests, mixed-type context bundles)
+* Major Phase 15 additions: `grain phase close` (hard lifecycle gate, grain-verified sealed marker), `grain workflow run` auto-packet bootstrap (packet auto-created on first run if missing), `grain workflow reconcile` (drift detection across backlog/packet/current_task/needs_fix; --fix mode), Phase 15 integration test suite (10 tests), `AGENTS.md` generation via `grain init`/`grain onboard`/`grain init --update-agents` (idempotent block, multi-agent safe), `grain phase archive <N>` (validated move of closed phase packets to archive dir)
 
 ---
 
 ## Combined Aggregate
 
-* Total tasks completed: 117 (53 v1 + 64 v2)
+* Total tasks completed: 123 (53 v1 + 70 v2; v0.1.x patches not counted as formal tasks)
 * Total blocked (all phases): 1 (P11-T05 Homebrew, deferred)
-* Total tests at v1 close: 379; at Phase 6 close: 399; at Phase 7 close: 419; at Phase 8 close: 494; at Phase 9 close: 561; at Phase 10 close: 575; at Phase 11 close: 577; at Phase 12 close: 595; at Phase 13 close: 638; at Phase 14 close: 662
-* Open questions resolved total: Q1–Q16 (16 resolved); QD-01 deferred; no new questions in Phases 9–14
-* Canonical change proposals applied total: CP-001 through CP-008 (8 applied in v1); 1 scoped addition in v2 (P8-T10 `cli_spec.md §6.9`); CP-009 applied (Forge→Grain, Sentinel→Assay); CP-010 resolved (superseded); no new proposals in Phases 11–14
+* Total tests at v1 close: 379; at Phase 6 close: 399; at Phase 7 close: 419; at Phase 8 close: 494; at Phase 9 close: 561; at Phase 10 close: 575; at Phase 11 close: 577; at Phase 12 close: 595; at Phase 13 close: 638; at Phase 14 close: 662; at Phase 15 close: 775
+* Open questions resolved total: Q1–Q16 (16 resolved); QD-01 (grain workflow reconcile) delivered Phase 15; no new questions in Phases 9–15
+* Canonical change proposals applied total: CP-001 through CP-008 (8 applied in v1); 1 scoped addition in v2 (P8-T10 `cli_spec.md §6.9`); CP-009 applied (Forge→Grain, Sentinel→Assay); CP-010 resolved (superseded); no new proposals in Phases 11–15
 * V1 phases closed: 5 (Phases 1–5)
-* V2 phases closed: 9 (Phase 6, Phase 7, Phase 8, Phase 9, Phase 10, Phase 11, Phase 12, Phase 13, Phase 14)
+* V2 phases closed: 10 (Phase 6, Phase 7, Phase 8, Phase 9, Phase 10, Phase 11, Phase 12, Phase 13, Phase 14, Phase 15)
 * V2 planning docs created: v2_plan.md, v2_adapters.md, v2_onboarding.md
-* **v0.1.0 status: COMPLETE** — all planned phases closed; 662 tests passing; ready for version tag and PyPI publish
+* **v0.1.0 status: COMPLETE** — all planned phases closed; 662 tests passing; version tagged and PyPI published
+* **v0.1.x patch series: COMPLETE** — v0.1.0 through v0.1.11; ~713+ tests at v0.1.11
+* **v0.2.0 status: IN PROGRESS** — Phase 15 closed (2026-04-17); Phase 16 (Semantic Enrichment Layer) active; 775 tests passing

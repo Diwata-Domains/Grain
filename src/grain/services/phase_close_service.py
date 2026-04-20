@@ -17,6 +17,7 @@ from grain.services.workflow_service import (
 _DEFAULT_PHASE_DOC = "docs/working/current_focus.md"
 _DEFAULT_BACKLOG_DOC = "docs/working/backlog.md"
 _DEFAULT_CURRENT_TASK_DOC = "docs/working/current_task.md"
+_DEFAULT_METRICS_DOC = "docs/working/workflow_metrics.md"
 
 
 @dataclass
@@ -110,6 +111,20 @@ def close_phase(root: Path, dry_run: bool = False) -> PhaseCloseResult:
                 *[f"  {t.task_ref}: {t.status}" for t in open_tasks],
             ],
         )
+
+    metrics_path = root / _DEFAULT_METRICS_DOC
+    if metrics_path.exists():
+        metrics_text = metrics_path.read_text(encoding="utf-8")
+        heading = f"### Phase {current_phase}"
+        if heading not in metrics_text:
+            return PhaseCloseResult(
+                ok=False,
+                closed_phase=current_phase,
+                errors=[
+                    f"workflow_metrics.md has no entry for Phase {current_phase} — "
+                    f"add a '### Phase {current_phase}' section before sealing"
+                ],
+            )
 
     done_count = len(tasks)
 

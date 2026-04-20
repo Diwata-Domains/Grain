@@ -533,14 +533,78 @@ Default status for new backlog items in this file: `draft`
 
 ---
 
-## 19. Phase 16 — Semantic Enrichment Layer (seeded, not yet planned)
+## 19. Phase 16 — Semantic Enrichment Layer
 
-> **Status:** seeded — not yet started. Depends on Phase 15 close. FR-015 Layer 2. v0.2.0 scope.
+> **Status:** ACTIVE. Depends on Phase 15 close. FR-015 Layer 2. v0.2.0 scope.
 
 ### P16 Planning Notes
 - Scope: embeddings for semantic similarity, similar-task detection, doc-to-task matching, duplicate/overlap detection. All outputs labeled as inferred — not authoritative.
 - Embedding provider decision: RESOLVED — `none` (BM25, default), `ollama`, `local` (sentence-transformers), `openai` (opt-in). Config field: `grain.embedding_provider` in `docs_manifest.yaml`.
 - Depends on: stable Phase 15 close and Phase 10 knowledge graph (graph provides the structural backbone; embeddings add semantic enrichment on top)
+
+### P16-T01 — Define embedding domain model, resolver, and config surface
+- **Status:** ready
+- **Description:** Add the shared semantic-scoring domain model: `EmbeddingProvider`, `ScoredCandidate`, provider status/result types, and `EmbeddingProviderResolver`. Extend manifest config parsing to recognize `ollama` and provider-specific model settings while preserving graceful fallback to BM25.
+- **Files:** `src/grain/domain/` (new embedding types), `src/grain/adapters/manifest.py`, `src/grain/services/` (new resolver module), `tests/`
+- **Model:** frontier_model
+- **Dependencies:** none
+- **Ready:** yes
+
+### P16-T02 — Implement `BM25Provider`
+- **Status:** draft
+- **Description:** Implement deterministic keyword-based scoring with no new dependencies. BM25 is the always-available fallback provider and the baseline for all semantic-layer comparisons.
+- **Files:** `src/grain/services/` (new provider module), `tests/`
+- **Model:** frontier_model
+- **Dependencies:** P16-T01
+- **Ready:** after P16-T01
+
+### P16-T03 — Implement `OllamaProvider`
+- **Status:** draft
+- **Description:** Add local-server embedding scoring using Ollama with graceful degradation when the server is unreachable or embeddings are unavailable.
+- **Files:** `src/grain/services/` (new provider module), `tests/`
+- **Model:** frontier_model
+- **Dependencies:** P16-T01, P16-T02
+- **Ready:** after P16-T02
+
+### P16-T04 — Implement `LocalProvider`
+- **Status:** draft
+- **Description:** Add sentence-transformers-based local embedding scoring with lazy model loading and graceful degradation when the optional dependency is absent.
+- **Files:** `src/grain/services/` (new provider module), `tests/`
+- **Model:** frontier_model
+- **Dependencies:** P16-T01, P16-T02
+- **Ready:** after P16-T02
+
+### P16-T05 — Implement `OpenAIProvider`
+- **Status:** draft
+- **Description:** Add OpenAI embedding scoring with optional runtime import, `GRAIN_OPENAI_API_KEY` support, and deterministic fallback behavior when configuration is incomplete.
+- **Files:** `src/grain/services/` (new provider module), `tests/`
+- **Model:** frontier_model
+- **Dependencies:** P16-T01, P16-T02
+- **Ready:** after P16-T02
+
+### P16-T06 — Integrate semantic scoring into context selection
+- **Status:** draft
+- **Description:** Wire the provider resolver into `context_service.py` so semantic scores rerank graph-derived candidates without inventing new context sources or breaking deterministic selection traces.
+- **Files:** `src/grain/services/context_service.py`, `src/grain/services/`, `tests/`
+- **Model:** frontier_model
+- **Dependencies:** P16-T02, P16-T03, P16-T04, P16-T05
+- **Ready:** after providers are stable
+
+### P16-T07 — Add `grain embedding show`
+- **Status:** draft
+- **Description:** Surface the active provider, configured model, reachability/availability state, and fallback mode through a dedicated CLI command with text and JSON output.
+- **Files:** `src/grain/cli/` (new embedding group or command), `src/grain/services/`, `tests/`
+- **Model:** open_model
+- **Dependencies:** P16-T01, P16-T03, P16-T04, P16-T05
+- **Ready:** after resolver/provider status contracts are stable
+
+### P16-T08 — Phase 16 integration tests
+- **Status:** draft
+- **Description:** Add end-to-end coverage for provider resolution, graceful degradation, and context-selection scoring behavior across BM25, Ollama, Local, and OpenAI configurations.
+- **Files:** `tests/`
+- **Model:** open_model
+- **Dependencies:** P16-T06, P16-T07
+- **Ready:** after implementation tasks land
 
 ---
 

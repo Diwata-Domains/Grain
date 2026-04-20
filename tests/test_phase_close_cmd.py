@@ -171,6 +171,63 @@ def test_phase_close_blocked_when_no_tasks(tmp_path: Path):
 
 
 # ---------------------------------------------------------------------------
+# Blocked — workflow_metrics.md missing Phase N entry
+# ---------------------------------------------------------------------------
+
+def _seed_metrics(tmp_path: Path, phase: str | None = None) -> None:
+    """Write a workflow_metrics.md; include a Phase entry if phase is given."""
+    lines = ["# Workflow Metrics\n\n"]
+    if phase:
+        lines.append(f"### Phase {phase}\n\n* Tasks completed: 2\n")
+    (tmp_path / "docs" / "working" / "workflow_metrics.md").write_text(
+        "".join(lines), encoding="utf-8"
+    )
+
+
+def test_phase_close_blocked_when_metrics_missing_entry(tmp_path: Path):
+    _seed_repo(tmp_path, phase="15")
+    _seed_metrics(tmp_path)  # file exists but no Phase 15 entry
+    result = _run(tmp_path, "phase", "close")
+    assert result.exit_code != 0
+    assert "workflow_metrics.md" in result.output
+    assert "Phase 15" in result.output
+
+
+def test_phase_close_ok_when_metrics_has_entry(tmp_path: Path):
+    _seed_repo(tmp_path, phase="15")
+    _seed_metrics(tmp_path, phase="15")
+    result = _run(tmp_path, "phase", "close")
+    assert result.exit_code == 0, result.output
+    assert "phase close: ok" in result.output
+
+
+def test_phase_close_ok_when_no_metrics_file(tmp_path: Path):
+    """No workflow_metrics.md at all — gate does not fire."""
+    _seed_repo(tmp_path, phase="15")
+    result = _run(tmp_path, "phase", "close")
+    assert result.exit_code == 0, result.output
+
+
+def test_phase_close_dry_run_blocked_when_metrics_missing(tmp_path: Path):
+    """Dry-run validates the same gates — blocked if metrics entry absent."""
+    _seed_repo(tmp_path, phase="15")
+    _seed_metrics(tmp_path)
+    result = _run(tmp_path, "phase", "close", "--dry-run")
+    assert result.exit_code != 0
+    assert "workflow_metrics.md" in result.output
+
+
+def test_phase_close_metrics_blocked_json(tmp_path: Path):
+    _seed_repo(tmp_path, phase="15")
+    _seed_metrics(tmp_path)
+    result = _run(tmp_path, "--format", "json", "phase", "close")
+    assert result.exit_code != 0
+    payload = json.loads(result.output)
+    assert payload["ok"] is False
+    assert any("workflow_metrics.md" in e for e in payload["errors"])
+
+
+# ---------------------------------------------------------------------------
 # Bypass protection: workflow evaluator blocks on previous_phase_not_closed
 # ---------------------------------------------------------------------------
 

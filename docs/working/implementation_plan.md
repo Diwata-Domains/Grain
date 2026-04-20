@@ -567,7 +567,7 @@ Make Grain context-aware for Excel, Word, and PDF files. Extract readable conten
 
 ---
 
-## Phase 15 — Semantic Enrichment Layer
+## Phase 16 — Semantic Enrichment Layer
 
 ### Objective
 Replace static file-pattern context selection with scored, relevance-ranked candidate selection. Introduce an `EmbeddingProvider` protocol that supports four pluggable backends — BM25 (default, no deps), Ollama (local server), Local (sentence-transformers), and OpenAI (cloud API). Wire scoring into the existing context assembly pipeline.
@@ -601,14 +601,14 @@ The provider model follows the same pattern as `AdapterProfile` and `ModelProfil
 
 ### Task Sequence
 
-- **P15-T01** — `EmbeddingProvider` protocol, `ScoredCandidate` domain model, `EmbeddingProviderResolver`, config wiring
-- **P15-T02** — `BM25Provider` — TF-IDF keyword scoring, no new deps, deterministic output
-- **P15-T03** — `OllamaProvider` — local server integration, graceful degradation when server unreachable
-- **P15-T04** — `LocalProvider` — sentence-transformers optional dep, lazy load, graceful degradation when not installed
-- **P15-T05** — `OpenAIProvider` — openai SDK optional dep, env-var key, graceful degradation when key absent
-- **P15-T06** — Context service integration — wire `EmbeddingProviderResolver` into `context_service.py`, scored candidates augment graph-assisted selection
-- **P15-T07** — `grain embedding show` command — active provider, reachability, model, fallback status
-- **P15-T08** — Phase 15 integration tests (≥ 16 tests across all providers, degradation paths, and context selection)
+- **P16-T01** — `EmbeddingProvider` protocol, `ScoredCandidate` domain model, `EmbeddingProviderResolver`, config wiring
+- **P16-T02** — `BM25Provider` — TF-IDF keyword scoring, no new deps, deterministic output
+- **P16-T03** — `OllamaProvider` — local server integration, graceful degradation when server unreachable
+- **P16-T04** — `LocalProvider` — sentence-transformers optional dep, lazy load, graceful degradation when not installed
+- **P16-T05** — `OpenAIProvider` — openai SDK optional dep, env-var key, graceful degradation when key absent
+- **P16-T06** — Context service integration — wire `EmbeddingProviderResolver` into `context_service.py`, scored candidates augment graph-assisted selection
+- **P16-T07** — `grain embedding show` command — active provider, reachability, model, fallback status
+- **P16-T08** — Phase 16 integration tests (≥ 16 tests across all providers, degradation paths, and context selection)
 
 ### Architectural Notes
 - All providers implement the same `score(query: str, candidates: list[str]) -> list[ScoredCandidate]` interface — context service never knows which provider is active
@@ -627,40 +627,30 @@ The provider model follows the same pattern as `AdapterProfile` and `ModelProfil
 
 ---
 
-## Phase 16 — Adapter Write-Back
+## Phase 17 — Ranking and Decision Layer
 
 ### Objective
-Close the read→write loop for all currently supported extractors. Agents can read structured files via context; this phase lets them deliver changes back into those formats as a formal task output, gated behind task closure.
+Replace static ranking heuristics with an inspectable scoring layer that combines graph distance, semantic similarity, authority level, and packet-local priority. Ranking stays deterministic and proposal-only.
 
 ### Major Deliverables
-- `SpreadsheetExtractor.write()` — applies row/cell changes back to `.xlsx` / `.csv` via `openpyxl`
-- `DocsExtractor.write()` — applies paragraph, heading, and table updates back to `.docx` via `python-docx`
-- `NotebookExtractor.write()` — applies cell content updates back to `.ipynb`
-- Deliverable handler in `grain task close` — reads `deliverable_spec.md` for declared output type, routes to the correct writer
-- Structured change format — shared schema agents use to declare changes (JSON patch-style: target file, target element, new content)
-- `grain task close --apply-deliverable` flag — explicit opt-in to run write-back during closure
-- Integration tests covering round-trip read→write for each supported format
+- weighted candidate-scoring domain model
+- ranking service combining graph and semantic signals
+- deterministic score breakdowns for inspectability
+- context-selection integration using ranked candidates
+- next-task and impacted-file advisory ranking hooks
+- integration tests covering ranking stability and signal weighting behavior
 
 ### Task Sequence
-- **P16-T01** — Define shared change schema and `WritableExtractor` protocol
-- **P16-T02** — `SpreadsheetExtractor.write()` — xlsx/csv write-back with openpyxl
-- **P16-T03** — `DocsExtractor.write()` — docx write-back with python-docx
-- **P16-T04** — `NotebookExtractor.write()` — ipynb cell write-back
-- **P16-T05** — Deliverable handler in `task_service.close_packet()` — detects declared deliverable type, dispatches to writer
-- **P16-T06** — `grain task close --apply-deliverable` CLI flag
-- **P16-T07** — Phase 16 integration tests (round-trip read→write for each format, invalid change handling, missing file graceful failure)
+- Task sequence to be seeded after Phase 16 closes.
 
 ### Architectural Notes
-- Write-back is strictly gated behind task closure — writers are never invoked mid-execution
-- The change schema is agent-agnostic — any agent that can produce structured JSON can use it
-- Writers validate the change schema before applying; bad schema returns a closure error, not a partial write
-- `openpyxl` and `python-docx` are already in scope as optional deps (used by existing extractors); no new core dependencies
-- PDF remains read-only — no write-back planned
+- Ranking must remain deterministic and explainable — no opaque weight application
+- Semantic scores remain advisory inputs, not authority overrides
+- Output should expose score components so operator review can understand why a candidate ranked where it did
 
 ### Dependencies
-- requires Phase 14 close (stable context assembly pipeline) ✓
-- requires existing extractor implementations (`SpreadsheetExtractor`, `DocsExtractor`, `NotebookExtractor`) ✓
-- can run in parallel with Phase 15 (Semantic Enrichment) — no shared dependencies
+- requires Phase 16 close ✓
+- requires stable graph-assisted context assembly ✓
 
 ---
 
@@ -679,7 +669,7 @@ Rules:
 - prefer CLI/state-runner primitives and machine-readable command outputs before interface-layer work
 - do not begin TUI/GUI work before workflow automation runner primitives exist
 
-v0.2.0 planning is active. See Phase 15 above and `docs/working/current_focus.md` for current status.
+v0.2.0 planning is active. See Phase 16 above and `docs/working/current_focus.md` for current status.
 
 ---
 
