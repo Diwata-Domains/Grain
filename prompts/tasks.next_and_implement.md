@@ -58,7 +58,7 @@ Read:
 
 * docs/canonical/architecture.md
 
-* any additional canonical docs declared in `docs/runtime/docs_manifest.yaml` that are relevant to the task being executed
+Read any additional canonical docs declared in `docs/runtime/docs_manifest.yaml` only if they are relevant to the task being executed.
 
 * templates/tasks/task_packet.md
 * templates/tasks/task.md

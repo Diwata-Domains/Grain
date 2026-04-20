@@ -1,10 +1,6 @@
-# Task Planning Loop
+# Task Plan Next
 
-Use this to select or split the next task before packet generation.
-
-This is the preferred stable task-planning entrypoint.
-
-It wraps `prompts/tasks.plan.next.md`.
+Stable task planning entrypoint. Use when the next task must be selected or a backlog item split before execution.
 
 Metadata:
 - scope: task
@@ -12,10 +8,8 @@ Metadata:
 - recommended_model_class: frontier_model
 - escalation_model_class: reviewer_model
 
-## Purpose
+## Instructions
 
-Keep the backlog executable by selecting the next concrete task or splitting a too-broad task before packetization.
+Read the file `prompts/tasks.plan.next.md` and follow all steps in it exactly.
 
-## Output
-
-Use the same output contract as `prompts/tasks.plan.next.md`.
+Do not summarize or abbreviate the steps. Execute the full prompt.

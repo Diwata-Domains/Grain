@@ -74,27 +74,7 @@ grain --repo <REPO_ROOT> --format json workflow next
 grain --repo <REPO_ROOT> task validate --id <TASK-ID>
 ```
 
-**Handling expected bootstrap results — do not stop on these:**
-
-- `grain onboard` reporting files skipped: normal if files already exist.
-- `grain docs validate` warnings about managed-file drift or upgrade suggestions: these are non-blocking notices during initial onboarding; log them but continue.
-- `grain workflow next` returning `stop_reason: bootstrap_incomplete`: this is the expected state after scaffolding — it means working docs are stubs and need to be filled in (Steps 4–5 of this prompt). Continue to the draft-fill phase.
-
-**Stop and report only if:**
-- `grain onboard` exits with a non-zero code or reports a structural error.
-- `grain docs validate` reports hard errors (missing manifest, invalid YAML, schema violations) — not stub content or managed-file drift.
-- Any command produces an unexpected traceback.
-
----
-
-## Onboarding Phases
-
-Onboarding is a two-phase process. It is only complete after **both** phases:
-
-1. **CLI Scaffold** (`grain onboard`) — creates the Grain directory structure and installs runtime files. After this step, working docs exist but contain only bootstrap placeholders. `grain workflow next` will return `bootstrap_incomplete`.
-2. **Agent Draft** (this prompt) — you fill those stubs with repo-specific content, confirm project facts, and record open questions. After this step, the workflow runner can advance from bootstrap state.
-
-Do not consider onboarding complete after Phase 1 alone.
+Do not skip these steps. If any command fails, stop and report the failure with actionable next steps.
 
 ---
 
