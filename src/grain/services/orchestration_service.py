@@ -16,6 +16,7 @@ from grain.domain.orchestrator import (
     PacketCandidate,
 )
 from grain.services.impact_ranking_service import rank_impacted_files
+from grain.services.task_advice_service import advise_next_tasks
 
 _TOKEN_PATTERN = re.compile(r"[a-z0-9_]+")
 _PHASE_SPLIT_PATTERN = re.compile(r"\s*(?:,| and )\s*", re.IGNORECASE)
@@ -193,6 +194,7 @@ def analyze_scope_signals(
         "active_adapters": [profile.adapter_id for profile in active_profiles],
         "active_domains": domains,
         "cross_domain_flags": domains if len(domains) > 1 else [],
+        "task_advice": advise_next_tasks(root, scope_summary),
     }
     return (
         _command_result(ok=True, command="orchestration scope-signals", repo=str(root)),

@@ -174,6 +174,25 @@ def test_analyze_scope_signals_includes_ranked_impact_payload(tmp_path: Path, mo
     assert impact["ranking"]["ranked_affected_files"][0]["path"] == "src/api.py"
 
 
+def test_analyze_scope_signals_includes_task_advice_payload(tmp_path: Path, monkeypatch):
+    _write_adapter_profiles(tmp_path)
+    monkeypatch.setattr(
+        "grain.services.orchestration_service.advise_next_tasks",
+        lambda root, scope_summary: {
+            "phase": "17",
+            "candidate_pool_status": "draft",
+            "ranked_tasks": [{"task_ref": "P17-T04", "title": "Next task", "status": "draft", "total_score": 1.0, "components": []}],
+        },
+    )
+
+    result, payload = analyze_scope_signals(tmp_path, "add python cli")
+
+    assert result.ok is True
+    assert payload is not None
+    assert payload["task_advice"]["phase"] == "17"
+    assert payload["task_advice"]["ranked_tasks"][0]["task_ref"] == "P17-T04"
+
+
 def test_build_task_level_plan_unknown_adapter_filter_errors(tmp_path: Path):
     _write_adapter_profiles(tmp_path)
     result, plan = build_task_level_plan(

@@ -22,17 +22,6 @@ If a question affects canonical rules, architecture, contracts, or workflow sema
 
 ## 3. Open Questions
 
-### Q17 — What advisory contract should ranked next-task signals use in Phase 17?
-
-* **Status:** blocking
-* **Context:** `P17-T04` introduces ranked next-task advisory signals, but the current workflow/task-selection engine only performs authoritative status- and order-based routing. There is no existing input model for scoring candidate tasks analogous to the graph + semantic inputs used by context selection, and Phase 17 explicitly requires advisory scoring not to override workflow law.
-* **Decision Needed:** Define which signals are allowed to influence task-ranking advice, where the advisory output should live, and how it remains separate from the authoritative `workflow next` / `task next` routing path.
-* **Decision Type:** working-doc update unless canonical workflow semantics need to change
-* **Affected Docs:** `docs/working/backlog.md`, `docs/working/implementation_plan.md`, possibly `docs/canonical/cli_spec.md` or `docs/canonical/workflow_spec.md` if the advisory surface changes command semantics
-* **Related Tasks:** P17-T04
-
----
-
 ### Q7 — How should context export be represented in v1?
 
 * **Status:** resolved
@@ -58,6 +47,17 @@ If a question affects canonical rules, architecture, contracts, or workflow sema
 ---
 
 ## 4. Resolved Questions
+
+### Q17 — What advisory contract should ranked next-task signals use in Phase 17?
+
+* **Resolution:** Ranked next-task suggestions remain proposal-only and must live on a separate advisory surface rather than changing `workflow next` or `task next`. Phase 17 should score only already-eligible candidate tasks, expose explicit score components, and keep authoritative workflow routing status/order-based. Recommended surface: a new advisory command or orchestration payload for ranked task suggestions.
+* **Resolution Type:** working-doc update
+* **Decision By:** Shaznay
+* **Decision Date:** 2026-04-21
+* **Applied By:** codex
+* **Applied Date:** 2026-04-21
+* **Affected Docs:** `docs/working/backlog.md`, `docs/working/open_questions.md`
+* **Related Tasks:** P17-T04, P17-T06
 
 ### Q16 — What is the minimal runner slice and stop-condition contract for Phase 8?
 
