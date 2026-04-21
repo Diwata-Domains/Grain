@@ -15,6 +15,7 @@ from grain.domain.orchestrator import (
     OrchestratorPlan,
     PacketCandidate,
 )
+from grain.services.impact_ranking_service import rank_impacted_files
 
 _TOKEN_PATTERN = re.compile(r"[a-z0-9_]+")
 _PHASE_SPLIT_PATTERN = re.compile(r"\s*(?:,| and )\s*", re.IGNORECASE)
@@ -163,6 +164,11 @@ def analyze_scope_signals(
         capability = profile.get_capabilities()
         detect_signal = capability.detect_scope(scope_summary)
         impact_signal = capability.analyze_impact(detect_signal.file_patterns)
+        impact_ranking = rank_impacted_files(
+            root,
+            detect_signal.file_patterns,
+            impact_signal.affected_files,
+        )
         signals.append(
             {
                 "adapter_id": profile.adapter_id,
@@ -173,6 +179,7 @@ def analyze_scope_signals(
                 "impact": {
                     "affected_files": impact_signal.affected_files,
                     "downstream_areas": impact_signal.downstream_areas,
+                    "ranking": impact_ranking,
                 },
                 "active": score > 0,
             }

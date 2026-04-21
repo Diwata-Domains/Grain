@@ -643,15 +643,16 @@ Default status for new backlog items in this file: `draft`
 - **Ready:** after ranking service behavior is stable
 
 ### P17-T04 — Add ranked next-task advisory signals
-- **Status:** draft
+- **Status:** blocked
 - **Description:** Apply the ranking layer to next-task suggestion logic so candidate tasks can be scored and explained without changing authoritative workflow rules.
 - **Files:** `src/grain/services/`, `src/grain/cli/`, `tests/`
 - **Model:** open_model
 - **Dependencies:** P17-T02
 - **Ready:** after core ranking service exists
+- **Blocking:** Q17 — advisory contract for ranked task suggestions is not yet defined
 
 ### P17-T05 — Add ranked impacted-file advisory signals
-- **Status:** draft
+- **Status:** done
 - **Description:** Apply the ranking layer to impacted-file identification so graph and semantic signals produce inspectable, proposal-only file rankings.
 - **Files:** `src/grain/services/`, `tests/`
 - **Model:** open_model
