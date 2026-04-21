@@ -48,6 +48,17 @@ If a question affects canonical rules, architecture, contracts, or workflow sema
 
 ## 4. Resolved Questions
 
+### Q18 — What is the extraction boundary for Phase 18 data files?
+
+* **Resolution:** Phase 18 should treat data files and ML model artifacts as metadata-only context sources. Grain may surface filenames, extensions, sizes, basic schema/shape hints when cheaply available, and notebook-derived references to those artifacts, but it must not sample or inline dataset/model contents in this phase. This keeps the `data_adapter` deterministic, local-first, and safe for large or binary artifacts.
+* **Resolution Type:** working-doc update
+* **Decision By:** codex
+* **Decision Date:** 2026-04-21
+* **Applied By:** codex
+* **Applied Date:** 2026-04-21
+* **Affected Docs:** `docs/working/backlog.md`, `docs/working/open_questions.md`
+* **Related Tasks:** P18-T01, P18-T02, P18-T03, P18-T06
+
 ### Q17 — What advisory contract should ranked next-task signals use in Phase 17?
 
 * **Resolution:** Ranked next-task suggestions remain proposal-only and must live on a separate advisory surface rather than changing `workflow next` or `task next`. Phase 17 should score only already-eligible candidate tasks, expose explicit score components, and keep authoritative workflow routing status/order-based. Recommended surface: a new advisory command or orchestration payload for ranked task suggestions.

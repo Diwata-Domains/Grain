@@ -660,7 +660,7 @@ Default status for new backlog items in this file: `draft`
 - **Ready:** after core ranking service exists
 
 ### P17-T06 — Phase 17 integration tests
-- **Status:** draft
+- **Status:** done
 - **Description:** Add end-to-end coverage for ranking stability, score-breakdown inspectability, and context/advisory behavior across the new ranking layer.
 - **Files:** `tests/`
 - **Model:** open_model
@@ -671,7 +671,7 @@ Default status for new backlog items in this file: `draft`
 
 ## 21. Phase 18 — Data Adapter (seeded, not yet planned)
 
-> **Status:** seeded — not yet started. v0.2.0 scope. Promoted from v0.2.1.
+> **Status:** planned — ready to start. v0.2.0 scope. Promoted from v0.2.1.
 
 ### P18 Planning Notes
 - Scope: a dedicated `data_adapter` for data science and ML workflows
@@ -682,8 +682,56 @@ Default status for new backlog items in this file: `draft`
   - schema/config files: `requirements.txt`, `environment.yml`, `Pipfile`
   - model artifact awareness: `.pkl`, `.joblib`, `.pt`, `.onnx` (metadata only — not content extraction)
   - data pipeline scripts and notebooks as first-class context sources
-- Key decision gate: scope of data file extraction (metadata-only vs. content sampling) must be resolved before tasks are written
+- Key decision gate: resolved in Q18 — Phase 18 data files and ML artifacts are metadata-only context sources
 - Can begin after Phase 16 or in parallel with Phase 17
+
+### P18-T01 — Define `data_adapter` contract and extraction boundaries
+- **Status:** draft
+- **Description:** Define the Phase 18 adapter contract and supporting boundary docs: `data_adapter` profile shape, file-pattern ownership, notebook migration intent, and the metadata-only extraction policy for data/model artifacts. Update adapter runtime docs and any phase-planning notes needed to make the implementation slices inspectable.
+- **Files:** `docs/runtime/adapter_profiles.md`, `docs/working/current_focus.md`, `docs/working/open_questions.md`, `tests/`
+- **Model:** frontier_model
+- **Dependencies:** P17-T06
+- **Ready:** yes — Q18 resolved
+
+### P18-T02 — Implement metadata extractor for data and model artifacts
+- **Status:** draft
+- **Description:** Add a deterministic extractor/service for Phase 18 file types that reports metadata for dataset and model artifacts (`.parquet`, `.feather`, `.arrow`, `.h5`, `.hdf5`, `.pkl`, `.joblib`, `.pt`, `.onnx`) without sampling contents. Include graceful degradation for missing optional libraries and lightweight schema hints only when they can be read cheaply.
+- **Files:** `src/grain/services/`, `tests/`, `pyproject.toml`
+- **Model:** frontier_model
+- **Dependencies:** P18-T01
+- **Ready:** after the `data_adapter` contract is written
+
+### P18-T03 — Migrate notebook ownership into `data_adapter`
+- **Status:** draft
+- **Description:** Move `.ipynb` primary ownership from `code_adapter` to `data_adapter`, preserving existing notebook extraction behavior while adding data-science-specific review/context hints. Keep the migration additive and backward-compatible for existing packet/context flows.
+- **Files:** `docs/runtime/adapter_profiles.md`, `src/grain/services/`, `tests/`
+- **Model:** frontier_model
+- **Dependencies:** P18-T01
+- **Ready:** after adapter contract is stable
+
+### P18-T04 — Integrate `data_adapter` into context and scope selection
+- **Status:** draft
+- **Description:** Wire the new adapter and extractor signals into context assembly and orchestration/scope analysis so data workflows select the right sources deterministically. Preserve the current explainability and proposal-only behavior in orchestration outputs.
+- **Files:** `src/grain/services/context_service.py`, `src/grain/services/orchestration_service.py`, `tests/`
+- **Model:** frontier_model
+- **Dependencies:** P18-T02, P18-T03
+- **Ready:** after extractor and notebook migration land
+
+### P18-T05 — Improve onboarding and scanner detection for data workflows
+- **Status:** draft
+- **Description:** Expand codebase scanning and onboarding hints so repos with notebooks, dataset artifacts, and ML model files recommend `data_adapter` cleanly and stop defaulting those signals to `code_adapter` alone.
+- **Files:** `src/grain/services/`, `tests/`, `docs/working/`
+- **Model:** open_model
+- **Dependencies:** P18-T03
+- **Ready:** after `data_adapter` profile exists
+
+### P18-T06 — Phase 18 integration tests
+- **Status:** draft
+- **Description:** Add end-to-end Phase 18 coverage across adapter-profile loading, metadata-only extraction, notebook ownership migration, context selection, and orchestration/scope analysis for a representative data-science repo layout.
+- **Files:** `tests/`
+- **Model:** open_model
+- **Dependencies:** P18-T02, P18-T03, P18-T04, P18-T05
+- **Ready:** after implementation tasks land
 
 ---
 
