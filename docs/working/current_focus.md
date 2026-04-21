@@ -67,8 +67,8 @@ IN PROGRESS — Phase 17 closed 2026-04-21. Phase 18 is now the active implement
 - Config field: `grain.embedding_provider` in `docs_manifest.yaml` (already shipped in v0.1.7)
 
 ## Immediate Goals
-1. Resolve the Phase 18 extraction boundary for data files: metadata-only versus any bounded content sampling
-2. Plan Phase 18 task slices for a dedicated `data_adapter`, including richer notebook and ML-artifact awareness
+1. Land the Phase 18 `data_adapter` contract and metadata-only extraction boundary in the runtime docs
+2. Implement the Phase 18 adapter slices for richer notebook and ML-artifact awareness
 3. Preserve the existing CLI/context contracts while migrating `.ipynb` ownership cleanly from `code_adapter` to `data_adapter`
 
 ## After Phase 8 — Using the Runner with Agent CLIs

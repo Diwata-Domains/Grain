@@ -17,6 +17,9 @@ Supported today:
 - `spreadsheet_adapter`
 - `docs_adapter`
 
+Defined for active Phase 18 work:
+- `data_adapter`
+
 Planned:
 - `pdf extraction under docs_adapter`
 
@@ -237,6 +240,53 @@ Each profile should follow this section structure:
 - `default_model_bias`:
   - `open_model` for scoped text edits and formatting checks
   - `frontier_model` for structural documentation refactors
+
+### data_adapter
+
+- `adapter_id`: `data_adapter`
+- `domain_type`: `data`
+- `applies_to`:
+  - data science workflows
+  - ML experimentation repositories
+  - notebook-driven analysis
+  - dataset and model artifact review
+- `relevant_file_patterns`:
+  - `**/*.parquet`
+  - `**/*.feather`
+  - `**/*.arrow`
+  - `**/*.h5`
+  - `**/*.hdf5`
+  - `**/*.pkl`
+  - `**/*.joblib`
+  - `**/*.pt`
+  - `**/*.onnx`
+  - `requirements.txt`
+  - `environment.yml`
+  - `Pipfile`
+- `ignore_file_patterns`:
+  - `node_modules/**`
+  - `dist/**`
+  - `build/**`
+  - `.venv/**`
+- `build_or_run_hints`:
+  - treat dataset and model artifacts as metadata-only context in Phase 18
+  - prefer environment and pipeline files over raw artifact contents
+  - keep extraction deterministic and local-first; skip expensive binary introspection
+- `test_or_validation_hints`:
+  - verify artifact inventories and file-type coverage
+  - confirm metadata summaries do not inline dataset or model contents
+  - validate notebook-to-artifact references when present
+- `review_focus_hints`:
+  - accidental content sampling from large or binary artifacts
+  - notebook ownership drift during the Phase 18 migration
+  - misleading schema hints when optional readers are unavailable
+- `context_priority_rules`:
+  - prioritize notebooks, pipeline config, and lightweight metadata before bulk artifacts
+  - treat dataset and model files as metadata-only until a later canonical decision expands scope
+  - `.ipynb` migration into `data_adapter` is planned for Phase 18 but not active in this contract slice
+- `default_model_bias`:
+  - `open_model` for narrow metadata and profile updates
+  - `frontier_model` for cross-artifact reasoning or notebook-heavy workflows
 
 ---
 

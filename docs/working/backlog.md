@@ -686,7 +686,7 @@ Default status for new backlog items in this file: `draft`
 - Can begin after Phase 16 or in parallel with Phase 17
 
 ### P18-T01 — Define `data_adapter` contract and extraction boundaries
-- **Status:** draft
+- **Status:** done
 - **Description:** Define the Phase 18 adapter contract and supporting boundary docs: `data_adapter` profile shape, file-pattern ownership, notebook migration intent, and the metadata-only extraction policy for data/model artifacts. Update adapter runtime docs and any phase-planning notes needed to make the implementation slices inspectable.
 - **Files:** `docs/runtime/adapter_profiles.md`, `docs/working/current_focus.md`, `docs/working/open_questions.md`, `tests/`
 - **Model:** frontier_model

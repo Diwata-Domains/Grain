@@ -51,6 +51,20 @@ def test_parse_adapter_profiles_returns_expected_profiles():
     assert frontend_profile.test_or_validation_hints == []
 
 
+def test_parse_runtime_adapter_profiles_includes_data_adapter_contract():
+    profiles = parse_adapter_profiles_markdown(
+        Path("docs/runtime/adapter_profiles.md").read_text(encoding="utf-8")
+    )
+
+    data_profile = next(profile for profile in profiles if profile.adapter_id == "data_adapter")
+    assert data_profile.domain_type == "data"
+    assert "**/*.parquet" in data_profile.relevant_file_patterns
+    assert "**/*.onnx" in data_profile.relevant_file_patterns
+    assert "requirements.txt" in data_profile.relevant_file_patterns
+    assert any("metadata-only" in hint for hint in data_profile.build_or_run_hints)
+    assert any(".ipynb" in hint for hint in data_profile.context_priority_rules)
+
+
 def test_parse_adapter_profiles_raises_for_missing_required_field():
     invalid = SAMPLE_ADAPTER_PROFILES.replace(
         "- `domain_type`: `code`\n",
