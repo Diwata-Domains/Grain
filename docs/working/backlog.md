@@ -618,6 +618,54 @@ Default status for new backlog items in this file: `draft`
 - Depends on: stable Phase 16 semantic layer and Phase 10 graph layer.
 - Note: P17 is the layer that makes the Advisory/Intelligence Layer significantly more capable without breaking Grain's determinism model.
 
+### P17-T01 — Add ranking domain model and score breakdown contracts
+- **Status:** done
+- **Description:** Define the inspectable ranking data model: weighted score components, deterministic breakdown structures, and result types used by the ranking layer.
+- **Files:** `src/grain/domain/`, `tests/`
+- **Model:** frontier_model
+- **Dependencies:** P16-T01
+- **Ready:** after Phase 16 close
+
+### P17-T02 — Build deterministic ranking service
+- **Status:** draft
+- **Description:** Implement the ranking service that combines graph distance, semantic similarity, authority level, and packet-local priority into a deterministic weighted score with exposed breakdowns.
+- **Files:** `src/grain/services/`, `tests/`
+- **Model:** frontier_model
+- **Dependencies:** P17-T01, P16-T06
+- **Ready:** after ranking contracts are stable
+
+### P17-T03 — Integrate ranked scoring into context selection
+- **Status:** draft
+- **Description:** Replace static adapter-priority ordering in context selection with the ranking service while preserving deterministic traces and exposing score components in bundle metadata.
+- **Files:** `src/grain/services/context_service.py`, `tests/`
+- **Model:** frontier_model
+- **Dependencies:** P17-T02
+- **Ready:** after ranking service behavior is stable
+
+### P17-T04 — Add ranked next-task advisory signals
+- **Status:** draft
+- **Description:** Apply the ranking layer to next-task suggestion logic so candidate tasks can be scored and explained without changing authoritative workflow rules.
+- **Files:** `src/grain/services/`, `src/grain/cli/`, `tests/`
+- **Model:** open_model
+- **Dependencies:** P17-T02
+- **Ready:** after core ranking service exists
+
+### P17-T05 — Add ranked impacted-file advisory signals
+- **Status:** draft
+- **Description:** Apply the ranking layer to impacted-file identification so graph and semantic signals produce inspectable, proposal-only file rankings.
+- **Files:** `src/grain/services/`, `tests/`
+- **Model:** open_model
+- **Dependencies:** P17-T02
+- **Ready:** after core ranking service exists
+
+### P17-T06 — Phase 17 integration tests
+- **Status:** draft
+- **Description:** Add end-to-end coverage for ranking stability, score-breakdown inspectability, and context/advisory behavior across the new ranking layer.
+- **Files:** `tests/`
+- **Model:** open_model
+- **Dependencies:** P17-T03, P17-T04, P17-T05
+- **Ready:** after implementation tasks land
+
 ---
 
 ## 21. Phase 18 — Data Adapter (seeded, not yet planned)

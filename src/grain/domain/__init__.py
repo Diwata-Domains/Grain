@@ -25,9 +25,19 @@ from grain.domain.orchestrator import (
     PacketCandidate,
     VALID_PLAN_STATUSES,
 )
+from grain.domain.ranking import (
+    AUTHORITY_SIGNAL_SCORES,
+    DEFAULT_RANKING_WEIGHTS,
+    RANK_SIGNAL_IDS,
+    RankedCandidate,
+    RankingComponent,
+    RankingWeights,
+    authority_signal_score,
+)
 from grain.domain.scan_result import ScanResult
 
 __all__ = [
+    "AUTHORITY_SIGNAL_SCORES",
     "AdapterCapabilityProtocol",
     "ArtifactPattern",
     "ContextHint",
@@ -36,6 +46,7 @@ __all__ = [
     "DEFAULT_LOCAL_EMBEDDING_MODEL",
     "DEFAULT_OLLAMA_EMBEDDING_MODEL",
     "DEFAULT_OPENAI_EMBEDDING_MODEL",
+    "DEFAULT_RANKING_WEIGHTS",
     "EMBEDDING_PROVIDER_IDS",
     "EmbeddingProvider",
     "EmbeddingProviderStatus",
@@ -44,10 +55,15 @@ __all__ = [
     "NullAdapterCapability",
     "OrchestratorPlan",
     "PacketCandidate",
+    "RANK_SIGNAL_IDS",
     "ResolvedEmbeddingProvider",
+    "RankedCandidate",
+    "RankingComponent",
+    "RankingWeights",
     "ScanResult",
     "ScoredCandidate",
     "ScopeSignal",
     "ValidationRequirement",
     "VALID_PLAN_STATUSES",
+    "authority_signal_score",
 ]
