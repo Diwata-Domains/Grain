@@ -14,7 +14,10 @@ grain:
   default_supervision: gated        # supervised | gated | autonomous
   default_format: text              # text | json
   upgrade_check: warn               # warn | silent
-  embedding_provider: none          # none | local | openai (used by semantic enrichment when available)
+  embedding_provider: none          # none | ollama | local | openai
+  ollama_embedding_model: nomic-embed-text
+  local_embedding_model: sentence-transformers/all-MiniLM-L6-v2
+  openai_embedding_model: text-embedding-3-small
 
 canonical:
   - id: product_scope

@@ -8,6 +8,15 @@ project:
   authority_model: explicit_hierarchy
   minimum_grain_version: "0.1.9"
 
+grain:
+  default_supervision: gated
+  default_format: text
+  upgrade_check: warn
+  embedding_provider: none
+  ollama_embedding_model: nomic-embed-text
+  local_embedding_model: sentence-transformers/all-MiniLM-L6-v2
+  openai_embedding_model: text-embedding-3-small
+
 canonical:
   - id: product_scope
     path: docs/canonical/product_scope.md
