@@ -34,7 +34,7 @@ def test_resolver_uses_bm25_by_default():
     assert resolved.fallback_active is False
 
 
-def test_resolver_falls_back_when_provider_factory_is_missing():
+def test_resolver_falls_back_when_provider_is_unavailable():
     resolver = EmbeddingProviderResolver()
 
     provider, resolved = resolver.resolve_config(
@@ -48,7 +48,7 @@ def test_resolver_falls_back_when_provider_factory_is_missing():
     assert resolved.configured_provider == "ollama"
     assert resolved.configured_model == "custom-ollama-model"
     assert resolved.fallback_active is True
-    assert "not available" in resolved.fallback_reason
+    assert "falling back to bm25" in resolved.fallback_reason
 
 
 def test_resolver_uses_registered_factory_for_provider():

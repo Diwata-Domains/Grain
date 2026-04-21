@@ -12,15 +12,27 @@ from grain.domain.embedding import (
     ResolvedEmbeddingProvider,
 )
 from grain.services.bm25_provider import BM25Provider
+from grain.services.ollama_provider import OllamaProvider
 
 ProviderFactory = Callable[[GrainConfig], EmbeddingProvider]
+
+
+def _build_ollama_provider(config: GrainConfig) -> EmbeddingProvider:
+    provider = OllamaProvider(model_name=config.ollama_embedding_model)
+    status = provider.describe_status()
+    if not status.available:
+        raise RuntimeError(status.detail or "Ollama provider is unavailable")
+    return provider
 
 
 class EmbeddingProviderResolver:
     """Resolve the configured semantic-scoring provider with BM25 fallback."""
 
     def __init__(self, factories: dict[str, ProviderFactory] | None = None):
-        self._factories: dict[str, ProviderFactory] = dict(factories or {})
+        self._factories: dict[str, ProviderFactory] = {
+            "ollama": _build_ollama_provider,
+            **dict(factories or {}),
+        }
 
     def resolve_root(self, root: Path) -> tuple[EmbeddingProvider, ResolvedEmbeddingProvider]:
         return self.resolve_config(load_grain_config(root))

@@ -559,7 +559,7 @@ Default status for new backlog items in this file: `draft`
 - **Ready:** after P16-T01
 
 ### P16-T03 — Implement `OllamaProvider`
-- **Status:** draft
+- **Status:** done
 - **Description:** Add local-server embedding scoring using Ollama with graceful degradation when the server is unreachable or embeddings are unavailable.
 - **Files:** `src/grain/services/` (new provider module), `tests/`
 - **Model:** frontier_model
