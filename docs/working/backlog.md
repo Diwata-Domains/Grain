@@ -567,7 +567,7 @@ Default status for new backlog items in this file: `draft`
 - **Ready:** after P16-T02
 
 ### P16-T04 — Implement `LocalProvider`
-- **Status:** draft
+- **Status:** done
 - **Description:** Add sentence-transformers-based local embedding scoring with lazy model loading and graceful degradation when the optional dependency is absent.
 - **Files:** `src/grain/services/` (new provider module), `tests/`
 - **Model:** frontier_model
