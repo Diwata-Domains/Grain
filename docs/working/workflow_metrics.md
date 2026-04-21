@@ -507,11 +507,34 @@ Released between Phase 14 close and Phase 15 start. Not tracked as formal phases
 
 ---
 
+### Phase 16
+
+* Tasks completed: 8 (P16-T01 through P16-T08)
+* Tasks blocked: 0
+* Prompt runs: 1 (single continuous session — single-agent conversational model)
+* Avg prompt runs per completed task: n/a (single-agent model; all stages in one session)
+* Manual interventions: 3 (global task-ID renumbering correction from TASK-0001 to TASK-0109; workflow-next execute/review friction logged; P16-T08 backlog status corrected manually when reconcile did not update it)
+* First-pass success rate: 8/8 (all task slices landed and closed without a separate rework round; one BM25 integration fixture needed tightening inline)
+* Rework count: 0 (no task was reopened or routed back from review)
+* Drift incidents: 3 (`workflow next` kept routing to execute after `results.md`; packet ID allocation ignored `tasks/archive/`; reconcile missed the final P16-T08 backlog sync)
+* Phase duration: Session 19
+* Tests at phase close: 33 targeted semantic/context/CLI tests passing; full repo suite not run in this phase-close session
+* Conversation model: single-agent conversational (Codex in-session; tasks executed, reviewed, and closed in one continuous conversation)
+* Token tracking: proxy metrics only
+
+### Phase 16 Notes
+
+* What felt efficient: provider work split cleanly into resolver, baseline BM25, three optional backends, context integration, CLI inspection, and integration coverage; each task was small enough to close and commit independently; fake-provider seams kept optional-backend testing deterministic
+* What created friction: local `grain` entrypoint was behind repo source (`0.1.5` vs required `>=0.1.9`), so repo-local CLI invocation was needed for newer workflow commands; two workflow/tooling bugs surfaced inside the phase (`workflow next` execute/review routing and packet-ID reuse); reconcile did not sync the final P16-T08 backlog state
+* What to tighten next: upgrade the local Grain CLI entrypoint before Phase 17 work; fix the logged workflow/tooling bugs before leaning harder on automation; decide whether phase-close docs should also require/update `current_focus.md` status summaries instead of only appending a seal marker
+
+---
+
 ## V2 Aggregate (to date)
 
-* Total v2 tasks completed: 70 (Phase 6: 7, Phase 7: 7, Phase 8: 11, Phase 9: 7, Phase 10: 6, Phase 11: 4, Phase 12: 4, Phase 13: 5, Phase 14: 4, Phase 15: 6; v0.1.x patches not counted as formal tasks)
+* Total v2 tasks completed: 78 (Phase 6: 7, Phase 7: 7, Phase 8: 11, Phase 9: 7, Phase 10: 6, Phase 11: 4, Phase 12: 4, Phase 13: 5, Phase 14: 4, Phase 15: 6, Phase 16: 8; v0.1.x patches not counted as formal tasks)
 * Total v2 blocked: 1 (P11-T05 deferred)
-* Tests at v2 Phase 6 close: 399; at Phase 7 close: 419; at Phase 8 close: 494; at Phase 9 close: 561; at Phase 10 close: 575; at Phase 11 close: 577; at Phase 12 close: 595; at Phase 13 close: 638; at Phase 14 close: 662; at Phase 15 close: 775
+* Tests at v2 Phase 6 close: 399; at Phase 7 close: 419; at Phase 8 close: 494; at Phase 9 close: 561; at Phase 10 close: 575; at Phase 11 close: 577; at Phase 12 close: 595; at Phase 13 close: 638; at Phase 14 close: 662; at Phase 15 close: 775; at Phase 16 close: 33 targeted semantic/context/CLI tests (full suite not run)
 * Open questions resolved during v2 (to date): Q12–Q16 (5 questions); QD-01 (grain workflow reconcile) delivered in Phase 15; no new questions in Phases 9–15
 * Canonical change proposals raised during v2: 1 (P8-T10 `cli_spec.md §6.9` addition); CP-009 applied (Forge→Grain, Sentinel→Assay rename); CP-010 raised and resolved (superseded by CP-009); no new proposals in Phases 11–15
 * Major Phase 6 additions: adapter profiles runtime doc, AdapterProfile domain model, adapter loader/parser, packet adapter metadata fields, adapter-aware context biasing, adapter hint surfacing in context outputs, adapter system tests
@@ -524,19 +547,20 @@ Released between Phase 14 close and Phase 15 start. Not tracked as formal phases
 * Major Phase 13 additions: `grain onboard` CLI + `OnboardService` additive scaffold engine (dry-run, JSON/text output), `CodebaseScanner` (language/adapter/key-file/CI/docs detection), `OnboardDocGenerator` (draft canonical docs from scan, all marked `# DRAFT`), `workflow.onboard.existing.md` agent-driven adoption prompt, Phase 13 integration test suite (16 tests covering onboard/scanner/generator/e2e)
 * Major Phase 14 additions: `SpreadsheetExtractor` (xlsx/xls/csv via openpyxl), `DocsExtractor` (docx + md via python-docx), `PdfExtractor` (pdf via pdfplumber, graceful degradation), context assembly integration for all three, adapter profiles updated, Phase 14 integration tests (12 tests, mixed-type context bundles)
 * Major Phase 15 additions: `grain phase close` (hard lifecycle gate, grain-verified sealed marker), `grain workflow run` auto-packet bootstrap (packet auto-created on first run if missing), `grain workflow reconcile` (drift detection across backlog/packet/current_task/needs_fix; --fix mode), Phase 15 integration test suite (10 tests), `AGENTS.md` generation via `grain init`/`grain onboard`/`grain init --update-agents` (idempotent block, multi-agent safe), `grain phase archive <N>` (validated move of closed phase packets to archive dir)
+* Major Phase 16 additions: embedding-provider domain contracts and manifest config surface, `BM25Provider`, `OllamaProvider`, `LocalProvider`, `OpenAIProvider`, semantic reranking inside context selection, `grain embedding show`, Phase 16 integration coverage, and tooling notes for workflow-next/reconcile/task-ID drift discovered during execution
 
 ---
 
 ## Combined Aggregate
 
-* Total tasks completed: 123 (53 v1 + 70 v2; v0.1.x patches not counted as formal tasks)
+* Total tasks completed: 131 (53 v1 + 78 v2; v0.1.x patches not counted as formal tasks)
 * Total blocked (all phases): 1 (P11-T05 Homebrew, deferred)
-* Total tests at v1 close: 379; at Phase 6 close: 399; at Phase 7 close: 419; at Phase 8 close: 494; at Phase 9 close: 561; at Phase 10 close: 575; at Phase 11 close: 577; at Phase 12 close: 595; at Phase 13 close: 638; at Phase 14 close: 662; at Phase 15 close: 775
+* Total tests at v1 close: 379; at Phase 6 close: 399; at Phase 7 close: 419; at Phase 8 close: 494; at Phase 9 close: 561; at Phase 10 close: 575; at Phase 11 close: 577; at Phase 12 close: 595; at Phase 13 close: 638; at Phase 14 close: 662; at Phase 15 close: 775; at Phase 16 close: 33 targeted semantic/context/CLI tests (full suite not run)
 * Open questions resolved total: Q1–Q16 (16 resolved); QD-01 (grain workflow reconcile) delivered Phase 15; no new questions in Phases 9–15
 * Canonical change proposals applied total: CP-001 through CP-008 (8 applied in v1); 1 scoped addition in v2 (P8-T10 `cli_spec.md §6.9`); CP-009 applied (Forge→Grain, Sentinel→Assay); CP-010 resolved (superseded); no new proposals in Phases 11–15
 * V1 phases closed: 5 (Phases 1–5)
-* V2 phases closed: 10 (Phase 6, Phase 7, Phase 8, Phase 9, Phase 10, Phase 11, Phase 12, Phase 13, Phase 14, Phase 15)
+* V2 phases closed: 11 (Phase 6, Phase 7, Phase 8, Phase 9, Phase 10, Phase 11, Phase 12, Phase 13, Phase 14, Phase 15, Phase 16)
 * V2 planning docs created: v2_plan.md, v2_adapters.md, v2_onboarding.md
 * **v0.1.0 status: COMPLETE** — all planned phases closed; 662 tests passing; version tagged and PyPI published
 * **v0.1.x patch series: COMPLETE** — v0.1.0 through v0.1.11; ~713+ tests at v0.1.11
-* **v0.2.0 status: IN PROGRESS** — Phase 15 closed (2026-04-17); Phase 16 (Semantic Enrichment Layer) active; 775 tests passing
+* **v0.2.0 status: IN PROGRESS** — Phase 16 closed; Phase 17 next; latest targeted semantic/context/CLI gate 33 tests passing

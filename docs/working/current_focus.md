@@ -173,3 +173,5 @@ All five phases must ship for v0.2.0 to close.
 - TUI/GUI implementation (future paid tier, separate codebase)
 
 Phase 15 closed: 2026-04-17 — 6 tasks done (grain-verified)
+
+Phase 16 closed: 2026-04-21 — 8 tasks done (grain-verified)

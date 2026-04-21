@@ -599,7 +599,7 @@ Default status for new backlog items in this file: `draft`
 - **Ready:** after resolver/provider status contracts are stable
 
 ### P16-T08 — Phase 16 integration tests
-- **Status:** draft
+- **Status:** done
 - **Description:** Add end-to-end coverage for provider resolution, graceful degradation, and context-selection scoring behavior across BM25, Ollama, Local, and OpenAI configurations.
 - **Files:** `tests/`
 - **Model:** open_model
