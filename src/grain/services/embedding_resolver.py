@@ -14,6 +14,7 @@ from grain.domain.embedding import (
 from grain.services.bm25_provider import BM25Provider
 from grain.services.local_provider import LocalProvider
 from grain.services.ollama_provider import OllamaProvider
+from grain.services.openai_provider import OpenAIProvider
 
 ProviderFactory = Callable[[GrainConfig], EmbeddingProvider]
 
@@ -34,6 +35,14 @@ def _build_local_provider(config: GrainConfig) -> EmbeddingProvider:
     return provider
 
 
+def _build_openai_provider(config: GrainConfig) -> EmbeddingProvider:
+    provider = OpenAIProvider(model_name=config.openai_embedding_model)
+    status = provider.describe_status()
+    if not status.available:
+        raise RuntimeError(status.detail or "OpenAI provider is unavailable")
+    return provider
+
+
 class EmbeddingProviderResolver:
     """Resolve the configured semantic-scoring provider with BM25 fallback."""
 
@@ -41,6 +50,7 @@ class EmbeddingProviderResolver:
         self._factories: dict[str, ProviderFactory] = {
             "ollama": _build_ollama_provider,
             "local": _build_local_provider,
+            "openai": _build_openai_provider,
             **dict(factories or {}),
         }
 

@@ -575,7 +575,7 @@ Default status for new backlog items in this file: `draft`
 - **Ready:** after P16-T02
 
 ### P16-T05 — Implement `OpenAIProvider`
-- **Status:** draft
+- **Status:** done
 - **Description:** Add OpenAI embedding scoring with optional runtime import, `GRAIN_OPENAI_API_KEY` support, and deterministic fallback behavior when configuration is incomplete.
 - **Files:** `src/grain/services/` (new provider module), `tests/`
 - **Model:** frontier_model
