@@ -627,7 +627,7 @@ Default status for new backlog items in this file: `draft`
 - **Ready:** after Phase 16 close
 
 ### P17-T02 — Build deterministic ranking service
-- **Status:** draft
+- **Status:** done
 - **Description:** Implement the ranking service that combines graph distance, semantic similarity, authority level, and packet-local priority into a deterministic weighted score with exposed breakdowns.
 - **Files:** `src/grain/services/`, `tests/`
 - **Model:** frontier_model
