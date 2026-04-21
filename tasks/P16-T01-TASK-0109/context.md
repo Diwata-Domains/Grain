@@ -1,4 +1,4 @@
-# Context: TASK-0001
+# Context: TASK-0109
 
 ## Required Documents
 
@@ -15,9 +15,9 @@
 - `docs/working/implementation_plan.md` — provider model defaults and Phase 16 deliverables
 
 ### Packet Files
-- `tasks/P16-T01-TASK-0001/task.md`
-- `tasks/P16-T01-TASK-0001/plan.md`
-- `tasks/P16-T01-TASK-0001/deliverable_spec.md`
+- `tasks/P16-T01-TASK-0109/task.md`
+- `tasks/P16-T01-TASK-0109/plan.md`
+- `tasks/P16-T01-TASK-0109/deliverable_spec.md`
 
 ## Adapter Context
 - **Primary Adapter:** none

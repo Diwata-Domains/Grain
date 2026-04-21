@@ -543,7 +543,7 @@ Default status for new backlog items in this file: `draft`
 - Depends on: stable Phase 15 close and Phase 10 knowledge graph (graph provides the structural backbone; embeddings add semantic enrichment on top)
 
 ### P16-T01 — Define embedding domain model, resolver, and config surface
-- **Status:** ready
+- **Status:** done
 - **Description:** Add the shared semantic-scoring domain model: `EmbeddingProvider`, `ScoredCandidate`, provider status/result types, and `EmbeddingProviderResolver`. Extend manifest config parsing to recognize `ollama` and provider-specific model settings while preserving graceful fallback to BM25.
 - **Files:** `src/grain/domain/` (new embedding types), `src/grain/adapters/manifest.py`, `src/grain/services/` (new resolver module), `tests/`
 - **Model:** frontier_model

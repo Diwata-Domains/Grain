@@ -1,11 +1,11 @@
 # Task: Define embedding domain model, resolver, and config surface
 
 ## Metadata
-- **ID:** TASK-0001
-- **Status:** in_progress
+- **ID:** TASK-0109
+- **Status:** done
 - **Phase:** Phase 16 — Semantic Enrichment Layer
 - **Backlog:** P16-T01 — Define embedding domain model, resolver, and config surface
-- **Packet Path:** tasks/P16-T01-TASK-0001/
+- **Packet Path:** tasks/P16-T01-TASK-0109/
 - **Dependencies:** none
 - **Primary Adapter:** none
 - **Secondary Adapters:** none

@@ -1,9 +1,9 @@
-# Results: TASK-0001
+# Results: TASK-0109
 
 ## Packet State
-- **Current Task Status:** in_progress
-- **Review Readiness:** pending reviewer handoff
-- **Recommended Next Status:** review
+- **Current Task Status:** review
+- **Review Readiness:** approved
+- **Recommended Next Status:** done
 
 ## Files Changed
 - `src/grain/domain/embedding.py` — added semantic-scoring provider protocol and resolution/result types
@@ -20,11 +20,13 @@
 Implemented the Phase 16 contract/config slice for semantic enrichment. The repo now has a dedicated embedding domain module, a provider resolver service, manifest support for `none`, `ollama`, `local`, and `openai`, and provider-specific model fields with defaults. The resolver currently falls back deterministically to a local BM25-style lexical scorer when a configured provider is unavailable or not yet registered, which keeps the semantic layer usable without introducing new required dependencies in this task.
 
 ## Test Results
-17/17 targeted tests passing:
+26/26 targeted tests passing:
 - `tests/test_imports.py`
 - `tests/test_grain_config.py`
 - `tests/test_embedding_domain.py`
 - `tests/test_embedding_resolver.py`
+- `tests/test_workflow_next_cmd.py`
+- `tests/test_task_prepare_cmd.py`
 
 ## Efficiency
 <!-- Fill in at close. Use "n/a" for any field not applicable to your project or agent model. -->
@@ -57,9 +59,9 @@ Implemented the Phase 16 contract/config slice for semantic enrichment. The repo
 
 ## User Review
 <!-- reviewer fills this section — executor must leave all fields below as-is -->
-- **State:** pending
-- **Summary:** [reviewer fills]
-- **Resolution Mode:** [revise_current_task / replan_current_task / create_followup_task / close_task]
+- **State:** approved
+- **Summary:** Contract/config slice is coherent and ready to close; provider-specific integrations can proceed in follow-on Phase 16 tasks.
+- **Resolution Mode:** close_task
 
 ### Required Fixes
 - None
@@ -86,8 +88,8 @@ Implemented the Phase 16 contract/config slice for semantic enrichment. The repo
 
 ## Closure Decision
 <!-- closer fills this section during final closeout -->
-- **Decision:** pending
-- **Reason:** [closer fills]
+- **Decision:** closed
+- **Reason:** Closed via grain task close.
 
 ### Closure Blockers
 - None
