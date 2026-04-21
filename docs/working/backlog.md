@@ -591,7 +591,7 @@ Default status for new backlog items in this file: `draft`
 - **Ready:** after providers are stable
 
 ### P16-T07 — Add `grain embedding show`
-- **Status:** draft
+- **Status:** done
 - **Description:** Surface the active provider, configured model, reachability/availability state, and fallback mode through a dedicated CLI command with text and JSON output.
 - **Files:** `src/grain/cli/` (new embedding group or command), `src/grain/services/`, `tests/`
 - **Model:** open_model

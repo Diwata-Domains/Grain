@@ -17,6 +17,7 @@ from .docs import docs_group
 from .task import task_group
 from .adapter import adapter_group
 from .context import context_group
+from .embedding import embedding_group
 from .model import model_group
 from .phase import phase_group
 from .prompt import prompt_group
@@ -188,6 +189,7 @@ main.add_command(docs_group)
 main.add_command(task_group)
 main.add_command(adapter_group)
 main.add_command(context_group)
+main.add_command(embedding_group)
 main.add_command(model_group)
 main.add_command(phase_group)
 main.add_command(prompt_group)
