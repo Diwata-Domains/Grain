@@ -583,7 +583,7 @@ Default status for new backlog items in this file: `draft`
 - **Ready:** after P16-T02
 
 ### P16-T06 — Integrate semantic scoring into context selection
-- **Status:** draft
+- **Status:** done
 - **Description:** Wire the provider resolver into `context_service.py` so semantic scores rerank graph-derived candidates without inventing new context sources or breaking deterministic selection traces.
 - **Files:** `src/grain/services/context_service.py`, `src/grain/services/`, `tests/`
 - **Model:** frontier_model

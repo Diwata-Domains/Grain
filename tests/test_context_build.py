@@ -2,6 +2,7 @@
 
 import yaml
 
+from grain.domain.embedding import EmbeddingProviderStatus, ResolvedEmbeddingProvider, ScoredCandidate
 from grain.services.context_service import build_context_bundle, build_source_metadata
 from grain.services.task_service import create_packet_directory
 
@@ -204,3 +205,113 @@ def test_build_context_bundle_applies_primary_adapter_source_bias(packet_repo):
         assert any(path.startswith("tasks/P6-T05-TASK-0001/") for path in trace)
     assert adapter_context["review_focus_hints"] == ["behavior regressions"]
     assert adapter_context["test_or_validation_hints"] == ["run focused tests before full suite"]
+
+
+class _SemanticProvider:
+    provider_id = "openai"
+    model_name = "semantic-test"
+
+    def score(self, query: str, candidates: list[str]) -> list[ScoredCandidate]:
+        assert "authentication middleware" in query
+        scored: list[ScoredCandidate] = []
+        for candidate in candidates:
+            score = 0.1
+            if "src/auth_middleware.py" in candidate:
+                score = 0.9
+            elif "tests/test_auth.py" in candidate:
+                score = 0.5
+            scored.append(
+                ScoredCandidate(
+                    candidate=candidate,
+                    score=score,
+                    provider_id=self.provider_id,
+                )
+            )
+        return sorted(scored, key=lambda item: (-item.score, item.candidate))
+
+    def describe_status(self) -> EmbeddingProviderStatus:
+        return EmbeddingProviderStatus(
+            provider_id=self.provider_id,
+            model_name=self.model_name,
+            available=True,
+            detail="test provider",
+        )
+
+
+class _SemanticResolver:
+    def resolve_root(self, root):
+        provider = _SemanticProvider()
+        return provider, ResolvedEmbeddingProvider(
+            configured_provider="openai",
+            active_provider="openai",
+            configured_model="semantic-test",
+            active_model="semantic-test",
+            provider_status=provider.describe_status(),
+        )
+
+
+def test_build_context_bundle_reranks_graph_traced_sources_semantically(packet_repo):
+    _write_manifest(packet_repo)
+    _write_context_docs(packet_repo)
+    _write_adapter_profiles(packet_repo)
+    _write_file(packet_repo, "src/auth_middleware.py", "def auth_middleware(request):\n    return request\n")
+    _write_file(packet_repo, "src/database.py", "def run_migrations():\n    return True\n")
+    _write_file(packet_repo, "tests/test_auth.py", "def test_auth_middleware():\n    assert True\n")
+    create_packet_directory(packet_repo, phase=6, task_num=5)
+
+    packet_dir = packet_repo / "tasks" / "P6-T05-TASK-0001"
+    task_md = packet_dir / "task.md"
+    task_md.write_text(
+        """# Task: Improve auth middleware
+
+## Metadata
+- **ID:** TASK-0001
+- **Status:** draft
+- **Phase:** Phase 6
+- **Backlog:** P6-T05
+- **Packet Path:** tasks/P6-T05-TASK-0001/
+- **Dependencies:** none
+- **Primary Adapter:** code_adapter
+- **Secondary Adapters:** none
+
+## Objective
+Improve authentication middleware behavior and keep nearby auth tests aligned.
+
+## Why This Task Exists
+Task fixture.
+
+## Scope
+- update auth logic
+
+## Constraints
+- deterministic selection only
+
+## Escalation Conditions
+- none
+""",
+        encoding="utf-8",
+    )
+
+    result, bundle = build_context_bundle(
+        packet_repo,
+        "TASK-0001",
+        embedding_resolver=_SemanticResolver(),
+    )
+
+    assert result.ok is True
+    assert bundle is not None
+    sources = bundle.export_metadata["sources"]
+    auth_index = sources.index("src/auth_middleware.py")
+    test_index = sources.index("tests/test_auth.py")
+    db_index = sources.index("src/database.py")
+    assert auth_index < test_index < db_index
+
+    adapter_context = bundle.export_metadata["adapter_context"]
+    semantic = adapter_context["semantic_ranking"]
+    assert semantic["active_provider"] == "openai"
+    assert semantic["applied"] is True
+    assert [item["path"] for item in semantic["scores"]] == [
+        "src/auth_middleware.py",
+        "tests/test_auth.py",
+        "src/database.py",
+    ]

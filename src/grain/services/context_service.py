@@ -1,8 +1,10 @@
 """Context service — packet context source discovery and assembly operations."""
 
+from dataclasses import asdict
 from datetime import datetime, timezone
 import fnmatch
 from pathlib import Path
+import re
 
 from grain.adapters.adapter_config import load_adapter_profiles
 from grain.adapters.manifest import load_manifest
@@ -18,12 +20,19 @@ from grain.domain.context import (
 )
 from grain.domain.adapters import AdapterProfile
 from grain.domain.documents import DocumentRecord, build_registry
+from grain.domain.embedding import ResolvedEmbeddingProvider, ScoredCandidate
 from grain.domain.errors import ForgeError
 from grain.domain.packets import find_packet_dir, parse_task_metadata
+from grain.services.embedding_resolver import EmbeddingProviderResolver
 from grain.services.graph_service import build_knowledge_graph
 
 _NO_ADAPTER_VALUES: frozenset[str] = frozenset({"", "none", "null", "n/a"})
 _ADAPTER_SOURCE_LIMIT = 20
+_OBJECTIVE_SECTION = re.compile(
+    r"^## Objective\s*\n(.*?)(?=^## |\Z)",
+    re.MULTILINE | re.DOTALL,
+)
+_PLACEHOLDER_LINE = re.compile(r"^\[.*\]$")
 
 
 def discover_packet_sources(
@@ -158,6 +167,7 @@ def build_context_bundle(
     task_id: str,
     include_working_docs: bool = False,
     context_tags: set[str] | None = None,
+    embedding_resolver: EmbeddingProviderResolver | None = None,
 ) -> tuple[CommandResult, ContextBundle | None]:
     """Assemble a packet-scoped ContextBundle for one task ID.
 
@@ -206,6 +216,20 @@ def build_context_bundle(
         adapter_candidates,
         require_graph_trace=_requires_graph_trace(adapter_profile),
     )
+    semantic_resolution: ResolvedEmbeddingProvider | None = None
+    semantic_scores: list[dict[str, object]] = []
+    if adapter_sources:
+        (
+            adapter_sources,
+            semantic_resolution,
+            semantic_scores,
+        ) = _rerank_adapter_sources(
+            root=root,
+            packet_dir=source_set.packet_dir,
+            adapter_sources=adapter_sources,
+            selection_trace=selection_trace,
+            embedding_resolver=embedding_resolver,
+        )
 
     sources = list(packet_source_paths)
     sources.extend(adapter_sources)
@@ -221,6 +245,7 @@ def build_context_bundle(
         "review_focus_hints": [],
         "test_or_validation_hints": [],
         "selection_trace": {},
+        "semantic_ranking": {},
     }
     if adapter_profile is not None:
         adapter_context = {
@@ -231,6 +256,10 @@ def build_context_bundle(
             "review_focus_hints": adapter_profile.review_focus_hints,
             "test_or_validation_hints": adapter_profile.test_or_validation_hints,
             "selection_trace": selection_trace,
+            "semantic_ranking": _semantic_ranking_metadata(
+                semantic_resolution,
+                semantic_scores,
+            ),
         }
 
     stats = _compute_context_stats(
@@ -367,8 +396,7 @@ def _select_adapter_source_paths(
         return [], {}
 
     if not require_graph_trace:
-        selected = _dedupe_preserve_order(candidate_paths)
-        return selected[:_ADAPTER_SOURCE_LIMIT], {}
+        return _dedupe_preserve_order(candidate_paths), {}
 
     if not packet_paths:
         return [], {}
@@ -391,8 +419,126 @@ def _select_adapter_source_paths(
         selected.append(candidate)
         trace[candidate] = [_node_to_path_or_id(node) for node in path_nodes]
 
-    selected = _dedupe_preserve_order(selected)
-    return selected[:_ADAPTER_SOURCE_LIMIT], trace
+    return _dedupe_preserve_order(selected), trace
+
+
+def _rerank_adapter_sources(
+    *,
+    root: Path,
+    packet_dir: Path,
+    adapter_sources: list[str],
+    selection_trace: dict[str, list[str]],
+    embedding_resolver: EmbeddingProviderResolver | None,
+) -> tuple[list[str], ResolvedEmbeddingProvider | None, list[dict[str, object]]]:
+    graph_derived_sources = [path for path in adapter_sources if path in selection_trace]
+    if not graph_derived_sources:
+        return adapter_sources[:_ADAPTER_SOURCE_LIMIT], None, []
+
+    query = _read_task_objective(packet_dir / "task.md")
+    if not query:
+        return adapter_sources[:_ADAPTER_SOURCE_LIMIT], None, []
+
+    resolver = embedding_resolver or EmbeddingProviderResolver()
+    provider, resolved = resolver.resolve_root(root)
+
+    candidate_texts = {
+        path: _build_candidate_text(root, path)
+        for path in graph_derived_sources
+    }
+    text_to_path = {text: path for path, text in candidate_texts.items()}
+    ranked = provider.score(query, list(candidate_texts.values()))
+    ranked_paths = [
+        text_to_path[item.candidate]
+        for item in ranked
+        if item.candidate in text_to_path
+    ]
+    ranked_set = set(ranked_paths)
+    reranked_sources = ranked_paths + [
+        path
+        for path in adapter_sources
+        if path not in ranked_set
+    ]
+
+    return (
+        reranked_sources[:_ADAPTER_SOURCE_LIMIT],
+        resolved,
+        _serialize_scored_candidates(ranked, text_to_path),
+    )
+
+
+def _semantic_ranking_metadata(
+    resolved: ResolvedEmbeddingProvider | None,
+    semantic_scores: list[dict[str, object]],
+) -> dict[str, object]:
+    if resolved is None:
+        return {}
+
+    provider_status = asdict(resolved.provider_status) if resolved.provider_status is not None else None
+    return {
+        "configured_provider": resolved.configured_provider,
+        "active_provider": resolved.active_provider,
+        "configured_model": resolved.configured_model,
+        "active_model": resolved.active_model,
+        "fallback_active": resolved.fallback_active,
+        "fallback_reason": resolved.fallback_reason,
+        "provider_status": provider_status,
+        "applied": bool(semantic_scores),
+        "scores": semantic_scores,
+    }
+
+
+def _serialize_scored_candidates(
+    ranked: list[ScoredCandidate],
+    text_to_path: dict[str, str],
+) -> list[dict[str, object]]:
+    return [
+        {
+            "path": text_to_path[item.candidate],
+            "score": item.score,
+            "provider_id": item.provider_id,
+            "metadata": item.metadata,
+        }
+        for item in ranked
+        if item.candidate in text_to_path
+    ]
+
+
+def _read_task_objective(task_md_path: Path) -> str:
+    if not task_md_path.exists():
+        return ""
+
+    text = task_md_path.read_text(encoding="utf-8")
+    match = _OBJECTIVE_SECTION.search(text)
+    if match is None:
+        return ""
+
+    lines = [line.strip() for line in match.group(1).splitlines()]
+    cleaned = [line for line in lines if line and not _PLACEHOLDER_LINE.match(line)]
+    return " ".join(cleaned).strip()
+
+
+def _build_candidate_text(root: Path, path: str) -> str:
+    preview = _read_candidate_preview(root, path)
+    return f"path: {path}\ncontent:\n{preview}".strip()
+
+
+def _read_candidate_preview(root: Path, path: str, max_lines: int = 40, max_chars: int = 2000) -> str:
+    try:
+        with (root / path).open(encoding="utf-8", errors="replace") as handle:
+            lines: list[str] = []
+            total_chars = 0
+            for index, raw_line in enumerate(handle):
+                if index >= max_lines or total_chars >= max_chars:
+                    break
+                line = raw_line.rstrip()
+                remaining = max_chars - total_chars
+                if len(line) > remaining:
+                    line = line[:remaining]
+                lines.append(line)
+                total_chars += len(line)
+    except OSError:
+        return ""
+    return "\n".join(lines)
 
 
 def _requires_graph_trace(profile: AdapterProfile | None) -> bool:
