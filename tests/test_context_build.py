@@ -315,3 +315,13 @@ Task fixture.
         "tests/test_auth.py",
         "src/database.py",
     ]
+    assert [item["path"] for item in semantic["ranked_scores"]] == [
+        "src/auth_middleware.py",
+        "tests/test_auth.py",
+        "src/database.py",
+    ]
+    assert semantic["ranked_scores"][0]["components"][0]["signal_id"] == "graph_distance"
+    assert any(
+        component["signal_id"] == "semantic_similarity"
+        for component in semantic["ranked_scores"][0]["components"]
+    )

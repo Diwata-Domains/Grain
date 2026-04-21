@@ -635,7 +635,7 @@ Default status for new backlog items in this file: `draft`
 - **Ready:** after ranking contracts are stable
 
 ### P17-T03 — Integrate ranked scoring into context selection
-- **Status:** draft
+- **Status:** done
 - **Description:** Replace static adapter-priority ordering in context selection with the ranking service while preserving deterministic traces and exposing score components in bundle metadata.
 - **Files:** `src/grain/services/context_service.py`, `tests/`
 - **Model:** frontier_model

@@ -23,8 +23,10 @@ from grain.domain.documents import DocumentRecord, build_registry
 from grain.domain.embedding import ResolvedEmbeddingProvider, ScoredCandidate
 from grain.domain.errors import ForgeError
 from grain.domain.packets import find_packet_dir, parse_task_metadata
+from grain.domain.ranking import RankedCandidate
 from grain.services.embedding_resolver import EmbeddingProviderResolver
 from grain.services.graph_service import build_knowledge_graph
+from grain.services.ranking_service import RankingCandidateInput, rank_candidates
 
 _NO_ADAPTER_VALUES: frozenset[str] = frozenset({"", "none", "null", "n/a"})
 _ADAPTER_SOURCE_LIMIT = 20
@@ -218,11 +220,13 @@ def build_context_bundle(
     )
     semantic_resolution: ResolvedEmbeddingProvider | None = None
     semantic_scores: list[dict[str, object]] = []
+    ranked_scores: list[dict[str, object]] = []
     if adapter_sources:
         (
             adapter_sources,
             semantic_resolution,
             semantic_scores,
+            ranked_scores,
         ) = _rerank_adapter_sources(
             root=root,
             packet_dir=source_set.packet_dir,
@@ -259,6 +263,7 @@ def build_context_bundle(
             "semantic_ranking": _semantic_ranking_metadata(
                 semantic_resolution,
                 semantic_scores,
+                ranked_scores,
             ),
         }
 
@@ -429,14 +434,14 @@ def _rerank_adapter_sources(
     adapter_sources: list[str],
     selection_trace: dict[str, list[str]],
     embedding_resolver: EmbeddingProviderResolver | None,
-) -> tuple[list[str], ResolvedEmbeddingProvider | None, list[dict[str, object]]]:
+) -> tuple[list[str], ResolvedEmbeddingProvider | None, list[dict[str, object]], list[dict[str, object]]]:
     graph_derived_sources = [path for path in adapter_sources if path in selection_trace]
     if not graph_derived_sources:
-        return adapter_sources[:_ADAPTER_SOURCE_LIMIT], None, []
+        return adapter_sources[:_ADAPTER_SOURCE_LIMIT], None, [], []
 
     query = _read_task_objective(packet_dir / "task.md")
     if not query:
-        return adapter_sources[:_ADAPTER_SOURCE_LIMIT], None, []
+        return adapter_sources[:_ADAPTER_SOURCE_LIMIT], None, [], []
 
     resolver = embedding_resolver or EmbeddingProviderResolver()
     provider, resolved = resolver.resolve_root(root)
@@ -447,11 +452,22 @@ def _rerank_adapter_sources(
     }
     text_to_path = {text: path for path, text in candidate_texts.items()}
     ranked = provider.score(query, list(candidate_texts.values()))
-    ranked_paths = [
-        text_to_path[item.candidate]
-        for item in ranked
-        if item.candidate in text_to_path
-    ]
+    semantic_scores = _serialize_scored_candidates(ranked, text_to_path)
+    semantic_by_path = {item["path"]: item["score"] for item in semantic_scores}
+    ranked_candidates = rank_candidates(
+        [
+            RankingCandidateInput(
+                candidate=path,
+                graph_depth=_graph_depth_for_path(path, selection_trace),
+                semantic_score=float(semantic_by_path.get(path, 0.0)),
+                authority=_context_authority_for_path(path),
+                packet_priority=_packet_priority_for_path(path),
+                metadata={"selection_trace": selection_trace.get(path, [])},
+            )
+            for path in graph_derived_sources
+        ]
+    )
+    ranked_paths = [item.candidate for item in ranked_candidates]
     ranked_set = set(ranked_paths)
     reranked_sources = ranked_paths + [
         path
@@ -462,13 +478,15 @@ def _rerank_adapter_sources(
     return (
         reranked_sources[:_ADAPTER_SOURCE_LIMIT],
         resolved,
-        _serialize_scored_candidates(ranked, text_to_path),
+        semantic_scores,
+        _serialize_ranked_candidates(ranked_candidates),
     )
 
 
 def _semantic_ranking_metadata(
     resolved: ResolvedEmbeddingProvider | None,
     semantic_scores: list[dict[str, object]],
+    ranked_scores: list[dict[str, object]],
 ) -> dict[str, object]:
     if resolved is None:
         return {}
@@ -482,8 +500,9 @@ def _semantic_ranking_metadata(
         "fallback_active": resolved.fallback_active,
         "fallback_reason": resolved.fallback_reason,
         "provider_status": provider_status,
-        "applied": bool(semantic_scores),
+        "applied": bool(ranked_scores),
         "scores": semantic_scores,
+        "ranked_scores": ranked_scores,
     }
 
 
@@ -501,6 +520,48 @@ def _serialize_scored_candidates(
         for item in ranked
         if item.candidate in text_to_path
     ]
+
+
+def _serialize_ranked_candidates(ranked: list[RankedCandidate]) -> list[dict[str, object]]:
+    return [
+        {
+            "path": item.candidate,
+            "total_score": item.total_score,
+            "components": [
+                {
+                    "signal_id": component.signal_id,
+                    "raw_score": component.raw_score,
+                    "weight": component.weight,
+                    "weighted_score": component.weighted_score,
+                    "detail": component.detail,
+                }
+                for component in item.components
+            ],
+            "metadata": item.metadata,
+        }
+        for item in ranked
+    ]
+
+
+def _graph_depth_for_path(path: str, selection_trace: dict[str, list[str]]) -> int | None:
+    trace = selection_trace.get(path, [])
+    if not trace:
+        return None
+    return max(0, len(trace) - 1)
+
+
+def _context_authority_for_path(path: str) -> str:
+    if path.startswith("docs/canonical/"):
+        return "highest"
+    if path.startswith("docs/runtime/"):
+        return "highest_runtime"
+    if path.startswith("docs/working/"):
+        return "secondary"
+    return ""
+
+
+def _packet_priority_for_path(path: str) -> float:
+    return 0.5 if _is_test_path(path) else 1.0
 
 
 def _read_task_objective(task_md_path: Path) -> str:
