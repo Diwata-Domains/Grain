@@ -694,7 +694,7 @@ Default status for new backlog items in this file: `draft`
 - **Ready:** yes — Q18 resolved
 
 ### P18-T02 — Implement metadata extractor for data and model artifacts
-- **Status:** draft
+- **Status:** done
 - **Description:** Add a deterministic extractor/service for Phase 18 file types that reports metadata for dataset and model artifacts (`.parquet`, `.feather`, `.arrow`, `.h5`, `.hdf5`, `.pkl`, `.joblib`, `.pt`, `.onnx`) without sampling contents. Include graceful degradation for missing optional libraries and lightweight schema hints only when they can be read cheaply.
 - **Files:** `src/grain/services/`, `tests/`, `pyproject.toml`
 - **Model:** frontier_model

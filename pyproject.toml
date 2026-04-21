@@ -46,6 +46,10 @@ release = [
     "build>=1.4.3",
     "twine>=5.1",
 ]
+data = [
+    "pyarrow>=18.0",
+    "h5py>=3.12",
+]
 
 [project.urls]
 Homepage = "https://github.com/Diwata-Labs/Grain"
