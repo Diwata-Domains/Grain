@@ -551,7 +551,7 @@ Default status for new backlog items in this file: `draft`
 - **Ready:** yes
 
 ### P16-T02 — Implement `BM25Provider`
-- **Status:** draft
+- **Status:** done
 - **Description:** Implement deterministic keyword-based scoring with no new dependencies. BM25 is the always-available fallback provider and the baseline for all semantic-layer comparisons.
 - **Files:** `src/grain/services/` (new provider module), `tests/`
 - **Model:** frontier_model

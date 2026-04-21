@@ -2,6 +2,7 @@
 
 from grain.adapters.manifest import GrainConfig
 from grain.domain.embedding import EmbeddingProviderStatus
+from grain.services.bm25_provider import BM25Provider
 from grain.services.embedding_resolver import EmbeddingProviderResolver
 
 
@@ -26,6 +27,7 @@ def test_resolver_uses_bm25_by_default():
 
     provider, resolved = resolver.resolve_config(GrainConfig())
 
+    assert isinstance(provider, BM25Provider)
     assert provider.provider_id == "none"
     assert resolved.active_provider == "none"
     assert resolved.configured_model == "bm25"
@@ -71,6 +73,7 @@ def test_resolver_fallback_provider_scores_deterministically():
     resolver = EmbeddingProviderResolver()
     provider, _ = resolver.resolve_config(GrainConfig())
 
+    assert isinstance(provider, BM25Provider)
     ranked = provider.score(
         "auth middleware",
         ["middleware auth checks", "database migrations", "auth token middleware"],
