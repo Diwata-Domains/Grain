@@ -767,7 +767,7 @@ Default status for new backlog items in this file: `draft`
 - **Ready:** after the hosting/trust contract is stable
 
 ### P19-T03 — Implement `grain adapter install`
-- **Status:** draft
+- **Status:** done
 - **Description:** Add the install command for community adapters from an approved source descriptor or registry handle. The command must remain explicit, inspectable, and bounded by the Phase 19 trust contract.
 - **Files:** `src/grain/cli/`, `src/grain/services/`, `tests/`
 - **Model:** frontier_model

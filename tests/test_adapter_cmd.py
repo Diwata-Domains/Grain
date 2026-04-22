@@ -1,6 +1,7 @@
 """Tests for `grain adapter list/show` commands."""
 
 import json
+from pathlib import Path
 
 from click.testing import CliRunner
 
@@ -32,6 +33,33 @@ def _write_adapter_profiles(repo_root):
   - React
 - `context_priority_rules`:
   - prioritize changed UI modules
+""",
+        encoding="utf-8",
+    )
+
+
+def _write_adapter_package(root: Path, package_id="community-docs-adapter", adapter_id="community_docs_adapter"):
+    root.mkdir(parents=True, exist_ok=True)
+    (root / "adapter_package.yaml").write_text(
+        f"""package_id: {package_id}
+adapter_id: {adapter_id}
+version: 1.0.0
+profile_path: adapter_profile.md
+""",
+        encoding="utf-8",
+    )
+    (root / "adapter_profile.md").write_text(
+        f"""# Adapter Package
+
+## 5. Adapter Profiles
+
+### {adapter_id}
+- `adapter_id`: `{adapter_id}`
+- `domain_type`: `docs`
+- `applies_to`:
+  - Markdown
+- `context_priority_rules`:
+  - prioritize docs changes
 """,
         encoding="utf-8",
     )
@@ -105,3 +133,59 @@ def test_adapter_show_unknown_id_exits_two(tmp_path):
         ["--repo", str(tmp_path), "adapter", "show", "--id", "missing_adapter"],
     )
     assert result.exit_code == 2
+
+
+def test_adapter_install_text_output_from_source(tmp_path):
+    _write_adapter_profiles(tmp_path)
+    package_dir = tmp_path / "community-package"
+    _write_adapter_package(package_dir)
+    runner = CliRunner()
+
+    result = runner.invoke(
+        main,
+        ["--repo", str(tmp_path), "adapter", "install", "--source", str(package_dir)],
+    )
+
+    assert result.exit_code == 0, result.output
+    assert "adapter install: ok" in result.output
+    assert "package_id        community-docs-adapter" in result.output
+    assert "adapter_id        community_docs_adapter" in result.output
+
+
+def test_adapter_install_json_output_from_handle(tmp_path):
+    _write_adapter_profiles(tmp_path)
+    registry_root = tmp_path / "registry"
+    _write_adapter_package(registry_root / "community" / "docs")
+    runner = CliRunner()
+
+    result = runner.invoke(
+        main,
+        [
+            "--repo",
+            str(tmp_path),
+            "--format",
+            "json",
+            "adapter",
+            "install",
+            "--handle",
+            "community-docs-adapter",
+            "--registry-root",
+            str(registry_root),
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    data = json.loads(result.output)
+    assert data["ok"] is True
+    assert data["command"] == "adapter install"
+    assert data["source_kind"] == "registry_handle"
+    assert data["adapter_id"] == "community_docs_adapter"
+
+
+def test_adapter_install_invalid_selector_exits_one(tmp_path):
+    _write_adapter_profiles(tmp_path)
+    runner = CliRunner()
+
+    result = runner.invoke(main, ["--repo", str(tmp_path), "adapter", "install"])
+
+    assert result.exit_code == 1

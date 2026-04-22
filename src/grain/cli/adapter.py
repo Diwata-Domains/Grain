@@ -1,9 +1,11 @@
 import json
+from pathlib import Path
 
 import click
 
 from grain.adapters.adapter_config import load_adapter_profiles
 from grain.adapters.filesystem import resolve_repo_root
+from grain.domain.errors import GeneralError
 
 
 @click.group("adapter")
@@ -113,3 +115,55 @@ def adapter_show(ctx, adapter_id):
     click.echo("  default_model_bias")
     for item in profile.default_model_bias:
         click.echo(f"    - {item}")
+
+
+@adapter_group.command("install")
+@click.option("--source", type=click.Path(path_type=Path), default=None, help="Path to a validated adapter package directory.")
+@click.option("--handle", default="", help="Registry package_id or adapter_id to install from a local reviewed-registry checkout.")
+@click.option(
+    "--registry-root",
+    type=click.Path(path_type=Path),
+    default=None,
+    help="Path to a local reviewed-registry checkout used with --handle.",
+)
+@click.pass_context
+def adapter_install(ctx, source, handle, registry_root):
+    """Install one explicit community adapter package into the repo."""
+    from grain.services.adapter_install_service import install_adapter
+
+    repo = ctx.obj.get("repo") if ctx.obj else None
+    fmt = ctx.obj.get("fmt", "text") if ctx.obj else "text"
+    root = resolve_repo_root(repo)
+
+    result, payload = install_adapter(
+        root,
+        source=source,
+        handle=handle.strip(),
+        registry_root=registry_root,
+    )
+    if payload is None:
+        raise GeneralError("adapter install failed")
+    if not result.ok:
+        raise GeneralError("adapter install failed", detail="; ".join(result.errors))
+
+    if fmt == "json":
+        data = {
+            "ok": True,
+            "command": "adapter install",
+            "repo": str(root),
+            "source_kind": payload.source_kind,
+            "source_ref": payload.source_ref,
+            "package_id": payload.package_id,
+            "adapter_id": payload.adapter_id,
+            "installed_path": payload.installed_path,
+        }
+        click.echo(json.dumps(data, indent=2))
+        return
+
+    click.echo("adapter install: ok")
+    click.echo(f"  source_kind       {payload.source_kind}")
+    click.echo(f"  source_ref        {payload.source_ref}")
+    click.echo(f"  package_id        {payload.package_id}")
+    click.echo(f"  adapter_id        {payload.adapter_id}")
+    for path in result.files_updated:
+        click.echo(f"  updated   {path}")
