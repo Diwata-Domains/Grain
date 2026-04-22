@@ -783,7 +783,7 @@ Default status for new backlog items in this file: `draft`
 - **Ready:** after the hosting model is chosen
 
 ### P19-T05 — Add CI validation and author guidance
-- **Status:** draft
+- **Status:** done
 - **Description:** Add automated validation coverage for community adapter submissions plus author-facing documentation that explains packaging, validation expectations, and review/promotion boundaries.
 - **Files:** `.github/`, `docs/`, `tests/`
 - **Model:** open_model
