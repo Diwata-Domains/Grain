@@ -1,9 +1,9 @@
 # Current Focus
 
 ## Current Phase
-Phase 19 — Community Adapter Registry
+Phase 20 — Planning Not Started
 
-v0.2.0 ACTIVE
+v0.2.0 COMPLETE
 
 ## Phase 15 Status
 CLOSED. All 6 tasks done (T01-T06). 775/775 tests passing. Delivered: `grain phase close` (hard lifecycle gate), `grain workflow run` auto-packet bootstrap, `grain workflow reconcile` (drift detection + --fix), Phase 15 integration tests, `AGENTS.md` generation (`grain init` / `grain onboard`), `grain phase archive`. Phase closed 2026-04-17.
@@ -52,7 +52,7 @@ COMPLETE. Released v0.1.0 through v0.1.11. 713+ tests passing. PyPI published.
 - v0.1.11 — tooling_notes structure, upgrade customization guard, empty-phase fix
 
 ## v0.2.0 Status
-IN PROGRESS — Phase 18 closed 2026-04-21. Phase 19 is now the active implementation phase on `dev`.
+COMPLETE — Phases 15 through 19 are closed on `dev`. v0.2.0 implementation scope is complete as of 2026-04-22.
 
 ### Branching strategy (established 2026-04-16)
 - `main` — release-only; no direct commits during v0.2.0 development
@@ -67,9 +67,9 @@ IN PROGRESS — Phase 18 closed 2026-04-21. Phase 19 is now the active implement
 - Config field: `grain.embedding_provider` in `docs_manifest.yaml` (already shipped in v0.1.7)
 
 ## Immediate Goals
-1. Land the Phase 19 community registry hosting/trust contract in working and canonical docs
-2. Implement the initial registry slices around validation, install, and review workflow
-3. Preserve the official/community/local adapter boundaries while keeping the existing runtime contract stable
+1. Define the next post-v0.2.0 phase scope and seed the backlog
+2. Preserve the closed Phase 19 community adapter registry contract while the next phase is planned
+3. Fix the remaining workflow/tooling drifts noted during Phases 16 through 19 when they materially affect the next phase
 
 ## After Phase 8 — Using the Runner with Agent CLIs
 
@@ -146,11 +146,11 @@ All five phases must ship for v0.2.0 to close.
 - **Phase 16** — Semantic Enrichment Layer (EmbeddingProvider protocol, BM25 + Ollama + Local + OpenAI providers, context scoring) ✓ closed 2026-04-21
 - **Phase 17** — Ranking and Decision Layer (weighted candidate scoring, replaces static adapter priority rules, depends on Phase 16) ✓ closed 2026-04-21
 - **Phase 18** — Data Adapter (richer .ipynb context, ML artifact patterns, .ipynb migrated from code_adapter) ✓ closed 2026-04-21
-- **Phase 19** — Community Adapter Registry (`grain adapter install`, schema validation, discovery pipeline)
+- **Phase 19** — Community Adapter Registry (`grain adapter install`, schema validation, discovery pipeline) ✓ closed 2026-04-22
 - **Phase 11-T05 (deferred)** — Homebrew formula, resume when tap/release flow is prioritized
 
 ## Upcoming Phase Sequence
-1. **Phase 19** — Community Adapter Registry ← active now
+1. **Phase 20** — Planning not started ← active now
 
 ## Active Constraints
 - use local filesystem only
@@ -163,8 +163,7 @@ All five phases must ship for v0.2.0 to close.
 ## Do Not Work On Right Now
 - P11-T05 Homebrew formula until tap/release flow is prioritized
 - Assay — independent companion project, separate repo, not a Grain feature
-- broad Phase 19 implementation before task planning is written
-- Phase 19 until adapter contract is reviewed for v0.2.0 readiness
+- broad Phase 20 implementation before task planning is written
 - telemetry automation (v2 — FR-011)
 - autonomous multi-step execution without explicit operator gate
 - TUI/GUI implementation (future paid tier, separate codebase)
@@ -176,3 +175,5 @@ Phase 16 closed: 2026-04-21 — 8 tasks done (grain-verified)
 Phase 17 closed: 2026-04-21 — 6 tasks done (grain-verified)
 
 Phase 18 closed: 2026-04-21 — 6 tasks done (grain-verified)
+
+Phase 19 closed: 2026-04-22 — 6 tasks done (grain-verified)
