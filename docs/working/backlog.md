@@ -702,7 +702,7 @@ Default status for new backlog items in this file: `draft`
 - **Ready:** after the `data_adapter` contract is written
 
 ### P18-T03 — Migrate notebook ownership into `data_adapter`
-- **Status:** draft
+- **Status:** done
 - **Description:** Move `.ipynb` primary ownership from `code_adapter` to `data_adapter`, preserving existing notebook extraction behavior while adding data-science-specific review/context hints. Keep the migration additive and backward-compatible for existing packet/context flows.
 - **Files:** `docs/runtime/adapter_profiles.md`, `src/grain/services/`, `tests/`
 - **Model:** frontier_model

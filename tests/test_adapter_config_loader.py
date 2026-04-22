@@ -56,8 +56,11 @@ def test_parse_runtime_adapter_profiles_includes_data_adapter_contract():
         Path("docs/runtime/adapter_profiles.md").read_text(encoding="utf-8")
     )
 
+    code_profile = next(profile for profile in profiles if profile.adapter_id == "code_adapter")
     data_profile = next(profile for profile in profiles if profile.adapter_id == "data_adapter")
+    assert "**/*.ipynb" not in code_profile.relevant_file_patterns
     assert data_profile.domain_type == "data"
+    assert "**/*.ipynb" in data_profile.relevant_file_patterns
     assert "**/*.parquet" in data_profile.relevant_file_patterns
     assert "**/*.onnx" in data_profile.relevant_file_patterns
     assert "requirements.txt" in data_profile.relevant_file_patterns

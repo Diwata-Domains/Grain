@@ -53,7 +53,8 @@ def _write_manifest(root: Path) -> None:
 
 
 def _write_notebook_adapter_profile(root: Path) -> None:
-    # Uses docs_adapter (no graph trace required) with ipynb patterns to test
+    # Uses data_adapter (no graph trace required in Phase 18 migration) with
+    # ipynb patterns to test notebook ownership under the new adapter home.
     # the context pipeline without tree-sitter dependency.
     _write(
         root / "docs" / "runtime" / "adapter_profiles.md",
@@ -61,9 +62,9 @@ def _write_notebook_adapter_profile(root: Path) -> None:
 
 ## 5. Adapter Profiles
 
-### docs_adapter
-- `adapter_id`: `docs_adapter`
-- `domain_type`: `docs`
+### data_adapter
+- `adapter_id`: `data_adapter`
+- `domain_type`: `data`
 - `applies_to`:
   - Jupyter notebooks
 - `relevant_file_patterns`:
@@ -203,13 +204,14 @@ def test_context_bundle_selects_ipynb_sources(packet_repo: Path):
         {"cell_type": "code", "source": ["x = 1"], "outputs": [], "metadata": {}},
     ])
     create_packet_directory(packet_repo, phase=1, task_num=1)
-    _set_primary_adapter(packet_repo, "P1-T01-TASK-0001", "docs_adapter")
+    _set_primary_adapter(packet_repo, "P1-T01-TASK-0001", "data_adapter")
 
     result, bundle = build_context_bundle(packet_repo, "TASK-0001")
     assert result.ok is True
     assert bundle is not None
     sources = bundle.export_metadata["sources"]
     assert "analysis.ipynb" in sources
+    assert bundle.export_metadata["adapter_context"]["primary_adapter"] == "data_adapter"
 
 
 def test_context_export_renders_notebook_content(packet_repo: Path):
@@ -220,7 +222,7 @@ def test_context_export_renders_notebook_content(packet_repo: Path):
         {"cell_type": "code", "source": ["import pandas as pd"], "outputs": [], "metadata": {}},
     ])
     create_packet_directory(packet_repo, phase=1, task_num=1)
-    _set_primary_adapter(packet_repo, "P1-T01-TASK-0001", "docs_adapter")
+    _set_primary_adapter(packet_repo, "P1-T01-TASK-0001", "data_adapter")
 
     result, bundle = build_context_bundle(packet_repo, "TASK-0001")
     assert result.ok is True

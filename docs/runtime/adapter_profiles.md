@@ -101,11 +101,9 @@ Each profile should follow this section structure:
   - Rust
   - backend services
   - CLI tooling
-  - Jupyter notebooks
 - `relevant_file_patterns`:
   - `src/**`
   - `tests/**`
-  - `**/*.ipynb`
   - `pyproject.toml`
   - `Cargo.toml`
   - `Makefile`
@@ -251,6 +249,7 @@ Each profile should follow this section structure:
   - notebook-driven analysis
   - dataset and model artifact review
 - `relevant_file_patterns`:
+  - `**/*.ipynb`
   - `**/*.parquet`
   - `**/*.feather`
   - `**/*.arrow`
@@ -270,6 +269,7 @@ Each profile should follow this section structure:
   - `.venv/**`
 - `build_or_run_hints`:
   - treat dataset and model artifacts as metadata-only context in Phase 18
+  - notebook analysis lives here as the primary Phase 18 adapter path
   - prefer environment and pipeline files over raw artifact contents
   - keep extraction deterministic and local-first; skip expensive binary introspection
 - `test_or_validation_hints`:
@@ -278,12 +278,12 @@ Each profile should follow this section structure:
   - validate notebook-to-artifact references when present
 - `review_focus_hints`:
   - accidental content sampling from large or binary artifacts
-  - notebook ownership drift during the Phase 18 migration
+  - notebook execution/output drift during analysis-heavy changes
   - misleading schema hints when optional readers are unavailable
 - `context_priority_rules`:
-  - prioritize notebooks, pipeline config, and lightweight metadata before bulk artifacts
+  - prioritize notebooks, notebook-adjacent config, and lightweight metadata before bulk artifacts
   - treat dataset and model files as metadata-only until a later canonical decision expands scope
-  - `.ipynb` migration into `data_adapter` is planned for Phase 18 but not active in this contract slice
+  - select `.ipynb` files directly without requiring graph traces until broader data-adapter integration lands
 - `default_model_bias`:
   - `open_model` for narrow metadata and profile updates
   - `frontier_model` for cross-artifact reasoning or notebook-heavy workflows

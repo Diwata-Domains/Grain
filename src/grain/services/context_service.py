@@ -606,7 +606,7 @@ def _requires_graph_trace(profile: AdapterProfile | None) -> bool:
     """Return whether adapter source selection should require graph connectivity."""
     if profile is None:
         return True
-    return profile.adapter_id not in {"spreadsheet_adapter", "docs_adapter"}
+    return profile.adapter_id not in {"spreadsheet_adapter", "docs_adapter", "data_adapter"}
 
 
 def _is_ignored_by_adapter(path: str, ignore_patterns: list[str]) -> bool:
