@@ -22,6 +22,15 @@ If a question affects canonical rules, architecture, contracts, or workflow sema
 
 ## 3. Open Questions
 
+### Q19 — What hosting model should the Phase 19 community adapter registry use?
+
+* **Status:** decision_needed
+* **Notes:** Phase 19 needs one authoritative distribution path for community adapters before install/validation flows can stabilize. Candidate directions already noted in `backlog.md`: a dedicated GitHub org repo versus a subdirectory/registry living inside the main Grain repo.
+* **Affected Docs:** `docs/working/backlog.md`, future Phase 19 registry docs
+* **Related Tasks:** P19-T01 through P19-T06
+
+---
+
 ### Q7 — How should context export be represented in v1?
 
 * **Status:** resolved

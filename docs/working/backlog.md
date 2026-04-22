@@ -735,9 +735,9 @@ Default status for new backlog items in this file: `draft`
 
 ---
 
-## 22. Phase 19 — Community Adapter Registry (seeded, not yet planned)
+## 22. Phase 19 — Community Adapter Registry (planned, not yet started)
 
-> **Status:** seeded — not yet started. Depends on adapter contract review. v0.2.0 scope. Promoted from v0.2.1.
+> **Status:** planned — ready to start. Depends on adapter contract review. v0.2.0 scope. Promoted from v0.2.1.
 
 ### P19 Planning Notes
 - Scope: discovery, distribution, and review pipeline for community-contributed adapter profiles
@@ -747,15 +747,56 @@ Default status for new backlog items in this file: `draft`
   - **Community** — submitted via PR to a community repo, automated schema validation + maintainer review before merge
   - **Local/private** — user-defined, stays in their own repo (already works today, no changes needed)
 - Community adapters proven reliable over time may be promoted to Official
-- Key decision gate: hosting model (dedicated GitHub org repo vs. subdirectory in Grain repo) must be resolved before tasks are written
+- Key decision gate: hosting model is tracked as Q19 and is the first implementation/planning slice in this phase
 - Key open question: promotion criteria — what does a community adapter need to demonstrate before being promoted to Official?
 
-### Draft Tasks (not yet written as packets)
-- `grain adapter install <source>` command — fetch and apply a community adapter from a URL or registry handle
-- `grain adapter validate` — schema compliance check for adapter files before use
-- Community repo scaffold — structure, contribution guide, and adapter template
-- Automated schema validation in CI for community adapter PRs
-- Adapter author documentation
+### P19-T01 — Define community registry hosting and trust contract
+- **Status:** draft
+- **Description:** Resolve the authoritative hosting/distribution model for community adapters and write the minimal trust contract: where community adapters live, how install sources are addressed, what “official/community/local” means operationally, and what promotion to Official requires at a high level. This is the decision-and-contract slice that unblocks the rest of Phase 19.
+- **Files:** `docs/working/`, `docs/canonical/`, `tests/`
+- **Model:** frontier_model
+- **Dependencies:** P18-T06
+- **Ready:** yes — planning entrypoint for Q19
+
+### P19-T02 — Add adapter package validation service
+- **Status:** draft
+- **Description:** Implement schema/compliance validation for installable adapter packages or registry entries, including file-shape checks, adapter-profile parsing, and deterministic error reporting before installation.
+- **Files:** `src/grain/services/`, `src/grain/validators/`, `tests/`
+- **Model:** frontier_model
+- **Dependencies:** P19-T01
+- **Ready:** after the hosting/trust contract is stable
+
+### P19-T03 — Implement `grain adapter install`
+- **Status:** draft
+- **Description:** Add the install command for community adapters from an approved source descriptor or registry handle. The command must remain explicit, inspectable, and bounded by the Phase 19 trust contract.
+- **Files:** `src/grain/cli/`, `src/grain/services/`, `tests/`
+- **Model:** frontier_model
+- **Dependencies:** P19-T01, P19-T02
+- **Ready:** after validation rules are stable
+
+### P19-T04 — Scaffold registry/review artifacts
+- **Status:** draft
+- **Description:** Add the repository-side scaffold and templates for community adapters: submission layout, adapter template, contribution guidance, and review metadata expected by the validation/install flow.
+- **Files:** `contrib/`, `docs/`, `tests/`
+- **Model:** open_model
+- **Dependencies:** P19-T01
+- **Ready:** after the hosting model is chosen
+
+### P19-T05 — Add CI validation and author guidance
+- **Status:** draft
+- **Description:** Add automated validation coverage for community adapter submissions plus author-facing documentation that explains packaging, validation expectations, and review/promotion boundaries.
+- **Files:** `.github/`, `docs/`, `tests/`
+- **Model:** open_model
+- **Dependencies:** P19-T02, P19-T04
+- **Ready:** after validation service and scaffold exist
+
+### P19-T06 — Phase 19 integration tests
+- **Status:** draft
+- **Description:** Add end-to-end coverage across install-source validation, adapter install behavior, registry/review artifacts, and CI-facing validation paths for the chosen Phase 19 hosting model.
+- **Files:** `tests/`
+- **Model:** open_model
+- **Dependencies:** P19-T02, P19-T03, P19-T04, P19-T05
+- **Ready:** after implementation tasks land
 
 ---
 
