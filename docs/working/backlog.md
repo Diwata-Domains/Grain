@@ -726,7 +726,7 @@ Default status for new backlog items in this file: `draft`
 - **Ready:** after `data_adapter` profile exists
 
 ### P18-T06 — Phase 18 integration tests
-- **Status:** draft
+- **Status:** done
 - **Description:** Add end-to-end Phase 18 coverage across adapter-profile loading, metadata-only extraction, notebook ownership migration, context selection, and orchestration/scope analysis for a representative data-science repo layout.
 - **Files:** `tests/`
 - **Model:** open_model

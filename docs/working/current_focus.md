@@ -1,7 +1,7 @@
 # Current Focus
 
 ## Current Phase
-Phase 18 — Data Adapter
+Phase 19 — Community Adapter Registry
 
 v0.2.0 ACTIVE
 
@@ -52,7 +52,7 @@ COMPLETE. Released v0.1.0 through v0.1.11. 713+ tests passing. PyPI published.
 - v0.1.11 — tooling_notes structure, upgrade customization guard, empty-phase fix
 
 ## v0.2.0 Status
-IN PROGRESS — Phase 17 closed 2026-04-21. Phase 18 is now the active implementation phase on `dev`.
+IN PROGRESS — Phase 18 closed 2026-04-21. Phase 19 is now the active implementation phase on `dev`.
 
 ### Branching strategy (established 2026-04-16)
 - `main` — release-only; no direct commits during v0.2.0 development
@@ -67,9 +67,9 @@ IN PROGRESS — Phase 17 closed 2026-04-21. Phase 18 is now the active implement
 - Config field: `grain.embedding_provider` in `docs_manifest.yaml` (already shipped in v0.1.7)
 
 ## Immediate Goals
-1. Land the Phase 18 `data_adapter` contract and metadata-only extraction boundary in the runtime docs
-2. Implement the Phase 18 adapter slices for richer notebook and ML-artifact awareness
-3. Preserve the existing CLI/context contracts while migrating `.ipynb` ownership cleanly from `code_adapter` to `data_adapter`
+1. Resolve the Phase 19 hosting/distribution model for community adapters before writing execution tasks
+2. Plan the initial registry slices around install, validation, and review workflow
+3. Preserve the official/community/local adapter boundaries while keeping the existing runtime contract stable
 
 ## After Phase 8 — Using the Runner with Agent CLIs
 
@@ -145,13 +145,12 @@ All five phases must ship for v0.2.0 to close.
 - **Phase 15** — Workflow Hardening and Automation (`grain phase close`, `grain workflow run` auto-packet, `grain workflow reconcile`) ✓ closed 2026-04-17
 - **Phase 16** — Semantic Enrichment Layer (EmbeddingProvider protocol, BM25 + Ollama + Local + OpenAI providers, context scoring) ✓ closed 2026-04-21
 - **Phase 17** — Ranking and Decision Layer (weighted candidate scoring, replaces static adapter priority rules, depends on Phase 16) ✓ closed 2026-04-21
-- **Phase 18** — Data Adapter (richer .ipynb context, ML artifact patterns, .ipynb migrated from code_adapter)
+- **Phase 18** — Data Adapter (richer .ipynb context, ML artifact patterns, .ipynb migrated from code_adapter) ✓ closed 2026-04-21
 - **Phase 19** — Community Adapter Registry (`grain adapter install`, schema validation, discovery pipeline)
 - **Phase 11-T05 (deferred)** — Homebrew formula, resume when tap/release flow is prioritized
 
 ## Upcoming Phase Sequence
-1. **Phase 18** — Data Adapter ← active now
-2. **Phase 19** — Community Adapter Registry (after adapter contract review)
+1. **Phase 19** — Community Adapter Registry ← active now
 
 ## Active Constraints
 - use local filesystem only
@@ -164,7 +163,7 @@ All five phases must ship for v0.2.0 to close.
 ## Do Not Work On Right Now
 - P11-T05 Homebrew formula until tap/release flow is prioritized
 - Assay — independent companion project, separate repo, not a Grain feature
-- broad Phase 18 implementation before task planning is written
+- broad Phase 19 implementation before task planning is written
 - Phase 19 until adapter contract is reviewed for v0.2.0 readiness
 - telemetry automation (v2 — FR-011)
 - autonomous multi-step execution without explicit operator gate
@@ -175,3 +174,7 @@ Phase 15 closed: 2026-04-17 — 6 tasks done (grain-verified)
 Phase 16 closed: 2026-04-21 — 8 tasks done (grain-verified)
 
 Phase 17 closed: 2026-04-21 — 6 tasks done (grain-verified)
+
+Phase 18 closed: 2026-04-21 — 6 tasks done (grain-verified)
+
+Phase 18 closed: 2026-04-22 — 6 tasks done (grain-verified)

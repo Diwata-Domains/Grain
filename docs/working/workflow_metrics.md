@@ -553,12 +553,35 @@ Released between Phase 14 close and Phase 15 start. Not tracked as formal phases
 
 ---
 
+### Phase 18
+
+* Tasks completed: 6 (P18-T01 through P18-T06)
+* Tasks blocked: 0
+* Prompt runs: 1 (single continuous session — single-agent conversational model)
+* Avg prompt runs per completed task: n/a (single-agent model; all stages in one session)
+* Manual interventions: 3 (Q18 resolved up front to unblock planning; closed-task backlog drift had to be corrected during phase execution; stale workflow-next output required explicit rechecks after reconcile)
+* First-pass success rate: 6/6 (all slices landed and closed without reopening; one integration test fixture failure was corrected inline during implementation)
+* Rework count: 0 (no task was reopened or routed back from review)
+* Drift incidents: 2 (closed-task backlog state lagged the packet state; workflow-next briefly surfaced stale candidate output after reconcile)
+* Phase duration: Session 21
+* Tests at phase close: 76 targeted Phase 18 tests passing; full repo suite not run in this phase-close session
+* Conversation model: single-agent conversational (Codex in-session; tasks executed, reviewed, and closed in one continuous conversation)
+* Token tracking: proxy metrics only
+
+### Phase 18 Notes
+
+* What felt efficient: the phase decomposed cleanly into contract, extractor, notebook migration, context/orchestration integration, onboarding detection, and one end-to-end proof gate; existing extractor and orchestration seams kept the implementation additive
+* What created friction: backlog reconciliation still lagged closed-task status; tracked `__pycache__` artifacts created repetitive cleanup noise during test runs; phase-boundary state still depends on explicit `current_focus.md` advancement after `grain phase close`
+* What to tighten next: stop tracking generated `__pycache__` artifacts in the repo; teach reconcile to catch the final closed-task drift consistently; consider making phase-close advance the active-phase summary block in `current_focus.md` or fail until it is updated
+
+---
+
 ## V2 Aggregate (to date)
 
-* Total v2 tasks completed: 84 (Phase 6: 7, Phase 7: 7, Phase 8: 11, Phase 9: 7, Phase 10: 6, Phase 11: 4, Phase 12: 4, Phase 13: 5, Phase 14: 4, Phase 15: 6, Phase 16: 8, Phase 17: 6; v0.1.x patches not counted as formal tasks)
+* Total v2 tasks completed: 90 (Phase 6: 7, Phase 7: 7, Phase 8: 11, Phase 9: 7, Phase 10: 6, Phase 11: 4, Phase 12: 4, Phase 13: 5, Phase 14: 4, Phase 15: 6, Phase 16: 8, Phase 17: 6, Phase 18: 6; v0.1.x patches not counted as formal tasks)
 * Total v2 blocked: 1 (P11-T05 deferred)
-* Tests at v2 Phase 6 close: 399; at Phase 7 close: 419; at Phase 8 close: 494; at Phase 9 close: 561; at Phase 10 close: 575; at Phase 11 close: 577; at Phase 12 close: 595; at Phase 13 close: 638; at Phase 14 close: 662; at Phase 15 close: 775; at Phase 16 close: 33 targeted semantic/context/CLI tests (full suite not run); at Phase 17 close: 31 targeted ranking/context/orchestration tests (full suite not run)
-* Open questions resolved during v2 (to date): Q12–Q17 (6 questions); QD-01 (grain workflow reconcile) delivered in Phase 15
+* Tests at v2 Phase 6 close: 399; at Phase 7 close: 419; at Phase 8 close: 494; at Phase 9 close: 561; at Phase 10 close: 575; at Phase 11 close: 577; at Phase 12 close: 595; at Phase 13 close: 638; at Phase 14 close: 662; at Phase 15 close: 775; at Phase 16 close: 33 targeted semantic/context/CLI tests (full suite not run); at Phase 17 close: 31 targeted ranking/context/orchestration tests (full suite not run); at Phase 18 close: 76 targeted data-adapter tests (full suite not run)
+* Open questions resolved during v2 (to date): Q12–Q18 (7 questions); QD-01 (grain workflow reconcile) delivered in Phase 15
 * Canonical change proposals raised during v2: 1 (P8-T10 `cli_spec.md §6.9` addition); CP-009 applied (Forge→Grain, Sentinel→Assay rename); CP-010 raised and resolved (superseded by CP-009); no new proposals in Phases 11–15
 * Major Phase 6 additions: adapter profiles runtime doc, AdapterProfile domain model, adapter loader/parser, packet adapter metadata fields, adapter-aware context biasing, adapter hint surfacing in context outputs, adapter system tests
 * Major Phase 7 additions: stable new-project onboarding prompt, init seed-file scaffolding, adapter selection, starter packet bootstrap, onboarding integration tests, existing-project adoption boundary docs
@@ -572,19 +595,20 @@ Released between Phase 14 close and Phase 15 start. Not tracked as formal phases
 * Major Phase 15 additions: `grain phase close` (hard lifecycle gate, grain-verified sealed marker), `grain workflow run` auto-packet bootstrap (packet auto-created on first run if missing), `grain workflow reconcile` (drift detection across backlog/packet/current_task/needs_fix; --fix mode), Phase 15 integration test suite (10 tests), `AGENTS.md` generation via `grain init`/`grain onboard`/`grain init --update-agents` (idempotent block, multi-agent safe), `grain phase archive <N>` (validated move of closed phase packets to archive dir)
 * Major Phase 16 additions: embedding-provider domain contracts and manifest config surface, `BM25Provider`, `OllamaProvider`, `LocalProvider`, `OpenAIProvider`, semantic reranking inside context selection, `grain embedding show`, Phase 16 integration coverage, and tooling notes for workflow-next/reconcile/task-ID drift discovered during execution
 * Major Phase 17 additions: ranking domain contracts and weighted scoring service, ranked context-selection metadata, advisory ranked task suggestions on orchestration scope output, ranked impacted-file advisory signals, Q17 resolution for advisory-only task ranking, and Phase 17 integration coverage
+* Major Phase 18 additions: `data_adapter` runtime contract and Q18 metadata-only boundary, `DataArtifactExtractor`, notebook ownership migration from `code_adapter` to `data_adapter`, data-artifact context export wiring, orchestration scope activation for data workflows, onboarding/scanner promotion of `data_adapter` to an official applicable adapter, and Phase 18 integration coverage
 
 ---
 
 ## Combined Aggregate
 
-* Total tasks completed: 137 (53 v1 + 84 v2; v0.1.x patches not counted as formal tasks)
+* Total tasks completed: 143 (53 v1 + 90 v2; v0.1.x patches not counted as formal tasks)
 * Total blocked (all phases): 1 (P11-T05 Homebrew, deferred)
-* Total tests at v1 close: 379; at Phase 6 close: 399; at Phase 7 close: 419; at Phase 8 close: 494; at Phase 9 close: 561; at Phase 10 close: 575; at Phase 11 close: 577; at Phase 12 close: 595; at Phase 13 close: 638; at Phase 14 close: 662; at Phase 15 close: 775; at Phase 16 close: 33 targeted semantic/context/CLI tests (full suite not run); at Phase 17 close: 31 targeted ranking/context/orchestration tests (full suite not run)
-* Open questions resolved total: Q1–Q17 (17 resolved); QD-01 (grain workflow reconcile) delivered Phase 15
+* Total tests at v1 close: 379; at Phase 6 close: 399; at Phase 7 close: 419; at Phase 8 close: 494; at Phase 9 close: 561; at Phase 10 close: 575; at Phase 11 close: 577; at Phase 12 close: 595; at Phase 13 close: 638; at Phase 14 close: 662; at Phase 15 close: 775; at Phase 16 close: 33 targeted semantic/context/CLI tests (full suite not run); at Phase 17 close: 31 targeted ranking/context/orchestration tests (full suite not run); at Phase 18 close: 76 targeted data-adapter tests (full suite not run)
+* Open questions resolved total: Q1–Q18 (18 resolved); QD-01 (grain workflow reconcile) delivered Phase 15
 * Canonical change proposals applied total: CP-001 through CP-008 (8 applied in v1); 1 scoped addition in v2 (P8-T10 `cli_spec.md §6.9`); CP-009 applied (Forge→Grain, Sentinel→Assay); CP-010 resolved (superseded); no new proposals in Phases 11–15
 * V1 phases closed: 5 (Phases 1–5)
-* V2 phases closed: 12 (Phase 6, Phase 7, Phase 8, Phase 9, Phase 10, Phase 11, Phase 12, Phase 13, Phase 14, Phase 15, Phase 16, Phase 17)
+* V2 phases closed: 13 (Phase 6, Phase 7, Phase 8, Phase 9, Phase 10, Phase 11, Phase 12, Phase 13, Phase 14, Phase 15, Phase 16, Phase 17, Phase 18)
 * V2 planning docs created: v2_plan.md, v2_adapters.md, v2_onboarding.md
 * **v0.1.0 status: COMPLETE** — all planned phases closed; 662 tests passing; version tagged and PyPI published
 * **v0.1.x patch series: COMPLETE** — v0.1.0 through v0.1.11; ~713+ tests at v0.1.11
-* **v0.2.0 status: IN PROGRESS** — Phase 17 closed; Phase 18 next; latest targeted ranking/context/orchestration gate 31 tests passing
+* **v0.2.0 status: IN PROGRESS** — Phase 18 closed; Phase 19 next; latest targeted data-adapter gate 76 tests passing
