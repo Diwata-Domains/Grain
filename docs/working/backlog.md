@@ -791,7 +791,7 @@ Default status for new backlog items in this file: `draft`
 - **Ready:** after validation service and scaffold exist
 
 ### P19-T06 — Phase 19 integration tests
-- **Status:** draft
+- **Status:** done
 - **Description:** Add end-to-end coverage across install-source validation, adapter install behavior, registry/review artifacts, and CI-facing validation paths for the chosen Phase 19 hosting model.
 - **Files:** `tests/`
 - **Model:** open_model
