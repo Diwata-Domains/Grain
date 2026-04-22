@@ -759,7 +759,7 @@ Default status for new backlog items in this file: `draft`
 - **Ready:** yes — Q19 is the task decision/output
 
 ### P19-T02 — Add adapter package validation service
-- **Status:** draft
+- **Status:** done
 - **Description:** Implement schema/compliance validation for installable adapter packages or registry entries, including file-shape checks, adapter-profile parsing, and deterministic error reporting before installation.
 - **Files:** `src/grain/services/`, `src/grain/validators/`, `tests/`
 - **Model:** frontier_model
