@@ -176,5 +176,3 @@ Phase 16 closed: 2026-04-21 — 8 tasks done (grain-verified)
 Phase 17 closed: 2026-04-21 — 6 tasks done (grain-verified)
 
 Phase 18 closed: 2026-04-21 — 6 tasks done (grain-verified)
-
-Phase 18 closed: 2026-04-22 — 6 tasks done (grain-verified)
