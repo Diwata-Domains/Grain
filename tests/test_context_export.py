@@ -39,6 +39,39 @@ def _write_doc(repo_root, relative_path, content):
     file_path.write_text(content, encoding="utf-8")
 
 
+def _write_adapter_profiles(repo_root):
+    _write_doc(
+        repo_root,
+        "docs/runtime/adapter_profiles.md",
+        """# Adapter Profiles
+
+## 5. Adapter Profiles
+
+### data_adapter
+- `adapter_id`: `data_adapter`
+- `domain_type`: `data`
+- `applies_to`:
+  - notebook
+  - parquet
+- `relevant_file_patterns`:
+  - `**/*.parquet`
+- `test_or_validation_hints`:
+  - validate metadata summaries
+""",
+    )
+
+
+def _set_primary_adapter(repo_root, packet_dir_name, adapter_id):
+    task_md = repo_root / "tasks" / packet_dir_name / "task.md"
+    task_md.write_text(
+        task_md.read_text(encoding="utf-8").replace(
+            "- **Primary Adapter:** none",
+            f"- **Primary Adapter:** {adapter_id}",
+        ),
+        encoding="utf-8",
+    )
+
+
 def test_render_context_markdown_export_includes_sources_and_content(packet_repo):
     _write_manifest(packet_repo)
     _write_doc(packet_repo, "docs/canonical/workflow_spec.md", "# Workflow Spec\nExport body.\n")
@@ -98,3 +131,26 @@ def test_render_context_markdown_export_includes_adapter_hint_sections(packet_re
     assert "### Test/Validation Hints" in content
     assert "- behavior regressions" in content
     assert "- run focused tests before full suite" in content
+
+
+def test_render_context_markdown_export_uses_data_artifact_extractor(packet_repo, monkeypatch):
+    _write_manifest(packet_repo)
+    _write_doc(packet_repo, "docs/canonical/workflow_spec.md", "# Workflow Spec\nExport body.\n")
+    _write_adapter_profiles(packet_repo)
+    _write_doc(packet_repo, "data/train.parquet", "PAR1")
+    create_packet_directory(packet_repo, phase=4, task_num=13)
+    _set_primary_adapter(packet_repo, "P4-T13-TASK-0001", "data_adapter")
+
+    monkeypatch.setattr(
+        "grain.adapters.export.DataArtifactExtractor.extract",
+        lambda self, path: f"# Data Artifact: {path.name}\n- Content policy: metadata-only",
+    )
+
+    result, bundle = build_context_bundle(packet_repo, "TASK-0001")
+    assert result.ok is True
+    assert bundle is not None
+
+    content = render_context_markdown_export(packet_repo, bundle)
+    assert "## Source: `data/train.parquet`" in content
+    assert "# Data Artifact: train.parquet" in content
+    assert "- Content policy: metadata-only" in content

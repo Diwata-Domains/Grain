@@ -710,7 +710,7 @@ Default status for new backlog items in this file: `draft`
 - **Ready:** after adapter contract is stable
 
 ### P18-T04 — Integrate `data_adapter` into context and scope selection
-- **Status:** draft
+- **Status:** done
 - **Description:** Wire the new adapter and extractor signals into context assembly and orchestration/scope analysis so data workflows select the right sources deterministically. Preserve the current explainability and proposal-only behavior in orchestration outputs.
 - **Files:** `src/grain/services/context_service.py`, `src/grain/services/orchestration_service.py`, `tests/`
 - **Model:** frontier_model

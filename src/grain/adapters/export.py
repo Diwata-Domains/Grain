@@ -3,6 +3,7 @@
 from pathlib import Path
 
 from grain.domain.context import ContextBundle
+from grain.services.data_artifact_extractor import DataArtifactExtractor
 from grain.services.docs_extractor import DocsExtractor
 from grain.services.notebook_extractor import NotebookExtractor
 from grain.services.pdf_extractor import PdfExtractor
@@ -95,6 +96,8 @@ def _render_source_content(source_path: Path) -> str:
     suffix = source_path.suffix.lower()
     if suffix in {".csv", ".xls", ".xlsx"}:
         return SpreadsheetExtractor().extract(source_path)
+    if suffix in {".parquet", ".feather", ".arrow", ".h5", ".hdf5", ".pkl", ".joblib", ".pt", ".onnx"}:
+        return DataArtifactExtractor().extract(source_path)
     if suffix == ".docx":
         return DocsExtractor().extract(source_path)
     if suffix == ".pdf":

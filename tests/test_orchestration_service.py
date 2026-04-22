@@ -40,6 +40,19 @@ def _write_adapter_profiles(root: Path) -> None:
   - browser
 - `test_or_validation_hints`:
   - run component tests
+
+### data_adapter
+- `adapter_id`: `data_adapter`
+- `domain_type`: `data`
+- `applies_to`:
+  - notebook
+  - parquet
+  - model
+- `relevant_file_patterns`:
+  - `**/*.ipynb`
+  - `**/*.parquet`
+- `test_or_validation_hints`:
+  - validate metadata summaries
 """,
     )
 
@@ -191,6 +204,21 @@ def test_analyze_scope_signals_includes_task_advice_payload(tmp_path: Path, monk
     assert payload is not None
     assert payload["task_advice"]["phase"] == "17"
     assert payload["task_advice"]["ranked_tasks"][0]["task_ref"] == "P17-T04"
+
+
+def test_analyze_scope_signals_activates_data_adapter_for_notebook_scope(tmp_path: Path):
+    _write_adapter_profiles(tmp_path)
+    _write(tmp_path / "analysis.ipynb", '{"cells":[],"metadata":{},"nbformat":4,"nbformat_minor":5}')
+    _write(tmp_path / "data" / "train.parquet", "PAR1")
+
+    result, payload = analyze_scope_signals(tmp_path, "review notebook parquet model pipeline")
+
+    assert result.ok is True
+    assert payload is not None
+    assert "data_adapter" in payload["active_adapters"]
+    signal = next(item for item in payload["adapter_signals"] if item["adapter_id"] == "data_adapter")
+    assert signal["active"] is True
+    assert signal["impact"]["affected_files"]
 
 
 def test_build_task_level_plan_unknown_adapter_filter_errors(tmp_path: Path):
