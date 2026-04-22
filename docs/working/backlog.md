@@ -718,7 +718,7 @@ Default status for new backlog items in this file: `draft`
 - **Ready:** after extractor and notebook migration land
 
 ### P18-T05 — Improve onboarding and scanner detection for data workflows
-- **Status:** draft
+- **Status:** done
 - **Description:** Expand codebase scanning and onboarding hints so repos with notebooks, dataset artifacts, and ML model files recommend `data_adapter` cleanly and stop defaulting those signals to `code_adapter` alone.
 - **Files:** `src/grain/services/`, `tests/`, `docs/working/`
 - **Model:** open_model

@@ -192,6 +192,8 @@ class CodebaseScanner:
             documentation_files=documentation_files,
             has_frontend_signal=has_frontend_signal,
             has_spreadsheet_signal=has_spreadsheet_signal,
+            has_notebook_signal=has_notebook_signal,
+            has_data_signal=has_data_signal,
         )
 
         custom_adapter_hints = self._detect_custom_adapter_hints(
@@ -425,13 +427,6 @@ class CodebaseScanner:
                 "with file patterns for your infrastructure artifacts."
             )
 
-        if has_notebook_signal or has_data_signal:
-            hints.append(
-                "Data science signals detected (notebooks or data files). "
-                "Consider defining a custom `data_adapter` in docs/runtime/adapter_profiles.md "
-                "with file patterns for notebooks, datasets, and model artifacts."
-            )
-
         for language, suggested_adapter in _MOBILE_LANGUAGE_MAP.items():
             if language in primary_languages:
                 hints.append(
@@ -449,6 +444,8 @@ class CodebaseScanner:
         documentation_files: list[str],
         has_frontend_signal: bool,
         has_spreadsheet_signal: bool,
+        has_notebook_signal: bool,
+        has_data_signal: bool,
     ) -> list[str]:
         adapters: list[str] = []
 
@@ -464,5 +461,7 @@ class CodebaseScanner:
         if has_spreadsheet_signal:
             adapters.append("spreadsheet_adapter")
 
-        return adapters
+        if has_notebook_signal or has_data_signal:
+            adapters.append("data_adapter")
 
+        return adapters

@@ -128,7 +128,8 @@ def test_scanner_emits_data_hint_for_notebooks(tmp_path: Path):
 
     result = CodebaseScanner(tmp_path).scan()
 
-    assert any("data_adapter" in hint for hint in result.custom_adapter_hints)
+    assert "data_adapter" in result.applicable_adapters
+    assert not any("data_adapter" in hint for hint in result.custom_adapter_hints)
 
 
 def test_scanner_emits_data_hint_for_parquet(tmp_path: Path):
@@ -136,7 +137,8 @@ def test_scanner_emits_data_hint_for_parquet(tmp_path: Path):
 
     result = CodebaseScanner(tmp_path).scan()
 
-    assert any("data_adapter" in hint for hint in result.custom_adapter_hints)
+    assert "data_adapter" in result.applicable_adapters
+    assert not any("data_adapter" in hint for hint in result.custom_adapter_hints)
 
 
 def test_scanner_emits_mobile_hint_for_swift(tmp_path: Path):

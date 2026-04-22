@@ -184,3 +184,19 @@ def test_backlog_no_retrospective_when_no_modules(tmp_path: Path):
     content = (tmp_path / "docs" / "working" / "backlog.md").read_text(encoding="utf-8")
     assert "Retrospective Review Required" not in content
 
+
+def test_generated_drafts_surface_data_adapter_as_applicable(tmp_path: Path):
+    scan = ScanResult(
+        root=str(tmp_path.resolve()),
+        primary_languages=["Python"],
+        applicable_adapters=["code_adapter", "data_adapter"],
+        documentation_files=["README.md"],
+    )
+
+    OnboardDocGenerator(tmp_path).generate(scan)
+
+    product_scope = (tmp_path / "docs" / "canonical" / "product_scope.md").read_text(encoding="utf-8")
+    backlog = (tmp_path / "docs" / "working" / "backlog.md").read_text(encoding="utf-8")
+
+    assert "code_adapter, data_adapter" in product_scope
+    assert "code_adapter, data_adapter" in backlog
