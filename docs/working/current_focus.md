@@ -67,8 +67,8 @@ IN PROGRESS — Phase 18 closed 2026-04-21. Phase 19 is now the active implement
 - Config field: `grain.embedding_provider` in `docs_manifest.yaml` (already shipped in v0.1.7)
 
 ## Immediate Goals
-1. Resolve the Phase 19 hosting/distribution model for community adapters before writing execution tasks
-2. Plan the initial registry slices around install, validation, and review workflow
+1. Land the Phase 19 community registry hosting/trust contract in working and canonical docs
+2. Implement the initial registry slices around validation, install, and review workflow
 3. Preserve the official/community/local adapter boundaries while keeping the existing runtime contract stable
 
 ## After Phase 8 — Using the Runner with Agent CLIs

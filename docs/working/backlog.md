@@ -744,19 +744,19 @@ Default status for new backlog items in this file: `draft`
 - Adapter contract is already stable — community adapters follow the same schema as official adapters
 - Three tiers:
   - **Official** — maintained by Diwata Labs, fully validated (existing adapters)
-  - **Community** — submitted via PR to a community repo, automated schema validation + maintainer review before merge
+  - **Community** — submitted via PR to one dedicated reviewed community registry repo, with automated schema validation + maintainer review before merge
   - **Local/private** — user-defined, stays in their own repo (already works today, no changes needed)
 - Community adapters proven reliable over time may be promoted to Official
-- Key decision gate: hosting model is tracked as Q19 and is the first implementation/planning slice in this phase
+- Key decision gate: resolved in Q19 — Community adapters live in a dedicated reviewed registry repo, separate from the main Grain source repo
 - Key open question: promotion criteria — what does a community adapter need to demonstrate before being promoted to Official?
 
 ### P19-T01 — Define community registry hosting and trust contract
-- **Status:** draft
+- **Status:** done
 - **Description:** Resolve the authoritative hosting/distribution model for community adapters and write the minimal trust contract: where community adapters live, how install sources are addressed, what “official/community/local” means operationally, and what promotion to Official requires at a high level. This is the decision-and-contract slice that unblocks the rest of Phase 19.
 - **Files:** `docs/working/`, `docs/canonical/`, `tests/`
 - **Model:** frontier_model
 - **Dependencies:** P18-T06
-- **Ready:** yes — planning entrypoint for Q19
+- **Ready:** yes — Q19 is the task decision/output
 
 ### P19-T02 — Add adapter package validation service
 - **Status:** draft

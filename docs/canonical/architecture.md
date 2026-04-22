@@ -368,7 +368,9 @@ Bridge domain-specific execution hints, context selection priorities, validation
 
 **Official adapters** — maintained by the Grain project; distributed as part of the core system. Examples: `code_adapter`, `frontend_adapter`, `docs_adapter`, `spreadsheet_adapter`.
 
-**Custom adapters** — defined locally within a repo for domain-specific or private use cases. Examples: a `devops_adapter` for VPS provisioning tasks, a `local_ops_adapter` for machine-admin repos, or a domain-specific adapter for any operational workflow expressible through repo artifacts. Custom adapters must conform to the same contract as official adapters.
+**Community adapters** — maintained outside the core Grain repo but distributed through one dedicated reviewed registry repository. Community adapters must conform to the same contract as official adapters, pass registry validation, and remain proposal-reviewed before they are promoted to Official status.
+
+**Local/private adapters** — defined locally within a repo for domain-specific or private use cases. Examples: a `devops_adapter` for VPS provisioning tasks, a `local_ops_adapter` for machine-admin repos, or a domain-specific adapter for any operational workflow expressible through repo artifacts. Local/private adapters must conform to the same contract as official adapters, but they do not depend on the shared community registry.
 
 #### Adapter contract expectations
 - each adapter is a declarative, filesystem-visible profile, not runtime code

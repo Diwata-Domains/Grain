@@ -22,15 +22,6 @@ If a question affects canonical rules, architecture, contracts, or workflow sema
 
 ## 3. Open Questions
 
-### Q19 — What hosting model should the Phase 19 community adapter registry use?
-
-* **Status:** decision_needed
-* **Notes:** Phase 19 needs one authoritative distribution path for community adapters before install/validation flows can stabilize. Candidate directions already noted in `backlog.md`: a dedicated GitHub org repo versus a subdirectory/registry living inside the main Grain repo.
-* **Affected Docs:** `docs/working/backlog.md`, future Phase 19 registry docs
-* **Related Tasks:** P19-T01 through P19-T06
-
----
-
 ### Q7 — How should context export be represented in v1?
 
 * **Status:** resolved
@@ -56,6 +47,17 @@ If a question affects canonical rules, architecture, contracts, or workflow sema
 ---
 
 ## 4. Resolved Questions
+
+### Q19 — What hosting model should the Phase 19 community adapter registry use?
+
+* **Resolution:** Community adapters should live in one dedicated reviewed registry repository, separate from the main Grain source repo. The main Grain repo continues to own Official adapters and core runtime code; repo-local user adapters remain Local/private and require no registry. Phase 19 install flows should accept only explicit registry handles or explicit source references bounded by this reviewed registry contract. Promotion from Community to Official requires a separate maintainer decision after sustained validation and adoption, not an automatic registry state change.
+* **Resolution Type:** working-doc update
+* **Decision By:** codex
+* **Decision Date:** 2026-04-22
+* **Applied By:** codex
+* **Applied Date:** 2026-04-22
+* **Affected Docs:** `docs/working/backlog.md`, `docs/working/current_focus.md`, `docs/working/open_questions.md`, `docs/canonical/architecture.md`, `docs/canonical/data_contracts.md`, `docs/canonical/product_scope.md`
+* **Related Tasks:** P19-T01, P19-T02, P19-T03, P19-T04, P19-T05, P19-T06
 
 ### Q18 — What is the extraction boundary for Phase 18 data files?
 

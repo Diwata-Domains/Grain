@@ -539,13 +539,15 @@ review_focus_hints: <list[string]>
 default_model_bias: <string | mapping>
 ```
 
-### 17.3 Official vs Custom Adapters
+### 17.3 Official vs Community vs Local Adapters
 
 **Official adapters** are maintained by the Grain project and distributed in the core adapter profiles file. They are subject to the same canonical change process as other runtime docs.
 
-**Custom adapters** are defined locally by users for repo-specific or private domain needs. They must conform to the same schema as official adapters. Custom adapters may be added to `docs/runtime/adapter_profiles.md` alongside official ones, or declared in a separate file referenced by the manifest.
+**Community adapters** are maintained outside the core Grain repo but distributed through one dedicated reviewed registry repository. They must conform to the same schema as official adapters. Community adapters are installable only through explicit install flows bounded by the reviewed registry contract; they do not become Official automatically.
 
-Custom adapter `adapter_id` values must not shadow official adapter IDs.
+**Local/private adapters** are defined locally by users for repo-specific or private domain needs. They must conform to the same schema as official adapters. Local/private adapters may be added to `docs/runtime/adapter_profiles.md` alongside official adapters, or declared in a separate file referenced by the manifest.
+
+Community and local/private adapter `adapter_id` values must not shadow official adapter IDs.
 
 ### 17.4 Packet-Level Adapter Fields
 
