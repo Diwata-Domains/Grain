@@ -1,0 +1,4 @@
+package_id: sample-community-adapter
+adapter_id: sample_adapter
+version: 0.1.0
+profile_path: adapter_profile.md

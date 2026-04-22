@@ -775,7 +775,7 @@ Default status for new backlog items in this file: `draft`
 - **Ready:** after validation rules are stable
 
 ### P19-T04 — Scaffold registry/review artifacts
-- **Status:** draft
+- **Status:** done
 - **Description:** Add the repository-side scaffold and templates for community adapters: submission layout, adapter template, contribution guidance, and review metadata expected by the validation/install flow.
 - **Files:** `contrib/`, `docs/`, `tests/`
 - **Model:** open_model
