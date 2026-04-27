@@ -1,0 +1,7 @@
+package_id: sample-community-adapter
+review_state: pending
+reviewed_by: ""
+review_notes:
+  - confirm package metadata matches the adapter profile
+  - confirm the adapter contract is declarative and inspectable
+promotion_candidate: false

@@ -1,0 +1,25 @@
+version: 1
+
+# Workflow loop execution mode:
+# - supervised: propose every step and require operator approval before each invocation
+# - gated: run automatically and stop at review/close gates (default)
+# - autonomous: minimal stops; only pauses on failures/escalations
+#   NOTE: autonomous mode is unverified automation. It does not replace human review
+#   or an independent verification layer if your project uses one.
+supervision_level: gated
+
+# Agent configuration for each workflow stage.
+# Set shortcut to a named agent CLI (e.g. claude, codex) or set command for a raw invocation.
+# Replace model with the actual model identifier your agent CLI accepts.
+agents:
+  executor:
+    shortcut: claude
+    model: claude-opus-4-5
+
+  reviewer:
+    shortcut: claude
+    model: claude-opus-4-5
+
+  closer:
+    shortcut: claude
+    model: claude-opus-4-5

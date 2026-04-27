@@ -1,0 +1,110 @@
+"""Export adapter for context bundle outputs."""
+
+from pathlib import Path
+
+from grain.domain.context import ContextBundle
+from grain.services.data_artifact_extractor import DataArtifactExtractor
+from grain.services.docs_extractor import DocsExtractor
+from grain.services.notebook_extractor import NotebookExtractor
+from grain.services.pdf_extractor import PdfExtractor
+from grain.services.spreadsheet_extractor import SpreadsheetExtractor
+
+
+def render_context_markdown_export(root: Path, bundle: ContextBundle) -> str:
+    """Render a single assembled markdown export for a ContextBundle."""
+    generated_at = bundle.export_metadata.get("generated_at", "")
+    sources = bundle.export_metadata.get("sources", [])
+    adapter_context = bundle.export_metadata.get("adapter_context", {})
+    primary_adapter = str(adapter_context.get("primary_adapter", "none"))
+    review_hints = adapter_context.get("review_focus_hints", [])
+    validation_hints = adapter_context.get("test_or_validation_hints", [])
+
+    lines: list[str] = [
+        "# Context Export",
+        "",
+        f"Task ID: {bundle.task_id}",
+        f"Generated At: {generated_at}",
+        f"Primary Adapter: {primary_adapter}",
+    ]
+
+    if primary_adapter != "none":
+        lines.extend(
+            [
+                "",
+                "## Adapter Hints",
+                "",
+                "### Review Focus Hints",
+            ]
+        )
+        if review_hints:
+            for hint in review_hints:
+                lines.append(f"- {hint}")
+        else:
+            lines.append("- (none)")
+        lines.extend(["", "### Test/Validation Hints"])
+        if validation_hints:
+            for hint in validation_hints:
+                lines.append(f"- {hint}")
+        else:
+            lines.append("- (none)")
+
+    lines.extend(
+        [
+        "",
+        "## Sources",
+        ]
+    )
+    for source in sources:
+        lines.append(f"- `{source}`")
+
+    for source in sources:
+        source_path = root / source
+        lines.append("")
+        lines.append(f"## Source: `{source}`")
+        if not source_path.exists():
+            lines.append("")
+            lines.append("_Missing source file on disk._")
+            continue
+        lines.append("")
+        lines.append("```md")
+        lines.append(_render_source_content(source_path))
+        lines.append("```")
+
+    return "\n".join(lines).strip() + "\n"
+
+
+def write_context_markdown_export(
+    root: Path,
+    bundle: ContextBundle,
+    output_path: Path | None = None,
+) -> Path:
+    """Write markdown export to disk and return the output path."""
+    if output_path is None:
+        resolved = bundle.packet_dir / "context_export.md"
+    elif output_path.is_absolute():
+        resolved = output_path
+    else:
+        resolved = root / output_path
+
+    resolved.parent.mkdir(parents=True, exist_ok=True)
+    content = render_context_markdown_export(root, bundle)
+    resolved.write_text(content, encoding="utf-8")
+    return resolved
+
+
+def _render_source_content(source_path: Path) -> str:
+    suffix = source_path.suffix.lower()
+    if suffix in {".csv", ".xls", ".xlsx"}:
+        return SpreadsheetExtractor().extract(source_path)
+    if suffix in {".parquet", ".feather", ".arrow", ".h5", ".hdf5", ".pkl", ".joblib", ".pt", ".onnx"}:
+        return DataArtifactExtractor().extract(source_path)
+    if suffix == ".docx":
+        return DocsExtractor().extract(source_path)
+    if suffix == ".pdf":
+        return PdfExtractor().extract(source_path)
+    if suffix == ".ipynb":
+        return NotebookExtractor().extract(source_path)
+    try:
+        return source_path.read_text(encoding="utf-8")
+    except UnicodeDecodeError:
+        return f"[context_export: binary or non-utf8 source {source_path.name}]"

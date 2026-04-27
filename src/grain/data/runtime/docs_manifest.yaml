@@ -1,0 +1,223 @@
+version: 1
+
+project:
+  name: "[Your Project Name]"
+  type: "[project type — e.g. web_app, cli_tool, service, data_pipeline]"
+  mode: single_user
+  storage: filesystem
+  authority_model: explicit_hierarchy
+  minimum_grain_version: "__GRAIN_VERSION__"
+
+# Grain configuration — project-level defaults for the grain CLI.
+# All fields are optional. Omit any you do not need.
+grain:
+  default_supervision: gated        # supervised | gated | autonomous
+  default_format: text              # text | json
+  upgrade_check: warn               # warn | silent
+  embedding_provider: none          # none | ollama | local | openai
+  ollama_embedding_model: nomic-embed-text
+  local_embedding_model: sentence-transformers/all-MiniLM-L6-v2
+  openai_embedding_model: text-embedding-3-small
+
+canonical:
+  - id: product_scope
+    path: docs/canonical/product_scope.md
+    purpose: Defines goals, non-goals, users, and scope boundaries
+    authority: highest
+    editable_by_agents: false
+    read_when:
+      - starting_project
+      - evaluating_scope
+      - planning_phases
+      - resolving_scope_conflicts
+
+  - id: architecture
+    path: docs/canonical/architecture.md
+    purpose: Defines system modules, interfaces, and design decisions
+    authority: highest
+    editable_by_agents: false
+    read_when:
+      - designing_features
+      - creating_tasks
+      - validating_implementation
+      - resolving_design_conflicts
+
+working:
+  - id: implementation_plan
+    path: docs/working/implementation_plan.md
+    purpose: Current build sequence and milestone plan
+    authority: secondary
+    editable_by_agents: true
+    read_when:
+      - selecting_next_work
+      - checking_phase_sequence
+
+  - id: backlog
+    path: docs/working/backlog.md
+    purpose: Task inventory grouped by phase with status and dependencies
+    authority: secondary
+    editable_by_agents: true
+    read_when:
+      - selecting_tasks
+      - reviewing_progress
+      - planning_next_packet
+
+  - id: current_focus
+    path: docs/working/current_focus.md
+    purpose: Active focus, temporary constraints, and immediate priorities
+    authority: secondary
+    editable_by_agents: true
+    read_when:
+      - starting_any_execution
+      - resuming_work
+
+  - id: open_questions
+    path: docs/working/open_questions.md
+    purpose: Open decisions needing clarification or approval
+    authority: informational
+    editable_by_agents: true
+    read_when:
+      - encountering_blockers
+      - preparing_review
+
+  - id: change_proposals
+    path: docs/working/change_proposals.md
+    purpose: Proposed changes to canonical docs pending human approval
+    authority: advisory
+    editable_by_agents: true
+    read_when:
+      - canonical_conflict_detected
+      - proposing_scope_or_architecture_changes
+
+  - id: workflow_metrics
+    path: docs/working/workflow_metrics.md
+    purpose: Per-phase execution metrics and workflow health observations
+    authority: informational
+    editable_by_agents: true
+    read_when:
+      - closing_phase
+      - reviewing_workflow_health
+
+  - id: tooling_notes
+    path: docs/working/tooling_notes.md
+    purpose: Structured inbox for workflow friction, tool bugs, and mid-session observations (Type/Status/Severity columns)
+    authority: informational
+    editable_by_agents: true
+    read_when:
+      - never
+
+runtime:
+  - id: project_rules
+    path: docs/runtime/PROJECT_RULES.md
+    purpose: Global execution rules for agents and tools
+    authority: highest_runtime
+    editable_by_agents: false
+    read_when:
+      - always
+
+  - id: docs_index
+    path: docs/runtime/docs_index.md
+    purpose: Human-readable doc map, hierarchy, and permissions
+    authority: high_runtime
+    editable_by_agents: true
+    read_when:
+      - entering_repo
+      - locating_authority
+
+  - id: docs_manifest
+    path: docs/runtime/docs_manifest.yaml
+    purpose: Machine-readable doc registry and load rules
+    authority: high_runtime
+    editable_by_agents: true
+    read_when:
+      - context_selection
+      - validation
+      - packet_generation
+
+  - id: context_loading
+    path: docs/runtime/context_loading.md
+    purpose: Rules for selecting minimal relevant context
+    authority: high_runtime
+    editable_by_agents: true
+    read_when:
+      - before_task_execution
+      - during_packet_generation
+
+  - id: agent_profiles
+    path: docs/runtime/agent_profiles.md
+    purpose: Model classes, routing logic, and escalation rules
+    authority: high_runtime
+    editable_by_agents: true
+    read_when:
+      - selecting_model
+      - escalating_work
+
+  - id: adapter_profiles
+    path: docs/runtime/adapter_profiles.md
+    purpose: Adapter contract and domain-specific execution/context/review hints
+    authority: high_runtime
+    editable_by_agents: true
+    read_when:
+      - designing_adapters
+      - context_selection
+
+tasks:
+  root: tasks/
+  packet_files:
+    - name: task
+      filename: task.md
+      required: true
+    - name: context
+      filename: context.md
+      required: true
+    - name: plan
+      filename: plan.md
+      required: true
+    - name: deliverable_spec
+      filename: deliverable_spec.md
+      required: true
+    - name: results
+      filename: results.md
+      required: false
+    - name: handoff
+      filename: handoff.md
+      required: false
+  patch_dir: patches/
+  status_values:
+    - draft
+    - ready
+    - in_progress
+    - blocked
+    - review
+    - needs_fix
+    - done
+  id_format: "P<N>-T<NN>-TASK-####"
+
+rules:
+  authority_order:
+    - docs/runtime/PROJECT_RULES.md
+    - docs/canonical/*
+    - docs/runtime/docs_manifest.yaml
+    - docs/runtime/docs_index.md
+    - docs/working/*
+    - tasks/*
+  canonical_change_policy:
+    direct_agent_edits_allowed: false
+    require_human_approval: true
+    proposal_location: docs/working/change_proposals.md
+  context_policy:
+    load_minimum_required_docs: true
+    prefer_task_packet_context: true
+    avoid_full_repo_context: true
+  execution_policy:
+    use_task_packets: true
+    one_task_one_packet: true
+    patch_over_rewrite: true
+    preserve_doc_separation: true
+  completion_policy:
+    require_defined_deliverable: true
+    require_results_recorded: true
+    require_rule_check: true
+    require_user_approval: true
+    require_verification_pass: false
+    allow_close_when_verification_not_run: true

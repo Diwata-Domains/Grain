@@ -1,0 +1,46 @@
+version: 1
+
+project:
+  name: Forge-test
+  type: cli_toolkit
+  mode: single_user
+  storage: filesystem
+  authority_model: explicit_hierarchy
+
+canonical:
+  - id: architecture
+    path: docs/canonical/architecture.md
+    purpose: Defines system structure
+    authority: highest
+    editable_by_agents: false
+    read_when:
+      - designing_features
+
+working:
+  - id: backlog
+    path: docs/working/backlog.md
+    purpose: Task inventory
+    authority: secondary
+    editable_by_agents: true
+    read_when:
+      - selecting_tasks
+
+runtime:
+  - id: project_rules
+    path: docs/runtime/PROJECT_RULES.md
+    purpose: Global rules
+    authority: highest_runtime
+    editable_by_agents: false
+    read_when:
+      - always
+
+tasks:
+  root: tasks/
+  packet_files: []
+  patch_dir: patches/
+  status_values:
+    - draft
+    - done
+  id_format: "TASK-####"
+
+# rules section intentionally omitted — triggers schema validation error

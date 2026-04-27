@@ -1,0 +1,55 @@
+name: Community Adapter Registry Validate
+
+on:
+  pull_request:
+    paths:
+      - "contrib/community_adapter_registry/**"
+      - "docs/working/community_adapter_authoring.md"
+      - "src/grain/services/adapter_package_service.py"
+      - "src/grain/services/adapter_install_service.py"
+      - "src/grain/cli/adapter.py"
+      - "tests/test_adapter_package_service.py"
+      - "tests/test_adapter_install_service.py"
+      - "tests/test_adapter_cmd.py"
+      - "tests/test_phase19_registry_scaffold.py"
+      - "tests/test_phase19_registry_ci_docs.py"
+  push:
+    branches:
+      - main
+    paths:
+      - "contrib/community_adapter_registry/**"
+      - "docs/working/community_adapter_authoring.md"
+      - "src/grain/services/adapter_package_service.py"
+      - "src/grain/services/adapter_install_service.py"
+      - "src/grain/cli/adapter.py"
+      - "tests/test_adapter_package_service.py"
+      - "tests/test_adapter_install_service.py"
+      - "tests/test_adapter_cmd.py"
+      - "tests/test_phase19_registry_scaffold.py"
+      - "tests/test_phase19_registry_ci_docs.py"
+
+jobs:
+  validate-community-adapter-registry:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install package and test runner
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e . pytest
+
+      - name: Run Phase 19 community adapter validation tests
+        run: |
+          pytest \
+            tests/test_adapter_package_service.py \
+            tests/test_adapter_install_service.py \
+            tests/test_adapter_cmd.py \
+            tests/test_phase19_registry_scaffold.py \
+            tests/test_phase19_registry_ci_docs.py

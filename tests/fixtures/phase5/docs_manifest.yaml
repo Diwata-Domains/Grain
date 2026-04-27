@@ -1,0 +1,82 @@
+version: 1
+
+project:
+  name: Forge-test
+  type: cli_toolkit
+  mode: single_user
+  storage: filesystem
+  authority_model: explicit_hierarchy
+
+canonical:
+  - id: workflow_spec
+    path: docs/canonical/workflow_spec.md
+    purpose: Defines workflow expectations
+    authority: highest
+    editable_by_agents: false
+    read_when:
+      - running_tasks
+
+working: []
+
+runtime:
+  - id: project_rules
+    path: docs/runtime/PROJECT_RULES.md
+    purpose: Global execution rules for agents and tools
+    authority: highest_runtime
+    editable_by_agents: false
+    read_when:
+      - always
+
+tasks:
+  root: tasks/
+  packet_files:
+    - name: task
+      filename: task.md
+      required: true
+    - name: context
+      filename: context.md
+      required: true
+    - name: plan
+      filename: plan.md
+      required: true
+    - name: deliverable_spec
+      filename: deliverable_spec.md
+      required: true
+  patch_dir: patches/
+  status_values:
+    - draft
+    - ready
+    - in_progress
+    - blocked
+    - review
+    - needs_fix
+    - done
+  id_format: "TASK-####"
+
+rules:
+  authority_order:
+    - docs/runtime/PROJECT_RULES.md
+    - docs/canonical/*
+    - docs/runtime/docs_manifest.yaml
+    - docs/working/*
+    - tasks/*
+  canonical_change_policy:
+    direct_agent_edits_allowed: false
+    require_human_approval: true
+    proposal_location: docs/working/change_proposals.md
+  context_policy:
+    load_minimum_required_docs: true
+    prefer_task_packet_context: true
+    avoid_full_repo_context: true
+  execution_policy:
+    use_task_packets: true
+    one_task_one_packet: true
+    patch_over_rewrite: true
+    preserve_doc_separation: true
+  completion_policy:
+    require_defined_deliverable: true
+    require_results_recorded: true
+    require_rule_check: true
+    require_user_approval: true
+    require_verification_pass: false
+    allow_close_when_verification_not_run: true
