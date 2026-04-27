@@ -266,13 +266,18 @@ Do not start these before their prerequisite phases are stable:
 v0.2.0 is released. Post-release planning now shifts to a new phase sequence starting with Phase 21.
 
 Immediate planning focus:
-- define the v0.3.0 milestone contract on `dev`
+- execute the locked v0.3.0 milestone contract on `dev`
 - lock the first TUI/operator slice
 - define writable document/spreadsheet workflows
 - define how Grain should be invoked from desktop agent environments
 - decide whether Obsidian remains a `docs_adapter` profile or becomes a first-class `obsidian_adapter`
 - require reviewable diffs, validators, and safety modes for non-code artifact writes
 - identify a small reusable workflow-recipe layer that belongs in the first operator surface
+
+Locked milestone contract:
+- Theme: `Operator Surface for Structured Knowledge Work`
+- Core: TUI, writable office artifacts, reviewable non-code diffs/validators/safety modes, desktop integration path, and explicit Obsidian support shape
+- Stretch: reusable workflow recipes, richer TUI inspection surfaces, and contract-freshness warnings if the core ships cleanly
 
 ---
 

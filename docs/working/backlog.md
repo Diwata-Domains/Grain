@@ -882,10 +882,33 @@ Default status for new backlog items in this file: `draft`
 ### P21 Planning Notes
 - Scope: lock the first v0.3.0 milestone around a real operator surface, writable office/document workflows, desktop-app compatibility, and explicit Obsidian support decisions
 - Primary target: turn the broad `TUI next` direction into an execution-ready plan with bounded phases and task inventory
+- Milestone theme: **Operator Surface for Structured Knowledge Work**
+- Milestone summary: v0.3.0 makes Grain usable not just for code/task orchestration, but for day-to-day operator workflows across task packets, document artifacts, spreadsheets, and markdown vaults from the environments the operator actually uses.
 - Branching intent:
   - `main` — release-state and approved planning truth
   - `dev` — v0.3.0 execution and planning refinement before coding starts
   - `hotfix` — any quick fixes to the released v0.2.0 line
+- Core deliverables required for v0.3.0:
+  - first usable Grain TUI for workflow navigation and common actions
+  - writable `.docx` and spreadsheet flows
+  - reviewable non-code artifact changes with validators and safety modes
+  - explicit desktop invocation strategy, including a thin MCP path where required
+  - explicit Obsidian support decision with at least one supported vault-aware path
+- Stretch deliverables if core lands cleanly:
+  - reusable workflow recipes for repeated office/vault workflows
+  - richer TUI inspection surfaces such as context bundle views and prompt previews
+  - contract freshness warnings for prompt/runtime drift during long sessions
+- Success criteria:
+  - an operator can navigate active workflow state from the TUI without dropping to raw file inspection for common actions
+  - an operator can safely update a `.docx` artifact and a spreadsheet artifact through Grain-managed flows
+  - those updates produce reviewable outputs before closure
+  - Grain has a credible desktop integration story for both Claude-style MCP environments and Codex-style CLI usage
+  - Obsidian support is no longer ambiguous in planning or adapter boundaries
+- Explicit non-goals for v0.3.0:
+  - broad GUI beyond the first TUI slice
+  - cloud sync, hosted state, or team collaboration backend
+  - full Sentinel work
+  - broad new adapter proliferation beyond the office/document and Obsidian surfaces
 - Product assumptions for v0.3.0:
   - a TUI is required
   - writable `.docx` and spreadsheet flows are in scope
@@ -901,12 +924,12 @@ Default status for new backlog items in this file: `draft`
   - remote SaaS infrastructure unless required by the chosen desktop integration path
 
 ### P21-T01 — Define the v0.3.0 milestone contract
-- **Status:** ready
-- **Description:** Convert post-v0.2.0 direction into a bounded v0.3.0 contract: name the milestone theme, define success criteria, and identify the first 2–3 implementation phases Grain will execute next.
+- **Status:** done
+- **Description:** Milestone contract defined on 2026-04-27. Theme: `Operator Surface for Structured Knowledge Work`. Core: TUI, writable office artifacts, reviewable non-code diffs/validators/safety modes, desktop integration path, and explicit Obsidian support shape. Stretch: reusable workflow recipes, richer TUI inspection, and contract-freshness warnings if the core lands cleanly.
 - **Files:** `docs/working/backlog.md`, `docs/working/current_focus.md`, `docs/working/implementation_plan.md`
 - **Model:** frontier_model
 - **Dependencies:** none
-- **Ready:** yes
+- **Ready:** complete
 
 ### P21-T02 — Define the first Grain TUI slice
 - **Status:** draft

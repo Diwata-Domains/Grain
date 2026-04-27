@@ -70,11 +70,29 @@ COMPLETE — Phases 15 through 19 are closed on `dev`. v0.2.0 implementation sco
 CLOSED. All 6 tasks done (P20-T01 through P20-T06). Delivered: review routing after execution artifacts exist, archived-packet-aware task IDs, done-task stale-pointer handling, terminal project-complete workflow state, safer upgrade behavior for customized repos, and packet-first guardrails across prompts and agent instructions. Phase closed 2026-04-23.
 
 ## Immediate Goals
-1. Finalize the v0.3.0 plan on `dev`
+1. Execute the locked v0.3.0 milestone contract on `dev`
 2. Define the first TUI/operator slice, writable office-surface strategy, and desktop-app integration path
 3. Make Obsidian support explicit before implementation starts
 4. Ensure non-code artifact writes are reviewable through diffs, validators, and safety modes
-5. Capture high-value reusable workflow recipes instead of leaving them as ad hoc operator knowledge
+5. Capture high-value reusable workflow recipes only if the core milestone lands cleanly
+
+## v0.3.0 Contract
+- Theme: `Operator Surface for Structured Knowledge Work`
+- Core:
+  - first usable TUI for workflow navigation and common actions
+  - writable `.docx` and spreadsheet flows
+  - reviewable non-code artifact changes with validators and safety modes
+  - desktop invocation strategy for Claude-style MCP and Codex-style CLI usage
+  - explicit Obsidian support shape
+- Stretch:
+  - reusable workflow recipes
+  - richer TUI inspection surfaces
+  - contract-freshness warnings
+- Non-goals:
+  - broad GUI beyond the first TUI slice
+  - cloud/backend collaboration features
+  - Sentinel work
+  - broad new adapter expansion beyond office/document and Obsidian surfaces
 
 ## After Phase 8 — Using the Runner with Agent CLIs
 
