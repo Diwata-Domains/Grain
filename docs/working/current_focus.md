@@ -1,7 +1,7 @@
 # Current Focus
 
 ## Current Phase
-Phase 21 — Planning Not Started
+Phase 21 — v0.3.0 Planning and Operator Surface Definition
 
 v0.2.0 COMPLETE
 
@@ -70,9 +70,9 @@ COMPLETE — Phases 15 through 19 are closed on `dev`. v0.2.0 implementation sco
 CLOSED. All 6 tasks done (P20-T01 through P20-T06). Delivered: review routing after execution artifacts exist, archived-packet-aware task IDs, done-task stale-pointer handling, terminal project-complete workflow state, safer upgrade behavior for customized repos, and packet-first guardrails across prompts and agent instructions. Phase closed 2026-04-23.
 
 ## Immediate Goals
-1. Do a full release once-over before publishing v0.2.0
-2. Turn the Phase 21 planning placeholder into concrete v0.3.0 backlog items
-3. Preserve the closed Phase 20 workflow-hardening gains while defining the next milestone
+1. Finalize the v0.3.0 plan on `dev`
+2. Define the first TUI/operator slice, writable office-surface strategy, and desktop-app integration path
+3. Make Obsidian support explicit before implementation starts
 
 ## After Phase 8 — Using the Runner with Agent CLIs
 
@@ -153,7 +153,10 @@ All five phases must ship for v0.2.0 to close.
 - **Phase 11-T05 (deferred indefinitely)** — Homebrew formula remains out of scope unless distribution priorities change
 
 ## Upcoming Phase Sequence
-1. **Phase 21** — v0.3.0 planning and release confidence ← active now
+1. **Phase 21** — v0.3.0 planning and operator surface definition ← active now
+2. **Phase 22** — TUI foundation and workflow surfaces
+3. **Phase 23** — writable office artifacts (`.docx`, spreadsheets)
+4. **Phase 24** — desktop integrations and Obsidian support
 
 ## Active Constraints
 - use local filesystem only
@@ -163,13 +166,18 @@ All five phases must ship for v0.2.0 to close.
 - all orchestration outputs are proposals — no auto-creation of task packets
 - keep intelligence-layer outputs deterministic, local-only, and proposal-only
 
+## Branching Plan
+- `main` — release-state and approved planning truth
+- `dev` — v0.3.0 execution and planning refinement before coding starts
+- `hotfix` — quick fixes to the released v0.2.x line only
+
 ## Do Not Work On Right Now
 - Homebrew/tap distribution work unless release priorities change materially
 - Assay — independent companion project, separate repo, not a Grain feature
 - broad Phase 21 implementation before task planning is written
 - telemetry automation (v2 — FR-011)
 - autonomous multi-step execution without explicit operator gate
-- TUI/GUI implementation (future paid tier, separate codebase)
+- broad GUI work beyond the first required TUI slice
 
 Phase 15 closed: 2026-04-17 — 6 tasks done (grain-verified)
 

@@ -263,12 +263,14 @@ Do not start these before their prerequisite phases are stable:
 
 ## 9. Current Planning Horizon
 
-v0.2.0 implementation is complete. Post-release planning now shifts to a new phase sequence starting with Phase 21.
+v0.2.0 is released. Post-release planning now shifts to a new phase sequence starting with Phase 21.
 
 Immediate planning focus:
-- perform a full release once-over on the v0.2.0 surface
-- define the first concrete v0.3.0 phase slice
-- preserve workflow correctness and packaging quality while widening scope
+- define the v0.3.0 milestone contract on `dev`
+- lock the first TUI/operator slice
+- define writable document/spreadsheet workflows
+- define how Grain should be invoked from desktop agent environments
+- decide whether Obsidian remains a `docs_adapter` profile or becomes a first-class `obsidian_adapter`
 
 ---
 
