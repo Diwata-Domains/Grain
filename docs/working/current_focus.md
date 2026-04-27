@@ -73,6 +73,8 @@ CLOSED. All 6 tasks done (P20-T01 through P20-T06). Delivered: review routing af
 1. Finalize the v0.3.0 plan on `dev`
 2. Define the first TUI/operator slice, writable office-surface strategy, and desktop-app integration path
 3. Make Obsidian support explicit before implementation starts
+4. Ensure non-code artifact writes are reviewable through diffs, validators, and safety modes
+5. Capture high-value reusable workflow recipes instead of leaving them as ad hoc operator knowledge
 
 ## After Phase 8 — Using the Runner with Agent CLIs
 

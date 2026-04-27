@@ -892,6 +892,9 @@ Default status for new backlog items in this file: `draft`
   - desktop-app compatibility should be explicit, especially for Claude ecosystem MCP and OpenAI Codex workflows
   - likely integration split: CLI-first for Codex execution paths; MCP/server wrapper for Claude Desktop and ChatGPT app surfaces
   - Obsidian may justify a dedicated adapter if vault semantics exceed generic markdown/docs handling
+  - non-code artifact writes must be reviewable through change summaries or diffs before close
+  - safety modes should exist for office-style artifacts (`propose`, `apply`, `export-as-new-file` or equivalent)
+  - reusable workflow recipes are in scope if they simplify repeated operator tasks without introducing hidden state
 - Excluded from this phase until execution begins:
   - Assay feature work inside Grain
   - broad speculative GUI work beyond the first TUI/operator slice
@@ -937,7 +940,23 @@ Default status for new backlog items in this file: `draft`
 - **Dependencies:** P21-T01
 - **Ready:** after the milestone contract is locked
 
-### P21-T06 — Normalize tooling-notes schema and migration guidance
+### P21-T06 — Define reviewable diffs, validators, and safety modes for non-code artifacts
+- **Status:** draft
+- **Description:** Define how `.docx`, spreadsheets, and markdown-vault artifacts remain reviewable and safe. Cover change summaries or diffs, artifact-specific validators, and operator safety modes such as `propose`, `apply`, and `export-as-new-file`.
+- **Files:** planning docs, adapter planning docs, review docs, future design docs if needed
+- **Model:** frontier_model
+- **Dependencies:** P21-T01, P21-T03, P21-T05
+- **Ready:** after the milestone contract is locked
+
+### P21-T07 — Define reusable workflow recipes
+- **Status:** draft
+- **Description:** Identify a small reusable recipe layer for repeated operator tasks such as updating a PRD, revising notes from source material, updating spreadsheets, or fixing Obsidian vault links without over-abstracting the core workflow.
+- **Files:** planning docs, runtime docs, future prompt or recipe docs if needed
+- **Model:** open_model
+- **Dependencies:** P21-T01
+- **Ready:** after the milestone contract is locked
+
+### P21-T08 — Normalize tooling-notes schema and migration guidance
 - **Status:** draft
 - **Description:** Carry forward the deferred Phase 20 schema cleanup so Grain-managed repos use one machine-readable `tooling_notes.md` contract and clear migration guidance across seeded runtime docs and docs-facing instructions.
 - **Files:** `src/grain/data/runtime/`, `docs/runtime/`, `docs/canonical/`, `tests/`
@@ -945,12 +964,12 @@ Default status for new backlog items in this file: `draft`
 - **Dependencies:** none
 - **Ready:** optional follow-up after the operator-surface plan is stable
 
-### P21-T07 — Seed the first v0.3.0 execution phases and tasks
+### P21-T09 — Seed the first v0.3.0 execution phases and tasks
 - **Status:** draft
-- **Description:** Turn the approved v0.3.0 plan into concrete implementation phases on `dev`, including task inventory for the first TUI slice, writable office-surface support, desktop integration work, and Obsidian support.
+- **Description:** Turn the approved v0.3.0 plan into concrete implementation phases on `dev`, including task inventory for the first TUI slice, writable office-surface support, desktop integration work, Obsidian support, reviewable artifact flows, and workflow recipes.
 - **Files:** `docs/working/backlog.md`, `docs/working/current_focus.md`, `docs/working/implementation_plan.md`
 - **Model:** frontier_model
-- **Dependencies:** P21-T01 through P21-T05
+- **Dependencies:** P21-T01 through P21-T07
 - **Ready:** after the operator-surface plan is approved
 
 ---
@@ -966,6 +985,9 @@ Default status for new backlog items in this file: `draft`
   - current task and phase view
   - task execute/review/close launch points
   - prompt and packet artifact inspection
+  - context bundle inspection
+  - review-safe action launches for non-code artifact updates
+  - quick access to reusable workflow recipes
 
 ---
 
@@ -979,6 +1001,8 @@ Default status for new backlog items in this file: `draft`
   - docx read/update/export flow
   - spreadsheet read/update/export flow
   - review-safe diff or change-summary outputs
+  - artifact-specific validators
+  - explicit write safety modes such as `propose`, `apply`, and `export-as-new-file`
 
 ---
 
@@ -992,6 +1016,7 @@ Default status for new backlog items in this file: `draft`
   - thin MCP wrapper for Claude/Desktop-style environments
   - CLI-first Codex integration guidance and helpers
   - Obsidian vault semantics, whether via dedicated adapter or an extended docs profile
+  - reusable recipes for desktop-driven office and vault workflows
 
 ---
 

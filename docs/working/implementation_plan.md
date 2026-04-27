@@ -271,6 +271,8 @@ Immediate planning focus:
 - define writable document/spreadsheet workflows
 - define how Grain should be invoked from desktop agent environments
 - decide whether Obsidian remains a `docs_adapter` profile or becomes a first-class `obsidian_adapter`
+- require reviewable diffs, validators, and safety modes for non-code artifact writes
+- identify a small reusable workflow-recipe layer that belongs in the first operator surface
 
 ---
 
