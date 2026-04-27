@@ -94,6 +94,25 @@ CLOSED. All 6 tasks done (P20-T01 through P20-T06). Delivered: review routing af
   - Sentinel work
   - broad new adapter expansion beyond office/document and Obsidian surfaces
 
+## First TUI Slice
+- Shape: thin terminal operator shell over the existing CLI and file-backed workflow
+- Required views:
+  - workflow dashboard
+  - current task and phase view
+  - backlog-by-phase list
+  - packet artifact inspector
+  - prompt preview
+  - context bundle inspector
+- Required actions:
+  - launch execute/review/close flows
+  - open packet artifacts and blockers
+  - trigger safe review-oriented actions for non-code artifacts once those flows land
+- Explicit deferrals:
+  - embedded agent terminals
+  - multi-project views
+  - live collaboration
+  - broad canonical editing UI
+
 ## After Phase 8 — Using the Runner with Agent CLIs
 
 Phase 8 delivers a complete workflow automation runner. The intended operating pattern with an agent CLI (Claude Code, Codex, etc.) is:

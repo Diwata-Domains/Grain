@@ -932,12 +932,12 @@ Default status for new backlog items in this file: `draft`
 - **Ready:** complete
 
 ### P21-T02 — Define the first Grain TUI slice
-- **Status:** draft
-- **Description:** Specify the first TUI surface for Grain: core screens, navigation model, workflow-state views, task/review actions, and how the TUI relates to the existing CLI without replacing it.
+- **Status:** done
+- **Description:** First TUI slice defined on 2026-04-27 as a thin operator shell over the existing CLI/file-backed workflow. Required surfaces: workflow dashboard, current task/phase view, backlog-by-phase list, packet artifact inspector, prompt preview, and context-bundle inspector. Required actions: launch task execute/review/close flows, open packet artifacts, view blockers, and trigger safe non-code review actions when those land. Navigation model: one app shell with pane switching, detail panel, and command/status footer. The TUI must call stable Grain commands and read the same files the CLI already uses; it must not invent hidden state or alternate workflow transitions.
 - **Files:** planning docs, future canonical proposal inputs if needed
 - **Model:** frontier_model
 - **Dependencies:** P21-T01
-- **Ready:** after the milestone contract is locked
+- **Ready:** complete
 
 ### P21-T03 — Define writable document and spreadsheet workflows
 - **Status:** draft
@@ -1006,11 +1006,27 @@ Default status for new backlog items in this file: `draft`
 - Initial surfaces:
   - workflow status dashboard
   - current task and phase view
+  - backlog-by-phase list with ready/in-progress/review state visibility
   - task execute/review/close launch points
   - prompt and packet artifact inspection
   - context bundle inspection
   - review-safe action launches for non-code artifact updates
   - quick access to reusable workflow recipes
+- Navigation model:
+  - single terminal app shell
+  - left or top navigation for major views
+  - main detail pane for selected task/phase/artifact
+  - command and status footer for available actions and workflow blockers
+- TUI rules:
+  - no hidden workflow state
+  - no alternate lifecycle transitions
+  - CLI remains the source of truth for execution
+  - TUI actions should wrap existing Grain commands before introducing new stateful behavior
+- Explicitly deferred from the first slice:
+  - embedded agent execution consoles
+  - multi-project dashboarding
+  - live collaboration or remote sessions
+  - broad form-based canonical editing
 
 ---
 

@@ -279,6 +279,12 @@ Locked milestone contract:
 - Core: TUI, writable office artifacts, reviewable non-code diffs/validators/safety modes, desktop integration path, and explicit Obsidian support shape
 - Stretch: reusable workflow recipes, richer TUI inspection surfaces, and contract-freshness warnings if the core ships cleanly
 
+Locked first TUI slice:
+- thin terminal operator shell over the existing CLI and file-backed workflow
+- required views: workflow dashboard, current task/phase, backlog-by-phase, packet artifact inspector, prompt preview, context bundle inspector
+- required actions: launch execute/review/close flows, inspect blockers and packet artifacts, wrap safe non-code review actions when available
+- explicit deferrals: embedded agent consoles, multi-project dashboards, collaboration surfaces, broad canonical editing UI
+
 ---
 
 ## 9. Phase Completion Standard
