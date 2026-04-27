@@ -12,7 +12,7 @@ They may become:
 * v2/v3 capabilities
 * optional extensions
 
-Forge is a **development orchestration system**.
+Grain is a **development orchestration system**.
 Future work should expand its capabilities **without destabilizing the core build loop**.
 
 ---
@@ -166,7 +166,7 @@ If an item is actively being executed, the working docs own the operational stat
 
 ### FR-004b — Grain Distribution and Installation Paths
 
-* **Status:** graduated — delivered through Phase 11 (closed 2026-04-11); Homebrew path (P11-T05) deferred
+* **Status:** graduated — delivered through Phase 11 (closed 2026-04-11); Homebrew path (P11-T05) intentionally left outside the supported release story
 * **Suggested Target:** v0.1.0
 * **Why it matters:**
 
@@ -176,7 +176,7 @@ If an item is actively being executed, the working docs own the operational stat
 
   * PyPI publishing for `pip install grain`
   * `uv tool install grain` compatibility and documentation
-  * Homebrew distribution for macOS users (`brew install grain`)
+  * optional Homebrew distribution only if a maintained tap/release pipeline is introduced later
   * clear versioned install and upgrade instructions
   * installation verification and troubleshooting docs
 * **Dependencies:**
@@ -194,7 +194,7 @@ If an item is actively being executed, the working docs own the operational stat
 
 ### FR-004c — Workflow Automation Runner
 
-* **Status:** planned
+* **Status:** graduated — delivered through Phase 12
 * **Suggested Target:** v2
 * **Why it matters:**
 
@@ -357,8 +357,8 @@ If an item is actively being executed, the working docs own the operational stat
 
 ### FR-007b — Forge TUI
 
-* **Status:** candidate
-* **Suggested Target:** v2
+* **Status:** promoted — active v0.3.0 planning in Phase 21/22
+* **Suggested Target:** v0.3.0
 * **Why it matters:**
 
   * gives users a faster operator surface for navigating phases, backlog, packets, open questions, and proposals without leaving the terminal
@@ -387,6 +387,78 @@ If an item is actively being executed, the working docs own the operational stat
   * the TUI should read and write the same files Forge already uses
   * it should not introduce hidden state or an alternate workflow model
   * first version should be a thin terminal operator shell, not embedded agent orchestration
+  * promoted into active planning through `docs/working/backlog.md` Phase 21 and seeded Phase 22
+
+---
+
+### FR-016 — Writable Office Artifact Editing
+
+* **Status:** promoted — active v0.3.0 planning in Phase 21/23
+* **Suggested Target:** v0.3.0
+* **Why it matters:**
+
+  * Grain can already read spreadsheets and document artifacts, but practical operator value requires safe write/update support
+  * non-code artifacts need reviewable edits just as much as code does
+* **Scope:**
+
+  * `.docx` read/update/export flow
+  * spreadsheet read/update/export flow
+  * review-safe change summaries or diffs
+  * artifact-specific validators
+  * write safety modes such as `propose`, `apply`, and `export-as-new-file`
+* **Dependencies:**
+
+  * stable docs and spreadsheet extraction
+  * stable review and packet workflow
+* **Notes:**
+
+  * promoted into active planning through `docs/working/backlog.md` Phase 21 and seeded Phase 23
+
+---
+
+### FR-017 — Desktop Tooling and MCP Surface
+
+* **Status:** promoted — active v0.3.0 planning in Phase 21/24
+* **Suggested Target:** v0.3.0
+* **Why it matters:**
+
+  * Grain should be callable from the environments the operator actually uses, not only from a shell prompt
+  * Claude/Desktop-style MCP paths and Codex CLI-native paths imply different integration surfaces
+* **Scope:**
+
+  * thin MCP wrapper for Claude/Desktop-style environments
+  * CLI-first Codex guidance and helper flows
+  * shared tool contract for desktop-driven Grain usage
+* **Dependencies:**
+
+  * stable CLI surfaces
+  * stable review-safe artifact actions
+* **Notes:**
+
+  * promoted into active planning through `docs/working/backlog.md` Phase 21 and seeded Phase 24
+
+---
+
+### FR-018 — Obsidian Adapter and Vault Semantics
+
+* **Status:** promoted — active v0.3.0 planning in Phase 21/24
+* **Suggested Target:** v0.3.0
+* **Why it matters:**
+
+  * generic markdown handling is not the same as understanding an Obsidian vault
+  * wiki-links, frontmatter, attachments, canvases, and `.obsidian/` config can affect both context selection and safe edits
+* **Scope:**
+
+  * decide between extending `docs_adapter` versus introducing `obsidian_adapter`
+  * support vault-aware context loading and validations
+  * support safe note and link maintenance workflows
+* **Dependencies:**
+
+  * stable markdown/docs flows
+  * stable review-safe artifact update patterns
+* **Notes:**
+
+  * promoted into active planning through `docs/working/backlog.md` Phase 21 and seeded Phase 24
 
 ---
 

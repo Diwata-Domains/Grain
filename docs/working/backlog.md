@@ -800,9 +800,9 @@ Default status for new backlog items in this file: `draft`
 
 ---
 
-## 23. Phase 20 — Workflow Drift Remediation from Field Usage (planned, ready to start)
+## 23. Phase 20 — Workflow Drift Remediation from Field Usage ✓ CLOSED
 
-> **Status:** planned — seeded from cross-project `tooling_notes.md` review on 2026-04-23. Post-v0.2.0 hardening slice focused on workflow correctness, state handling, and customization safety. Excludes Assay feature work and items already fixed in v0.1.x / v0.2.0.
+> **Status:** CLOSED. 6 tasks done (P20-T01 through P20-T06). Closed 2026-04-23 after workflow correctness, state handling, upgrade-safety, and packet-first prompt hardening landed. P20-T07 deferred as a lower-priority follow-up.
 
 ### P20 Planning Notes
 - Scope: fix real workflow drift discovered while using Grain across Assay, DOMICILE, CRM, and other Grain-managed repos
@@ -834,15 +834,15 @@ Default status for new backlog items in this file: `draft`
 - **Ready:** after P20-T01 is complete to keep Phase 20 execution deterministic
 
 ### P20-T03 — Treat completed current task state as non-active workflow state (TASK-0137)
-- **Status:** ready
+- **Status:** done
 - **Description:** Harden workflow evaluation so `current_task.md` pointing at a `done` packet does not cause `workflow next` to keep routing against that completed task. Grain should recognize terminal task status, clear or ignore stale active-task state deterministically, and route to the correct next phase/task boundary.
 - **Files:** `src/grain/services/`, `src/grain/domain/`, `tests/`
 - **Model:** frontier_model
 - **Dependencies:** P20-T01
 - **Ready:** after review-routing semantics are stable
 
-### P20-T04 — Add a recognized terminal project-complete workflow state
-- **Status:** draft
+### P20-T04 — Add a recognized terminal project-complete workflow state (TASK-0138)
+- **Status:** done
 - **Description:** Add a valid terminal state for `docs/working/current_focus.md` so a completed project does not fail phase parsing. `grain workflow next` should stop cleanly with a deterministic no-op/project-complete signal instead of `required_docs_invalid` when the repo is intentionally complete.
 - **Files:** `src/grain/services/`, `src/grain/domain/`, `docs/canonical/`, `docs/runtime/`, `tests/`
 - **Model:** frontier_model
@@ -850,7 +850,7 @@ Default status for new backlog items in this file: `draft`
 - **Ready:** after P20-T01 and P20-T03 settle the workflow-state semantics
 
 ### P20-T05 — Make upgrade safer for customized repo doc layouts
-- **Status:** draft
+- **Status:** done
 - **Description:** Harden `grain upgrade` so repos with deliberate working-doc or canonical-doc customization do not get noisy or misleading diffs that appear to revert the project back to Grain defaults. Detect clearly customized managed files and surface bounded guidance rather than proposing destructive-looking rewrites.
 - **Files:** `src/grain/services/`, `src/grain/data/`, `tests/`, `README.md`
 - **Model:** frontier_model
@@ -858,7 +858,7 @@ Default status for new backlog items in this file: `draft`
 - **Ready:** after the core workflow-state fixes land
 
 ### P20-T06 — Strengthen packet-first guidance in bundled prompts and agent instructions
-- **Status:** draft
+- **Status:** done
 - **Description:** Harden the bundled prompt and instruction surface so resumed AI sessions do not skip task packet creation and jump straight to implementation. Add explicit packet-first guardrails to the relevant prompt/instruction assets without introducing hidden workflow steps or Assay coupling.
 - **Files:** `prompts/`, `src/grain/data/prompts/`, `docs/runtime/`, `tests/`
 - **Model:** open_model
@@ -872,6 +872,174 @@ Default status for new backlog items in this file: `draft`
 - **Model:** open_model
 - **Dependencies:** none
 - **Ready:** optional follow-up after the correctness fixes land
+
+---
+
+## 24. Phase 21 — v0.3.0 Planning and Operator Surface Definition (planned, ready to start)
+
+> **Status:** planned — updated on 2026-04-27 after the official v0.2.0 release. This phase defines the first concrete v0.3.0 execution slice on `dev`, aligned with release-state planning already locked on `main`. Any v0.2.x fixes remain on `hotfix`.
+
+### P21 Planning Notes
+- Scope: lock the first v0.3.0 milestone around a real operator surface, writable office/document workflows, desktop-app compatibility, and explicit Obsidian support decisions
+- Primary target: turn the broad `TUI next` direction into an execution-ready plan with bounded phases and task inventory
+- Milestone theme: **Operator Surface for Structured Knowledge Work**
+- Milestone summary: v0.3.0 makes Grain usable not just for code/task orchestration, but for day-to-day operator workflows across task packets, document artifacts, spreadsheets, and markdown vaults from the environments the operator actually uses.
+- Branching intent:
+  - `main` — release-state and approved planning truth
+  - `dev` — v0.3.0 execution and planning refinement before coding starts
+  - `hotfix` — any quick fixes to the released v0.2.0 line
+- Core deliverables required for v0.3.0:
+  - first usable Grain TUI for workflow navigation and common actions
+  - writable `.docx` and spreadsheet flows
+  - reviewable non-code artifact changes with validators and safety modes
+  - explicit desktop invocation strategy, including a thin MCP path where required
+  - explicit Obsidian support decision with at least one supported vault-aware path
+- Stretch deliverables if core lands cleanly:
+  - reusable workflow recipes for repeated office/vault workflows
+  - richer TUI inspection surfaces such as context bundle views and prompt previews
+  - contract freshness warnings for prompt/runtime drift during long sessions
+- Success criteria:
+  - an operator can navigate active workflow state from the TUI without dropping to raw file inspection for common actions
+  - an operator can safely update a `.docx` artifact and a spreadsheet artifact through Grain-managed flows
+  - those updates produce reviewable outputs before closure
+  - Grain has a credible desktop integration story for both Claude-style MCP environments and Codex-style CLI usage
+  - Obsidian support is no longer ambiguous in planning or adapter boundaries
+- Explicit non-goals for v0.3.0:
+  - broad GUI beyond the first TUI slice
+  - cloud sync, hosted state, or team collaboration backend
+  - full Sentinel work
+  - broad new adapter proliferation beyond the office/document and Obsidian surfaces
+- Product assumptions for v0.3.0:
+  - a TUI is required
+  - writable `.docx` and spreadsheet flows are in scope
+  - desktop-app compatibility should be explicit, especially for Claude ecosystem MCP and OpenAI Codex workflows
+  - likely integration split: CLI-first for Codex execution paths; MCP/server wrapper for Claude Desktop and ChatGPT app surfaces
+  - Obsidian may justify a dedicated adapter if vault semantics exceed generic markdown/docs handling
+  - non-code artifact writes must be reviewable through change summaries or diffs before close
+  - safety modes should exist for office-style artifacts (`propose`, `apply`, `export-as-new-file` or equivalent)
+  - reusable workflow recipes are in scope if they simplify repeated operator tasks without introducing hidden state
+- Excluded from this phase until execution begins:
+  - Assay feature work inside Grain
+  - broad speculative GUI work beyond the first TUI/operator slice
+  - remote SaaS infrastructure unless required by the chosen desktop integration path
+
+### P21-T01 — Define the v0.3.0 milestone contract
+- **Status:** done
+- **Description:** Milestone contract defined on 2026-04-27. Theme: `Operator Surface for Structured Knowledge Work`. Core: TUI, writable office artifacts, reviewable non-code diffs/validators/safety modes, desktop integration path, and explicit Obsidian support shape. Stretch: reusable workflow recipes, richer TUI inspection, and contract-freshness warnings if the core lands cleanly.
+- **Files:** `docs/working/backlog.md`, `docs/working/current_focus.md`, `docs/working/implementation_plan.md`
+- **Model:** frontier_model
+- **Dependencies:** none
+- **Ready:** complete
+
+### P21-T02 — Define the first Grain TUI slice
+- **Status:** draft
+- **Description:** Specify the first TUI surface for Grain: core screens, navigation model, workflow-state views, task/review actions, and how the TUI relates to the existing CLI without replacing it.
+- **Files:** planning docs, future canonical proposal inputs if needed
+- **Model:** frontier_model
+- **Dependencies:** P21-T01
+- **Ready:** after the milestone contract is locked
+
+### P21-T03 — Define writable document and spreadsheet workflows
+- **Status:** draft
+- **Description:** Decide how Grain should move from read/extract support to safe write/update support for `.docx` and spreadsheet files, including packet integration, review expectations, and whether edits are direct, patch-like, or export-based.
+- **Files:** planning docs, adapter planning docs, potential canonical proposal inputs
+- **Model:** frontier_model
+- **Dependencies:** P21-T01
+- **Ready:** after the milestone contract is locked
+
+### P21-T04 — Define desktop-app integration strategy
+- **Status:** draft
+- **Description:** Decide how Grain should be invoked from desktop agent environments. Cover direct CLI usage, Claude MCP/server compatibility, and OpenAI Codex/ChatGPT app pathways, including where a thin MCP wrapper is required versus where command execution is enough.
+- **Files:** planning docs, runtime guidance, future roadmap docs if needed
+- **Model:** frontier_model
+- **Dependencies:** P21-T01
+- **Ready:** after the milestone contract is locked
+
+### P21-T05 — Decide Obsidian support shape
+- **Status:** draft
+- **Description:** Decide whether Obsidian should remain inside `docs_adapter` or become a first-class `obsidian_adapter`. Evaluate vault-specific semantics such as wiki-links, frontmatter, attachments, `.obsidian/` config, canvases, and daily-note structures, then define the minimum supported v0.3.0 surface.
+- **Files:** planning docs, adapter profiles, future design docs if needed
+- **Model:** frontier_model
+- **Dependencies:** P21-T01
+- **Ready:** after the milestone contract is locked
+
+### P21-T06 — Define reviewable diffs, validators, and safety modes for non-code artifacts
+- **Status:** draft
+- **Description:** Define how `.docx`, spreadsheets, and markdown-vault artifacts remain reviewable and safe. Cover change summaries or diffs, artifact-specific validators, and operator safety modes such as `propose`, `apply`, and `export-as-new-file`.
+- **Files:** planning docs, adapter planning docs, review docs, future design docs if needed
+- **Model:** frontier_model
+- **Dependencies:** P21-T01, P21-T03, P21-T05
+- **Ready:** after the milestone contract is locked
+
+### P21-T07 — Define reusable workflow recipes
+- **Status:** draft
+- **Description:** Identify a small reusable recipe layer for repeated operator tasks such as updating a PRD, revising notes from source material, updating spreadsheets, or fixing Obsidian vault links without over-abstracting the core workflow.
+- **Files:** planning docs, runtime docs, future prompt or recipe docs if needed
+- **Model:** open_model
+- **Dependencies:** P21-T01
+- **Ready:** after the milestone contract is locked
+
+### P21-T08 — Normalize tooling-notes schema and migration guidance
+- **Status:** draft
+- **Description:** Carry forward the deferred Phase 20 schema cleanup so Grain-managed repos use one machine-readable `tooling_notes.md` contract and clear migration guidance across seeded runtime docs and docs-facing instructions.
+- **Files:** `src/grain/data/runtime/`, `docs/runtime/`, `docs/canonical/`, `tests/`
+- **Model:** open_model
+- **Dependencies:** none
+- **Ready:** optional follow-up after the operator-surface plan is stable
+
+### P21-T09 — Seed the first v0.3.0 execution phases and tasks
+- **Status:** draft
+- **Description:** Turn the approved v0.3.0 plan into concrete implementation phases on `dev`, including task inventory for the first TUI slice, writable office-surface support, desktop integration work, Obsidian support, reviewable artifact flows, and workflow recipes.
+- **Files:** `docs/working/backlog.md`, `docs/working/current_focus.md`, `docs/working/implementation_plan.md`
+- **Model:** frontier_model
+- **Dependencies:** P21-T01 through P21-T07
+- **Ready:** after the operator-surface plan is approved
+
+---
+
+## 25. Phase 22 — TUI Foundation and Workflow Surfaces (seeded, not started)
+
+> **Status:** seeded — implementation phase for the first required TUI slice once Phase 21 planning is closed.
+
+### P22 Planning Notes
+- Scope: operator-first TUI for local Grain usage
+- Initial surfaces:
+  - workflow status dashboard
+  - current task and phase view
+  - task execute/review/close launch points
+  - prompt and packet artifact inspection
+  - context bundle inspection
+  - review-safe action launches for non-code artifact updates
+  - quick access to reusable workflow recipes
+
+---
+
+## 26. Phase 23 — Writable Office Artifacts (seeded, not started)
+
+> **Status:** seeded — implementation phase for `.docx` and spreadsheet write/update support after the TUI slice is bounded.
+
+### P23 Planning Notes
+- Scope: safe local updates to Office-style artifacts
+- Initial surfaces:
+  - docx read/update/export flow
+  - spreadsheet read/update/export flow
+  - review-safe diff or change-summary outputs
+  - artifact-specific validators
+  - explicit write safety modes such as `propose`, `apply`, and `export-as-new-file`
+
+---
+
+## 27. Phase 24 — Desktop Integrations and Obsidian Support (seeded, not started)
+
+> **Status:** seeded — implementation phase for external tool surfaces after the writable artifact plan is approved.
+
+### P24 Planning Notes
+- Scope: external invocation and markdown-vault specialization
+- Initial surfaces:
+  - thin MCP wrapper for Claude/Desktop-style environments
+  - CLI-first Codex integration guidance and helpers
+  - Obsidian vault semantics, whether via dedicated adapter or an extended docs profile
+  - reusable recipes for desktop-driven office and vault workflows
 
 ---
 

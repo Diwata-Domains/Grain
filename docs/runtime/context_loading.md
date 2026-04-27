@@ -27,6 +27,10 @@ Read:
 - only the canonical docs referenced by the packet
 - working docs only if needed
 
+Guardrail:
+- if no active task packet exists yet, stop and create/select one through the workflow before implementation
+- do not treat chat history or a backlog item alone as a substitute for the packet on disk
+
 ## For Review
 Read:
 - PROJECT_RULES.md

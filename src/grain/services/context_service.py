@@ -376,7 +376,7 @@ def _adapter_candidate_paths(root: Path, profile: AdapterProfile | None) -> list
         return []
     candidates: list[str] = []
     for pattern in profile.relevant_file_patterns:
-        for matched_path in root.glob(pattern):
+        for matched_path in _iter_adapter_matches(root, pattern):
             if not matched_path.is_file():
                 continue
             relative = matched_path.relative_to(root).as_posix()
@@ -384,6 +384,20 @@ def _adapter_candidate_paths(root: Path, profile: AdapterProfile | None) -> list
                 continue
             candidates.append(relative)
     return _dedupe_preserve_order(candidates)
+
+
+def _iter_adapter_matches(root: Path, pattern: str):
+    """Yield matches for one adapter context pattern.
+
+    Bare recursive directory patterns like `src/**` should contribute files,
+    not just intermediate directories.
+    """
+    if pattern.endswith("/**"):
+        base = root / pattern[:-3]
+        if not base.exists():
+            return []
+        return base.rglob("*")
+    return root.glob(pattern)
 
 
 def _select_adapter_source_paths(
@@ -436,7 +450,8 @@ def _rerank_adapter_sources(
     embedding_resolver: EmbeddingProviderResolver | None,
 ) -> tuple[list[str], ResolvedEmbeddingProvider | None, list[dict[str, object]], list[dict[str, object]]]:
     graph_derived_sources = [path for path in adapter_sources if path in selection_trace]
-    if not graph_derived_sources:
+    ranking_sources = graph_derived_sources or adapter_sources
+    if not ranking_sources:
         return adapter_sources[:_ADAPTER_SOURCE_LIMIT], None, [], []
 
     query = _read_task_objective(packet_dir / "task.md")
@@ -448,7 +463,7 @@ def _rerank_adapter_sources(
 
     candidate_texts = {
         path: _build_candidate_text(root, path)
-        for path in graph_derived_sources
+        for path in ranking_sources
     }
     text_to_path = {text: path for path, text in candidate_texts.items()}
     ranked = provider.score(query, list(candidate_texts.values()))
@@ -464,7 +479,7 @@ def _rerank_adapter_sources(
                 packet_priority=_packet_priority_for_path(path),
                 metadata={"selection_trace": selection_trace.get(path, [])},
             )
-            for path in graph_derived_sources
+            for path in ranking_sources
         ]
     )
     ranked_paths = [item.candidate for item in ranked_candidates]

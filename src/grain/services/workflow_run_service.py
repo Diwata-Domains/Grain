@@ -14,6 +14,7 @@ _TASK_ID_RE = re.compile(r"TASK-\d{4,}")
 _GATE_MAP: dict[str, str] = {
     "required_docs_missing": "required_docs_missing",
     "required_docs_invalid": "required_docs_invalid",
+    "project_complete": "project_complete",
     "task_blocked": "task_blocked",
     "review_artifacts_incomplete": "review_artifacts_incomplete",
     "conflicting_next_actions": "ambiguous_next_action",

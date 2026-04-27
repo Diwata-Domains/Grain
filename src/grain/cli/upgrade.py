@@ -71,6 +71,7 @@ def upgrade_cmd(ctx, dry_run: bool, show_diff: bool, interactive: bool, local_fm
                     "unchanged": result.unchanged,
                     "protected": result.protected,
                     "customized": result.customized,
+                    "skipped_customized": result.skipped_customized,
                     "dry_run": dry_run or show_diff,
                     "diffs": result.diffs,
                 },
@@ -100,17 +101,17 @@ def upgrade_cmd(ctx, dry_run: bool, show_diff: bool, interactive: bool, local_fm
         click.echo(f"Run `grain upgrade` to apply all {len(result.updated)} change(s).")
         return
 
-    if result.customized and not dry_run:
+    if result.skipped_customized and not dry_run:
         click.echo(
-            f"warning   {len(result.customized)} Grain-managed file(s) appear to have been "
-            "locally customized and will be overwritten:",
+            f"warning   {len(result.skipped_customized)} Grain-managed file(s) appear to have been "
+            "locally customized and were skipped:",
             err=True,
         )
-        for rel in result.customized:
+        for rel in result.skipped_customized:
             click.echo(f"  - {rel}", err=True)
         click.echo(
-            "  Run `grain upgrade --interactive` to review each change before applying, "
-            "or `grain upgrade --diff` to preview.",
+            "  Run `grain upgrade --interactive` to review and apply selected changes, "
+            "or `grain upgrade --diff` to preview them.",
             err=True,
         )
 
@@ -120,6 +121,11 @@ def upgrade_cmd(ctx, dry_run: bool, show_diff: bool, interactive: bool, local_fm
         click.echo(f"- {rel}{marker}")
     if not result.updated:
         click.echo("- (none)")
+
+    if result.skipped_customized:
+        click.echo("Skipped Customized:")
+        for rel in result.skipped_customized:
+            click.echo(f"- {rel}")
 
     click.echo("Added:")
     for rel in result.added:

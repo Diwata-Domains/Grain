@@ -70,6 +70,25 @@ def test_evaluate_workflow_state_returns_bootstrap_incomplete_after_onboard(tmp_
     assert evaluation.recommended_prompt == "prompts/workflow.onboard.existing.md"
 
 
+def test_evaluate_workflow_state_reports_project_complete_terminal_state(tmp_path: Path):
+    _write(
+        tmp_path / "docs" / "working" / "current_focus.md",
+        "# Current Focus\n\n## Current Phase\nPhase: complete\n",
+    )
+    _write(
+        tmp_path / "docs" / "working" / "current_task.md",
+        "# Current Task\n\nTask ID: none\nTask Path: none\nStatus: idle\n",
+    )
+    _write(tmp_path / "docs" / "working" / "backlog.md", "# Backlog\n")
+
+    result, evaluation = evaluate_workflow_state(tmp_path)
+
+    assert result.ok is False
+    assert evaluation is not None
+    assert evaluation.stop_reason == "project_complete"
+    assert evaluation.active_phase == "complete"
+
+
 def test_evaluate_workflow_state_stops_for_blocked_active_task(tmp_path: Path):
     _base_docs(
         tmp_path,

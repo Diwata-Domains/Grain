@@ -3,7 +3,9 @@ class Grain < Formula
 
   desc "CLI-first workflow toolkit for structured AI-assisted software development"
   homepage "https://github.com/Diwata-Labs/Grain"
-  # Update the release artifact filename and sha256 when cutting a new formula.
+  # Deferred release surface: this formula is not publish-ready until a real
+  # 0.2.0 artifact URL and sha256 are generated. Do not treat it as an active
+  # distribution path until the release tarball metadata is refreshed.
   url "file://#{File.expand_path("../dist/grain-0.1.0.tar.gz", __dir__)}"
   sha256 "0ee0aa82310fb32faef7ba9ab08c8634ef4cbb5f1669c5723373b12df18c900d"
   license "MIT"

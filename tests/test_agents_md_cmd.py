@@ -32,6 +32,7 @@ def test_creates_agents_md_when_absent(tmp_path: Path):
     assert _MARKER_START in agents
     assert _MARKER_END in agents
     assert "grain workflow next" in agents
+    assert "no packet exists on disk" in agents
 
 
 def test_appends_block_to_existing_agents_md(tmp_path: Path):

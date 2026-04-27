@@ -45,7 +45,7 @@ def test_review_summary_reports_packet_state(packet_repo):
     assert "review summary: ok" in result.output
     assert "review_ready      yes" in result.output
     assert "next_actions" in result.output
-    assert "forge review handoff" in result.output
+    assert "grain review handoff" in result.output
 
 
 def test_review_summary_json_output(packet_repo):

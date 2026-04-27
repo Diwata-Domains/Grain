@@ -16,6 +16,7 @@ _TASK_HEADING = re.compile(r"^###\s+(P(\d+)-T(\d+))\s+—\s+(.+)$")
 _PHASE_HEADING = re.compile(r"^##\s+\d+\.\s+Phase\s+(\d+)\s+—")
 _BACKLOG_STATUS = re.compile(r"^- \*\*Status:\*\*\s*(\S+)")
 _CURRENT_PHASE_LINE = re.compile(r"^Phase\s+(\d+)\s+—")
+_CURRENT_PHASE_COMPLETE_LINE = re.compile(r"^(Phase:\s*)?(complete|done)\s*$", re.IGNORECASE)
 _PHASE_CLOSED_MARKER_RE = re.compile(r"^Phase\s+(\d+)\s+closed:")
 _DEFAULT_PHASE_DOC = "docs/working/current_focus.md"
 _DEFAULT_BACKLOG_DOC = "docs/working/backlog.md"
@@ -74,6 +75,18 @@ def evaluate_workflow_state(
             ),
             evaluation,
         )
+
+    if current_phase == "complete":
+        evaluation = WorkflowEvaluation(
+            ok=False,
+            stop_reason="project_complete",
+            blocking_reasons=[
+                "project is marked complete — no further workflow action is required"
+            ],
+            affected_artifacts=[_DEFAULT_PHASE_DOC],
+            active_phase=current_phase,
+        )
+        return _result_with_evaluation(root, evaluation)
 
     if current_phase == "0":
         evaluation = WorkflowEvaluation(
@@ -360,6 +373,8 @@ def _command_result(**kwargs):
 def _read_current_phase(current_focus_path: Path) -> str:
     for line in current_focus_path.read_text(encoding="utf-8").splitlines():
         stripped = line.strip()
+        if _CURRENT_PHASE_COMPLETE_LINE.match(stripped):
+            return "complete"
         match = _CURRENT_PHASE_LINE.match(stripped)
         if match:
             return match.group(1)

@@ -46,24 +46,24 @@ Implemented the Phase 20 stale-current-task fix. `workflow next` no longer requi
 
 ## User Review
 <!-- reviewer fills this section — executor must leave all fields below as-is -->
-- **State:** [pending / approved / needs_fix / misunderstood / followup_requested]
-- **Summary:** [reviewer fills]
-- **Resolution Mode:** [revise_current_task / replan_current_task / create_followup_task / close_task]
+- **State:** approved
+- **Summary:** Approved to continue.
+- **Resolution Mode:** close_task
 
 ### Required Fixes
-- [fix, or "None"]
+- None
 
 ### Open Questions To Log
-- [question summary, or "None"]
+- None
 
 ### Proposal Candidates To Log
-- [proposal summary, or "None"]
+- None
 
 ### Follow-Ups To Log
-- [follow-up note, or "None"]
+- None
 
 ### Residual Risks
-- [risk, or "None"]
+- None
 
 ## Verification Review
 <!-- verifier fills this section when applicable; otherwise leave defaults -->
@@ -75,11 +75,11 @@ Implemented the Phase 20 stale-current-task fix. `workflow next` no longer requi
 
 ## Closure Decision
 <!-- closer fills this section during final closeout -->
-- **Decision:** [pending / keep_open / close_task / closed]
-- **Reason:** [closer fills]
+- **Decision:** closed
+- **Reason:** Closed via grain task close.
 
 ### Closure Blockers
-- [blocker, or "None"]
+- None
 
 ## Deliverable Checklist
 - [x] Evaluator ignores stale `current_task.md` pointers to done packets

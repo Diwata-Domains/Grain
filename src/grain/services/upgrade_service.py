@@ -69,7 +69,8 @@ class UpgradeResult:
     unchanged: list[str] = field(default_factory=list)
     protected: list[str] = field(default_factory=list)
     diffs: dict[str, str] = field(default_factory=dict)  # rel_path -> unified diff string
-    customized: list[str] = field(default_factory=list)  # updated files with user-added content
+    customized: list[str] = field(default_factory=list)  # stale files with user-added content
+    skipped_customized: list[str] = field(default_factory=list)  # customized files skipped in non-interactive mode
 
 
 def _unified_diff(rel: str, current: str, bundled: str) -> str:
@@ -96,7 +97,13 @@ def _has_user_additions(diff_text: str) -> bool:
     return False
 
 
-def upgrade_repo(root: Path, *, dry_run: bool = False, include_diffs: bool = False) -> UpgradeResult:
+def upgrade_repo(
+    root: Path,
+    *,
+    dry_run: bool = False,
+    include_diffs: bool = False,
+    allow_customized_updates: bool = False,
+) -> UpgradeResult:
     """Update Grain-managed files to the current bundled versions.
 
     - Updates prompts, task templates, and safe runtime docs.
@@ -127,6 +134,9 @@ def upgrade_repo(root: Path, *, dry_run: bool = False, include_diffs: bool = Fal
                     result.diffs[rel] = diff_text
                 if _has_user_additions(diff_text):
                     result.customized.append(rel)
+                    if not allow_customized_updates:
+                        result.skipped_customized.append(rel)
+                        continue
                 if not dry_run:
                     target.write_text(bundled, encoding="utf-8")
         else:

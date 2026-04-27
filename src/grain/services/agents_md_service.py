@@ -37,7 +37,11 @@ grain workflow next --format json
 ```
 
 This returns the current workflow state and next legal action. Feed the
-output into your first prompt. Never skip straight to implementation.
+output into your first prompt. Never skip straight to implementation or
+work from chat context alone when no packet exists on disk.
+
+If there is no active task packet yet, create or activate one through the
+workflow before modifying code.
 
 **Key commands:**
 

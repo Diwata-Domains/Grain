@@ -42,11 +42,11 @@ class GraphAwareAdapterCapability:
             produced_by=f"adapter_capability.detect_scope.{self.profile.adapter_id}",
         )
         if not result.ok or artifact is None:
-            return _static_scope_signal(self.profile)
+            return _fallback_scope_signal(self.profile, candidates)
 
         file_paths = _graph_file_paths(artifact)
         if not file_paths:
-            return _static_scope_signal(self.profile)
+            return _fallback_scope_signal(self.profile, candidates)
 
         relevant_areas = sorted(
             {self.profile.domain_type, *self.profile.applies_to, *[node.kind for node in artifact.nodes]}
@@ -131,7 +131,7 @@ def _candidate_files(root: Path, profile: AdapterProfile) -> list[str]:
         return []
     candidates: list[str] = []
     for pattern in profile.relevant_file_patterns:
-        for matched in root.glob(pattern):
+        for matched in _iter_profile_matches(root, pattern):
             if not matched.is_file():
                 continue
             rel = matched.relative_to(root).as_posix()
@@ -141,9 +141,31 @@ def _candidate_files(root: Path, profile: AdapterProfile) -> list[str]:
     return _dedupe_preserve_order(candidates)[:_CANDIDATE_LIMIT]
 
 
+def _iter_profile_matches(root: Path, pattern: str):
+    """Yield matches for one adapter pattern.
+
+    `Path.glob("src/**")` is not reliable for file discovery across Python
+    versions because it primarily enumerates directories. Treat bare recursive
+    directory patterns as "all files under this subtree" explicitly.
+    """
+    if pattern.endswith("/**"):
+        base = root / pattern[:-3]
+        if not base.exists():
+            return []
+        return base.rglob("*")
+    return root.glob(pattern)
+
+
 def _static_scope_signal(profile: AdapterProfile) -> ScopeSignal:
     return ScopeSignal(
         file_patterns=profile.relevant_file_patterns,
+        relevant_areas=sorted({profile.domain_type, *profile.applies_to}),
+    )
+
+
+def _fallback_scope_signal(profile: AdapterProfile, candidates: list[str]) -> ScopeSignal:
+    return ScopeSignal(
+        file_patterns=candidates or profile.relevant_file_patterns,
         relevant_areas=sorted({profile.domain_type, *profile.applies_to}),
     )
 

@@ -7,6 +7,36 @@ Versioning: [Semantic Versioning](https://semver.org/)
 
 ---
 
+## [0.2.0] — 2026-04-23
+
+### Added
+- `grain phase close`, `grain phase archive`, and stronger phase-boundary enforcement so phases must be explicitly sealed before the workflow advances
+- `grain workflow run` auto-activation/bootstrap behavior, `grain workflow reconcile --fix`, and broader runner integration coverage for state drift repair
+- semantic enrichment and ranking layers for context selection, including embedding-provider support and ranked decision scaffolding across Phases 16 and 17
+- `data_adapter` support for richer notebook/data-project context and Phase 18 data-surface handling
+- community adapter registry foundations from Phase 19, including install/discovery work for community-shared adapters
+- real CI coverage in GitHub Actions for test execution plus build and `twine check`
+- release-surface regression tests for shipped prompt indexes, formula metadata, and packet-first prompt/runtime guardrails
+
+### Changed
+- active tasks with execution artifacts now route to review instead of continuing to report `task_execute`
+- task ID allocation now scans archived packets so `TASK-XXXX` stays globally monotonic
+- workflow evaluation now ignores stale `current_task.md` pointers to packets already marked `done`
+- `grain upgrade` skips customized managed files by default in non-interactive mode and reports them as `skipped_customized`
+- shipped execution prompts, runtime guidance, and generated AGENTS instructions now enforce packet-first execution more explicitly
+- bundled prompt/docs indexes, README, and release guidance were hardened for public distribution and CI visibility
+
+### Fixed
+- completed projects can now use a terminal `complete` state without breaking phase parsing
+- shipped prompt/docs assets no longer leak local absolute paths or stale repo identity references
+- workflow-state surfaces are more resilient to real-world drift discovered across multiple Grain-managed repos
+
+### Notes
+- `Development Status :: 3 - Alpha` remains intentional for `0.2.0`; TUI/GUI work is still deferred
+- Homebrew remains deferred as a release path; the in-repo formula still needs a real `0.2.0` artifact URL and sha256 before it should be treated as publish-ready
+
+---
+
 ## [0.1.11] — 2026-04-16
 
 ### Added

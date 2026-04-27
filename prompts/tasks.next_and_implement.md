@@ -19,6 +19,7 @@ This includes:
 Do not perform review or phase closeout in this prompt.
 
 Small fixes and hotfixes still use normal task packets. Do not bypass packet creation just because the change is small.
+This prompt does not authorize implementation without a packet. If no active packet exists on disk yet, create or activate one before editing code.
 
 If `docs/working/current_task.md` already points to an active task:
 
@@ -77,6 +78,12 @@ At minimum, if present, read:
 * handoff.md
 
 Do not read unrelated task folders.
+
+Before proceeding, confirm the workflow state is packet-first:
+
+* if `docs/working/current_task.md` points to `none` or `idle`, you must create or activate exactly one task packet before implementation
+* if a packet directory already exists for the active task, reuse that packet instead of drafting a fresh one from memory
+* do not keep execution state only in chat; the packet on disk is the authority
 
 ---
 
@@ -151,6 +158,8 @@ Use this format exactly:
 Task ID: [TASK-ID]
 Task Path: tasks/[TASK-ID]/
 Status: in_progress
+
+Do not start implementation until the packet files and `docs/working/current_task.md` both point to the same active task on disk.
 
 ---
 
