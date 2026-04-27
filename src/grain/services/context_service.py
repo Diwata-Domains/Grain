@@ -376,7 +376,7 @@ def _adapter_candidate_paths(root: Path, profile: AdapterProfile | None) -> list
         return []
     candidates: list[str] = []
     for pattern in profile.relevant_file_patterns:
-        for matched_path in root.glob(pattern):
+        for matched_path in _iter_adapter_matches(root, pattern):
             if not matched_path.is_file():
                 continue
             relative = matched_path.relative_to(root).as_posix()
@@ -384,6 +384,20 @@ def _adapter_candidate_paths(root: Path, profile: AdapterProfile | None) -> list
                 continue
             candidates.append(relative)
     return _dedupe_preserve_order(candidates)
+
+
+def _iter_adapter_matches(root: Path, pattern: str):
+    """Yield matches for one adapter context pattern.
+
+    Bare recursive directory patterns like `src/**` should contribute files,
+    not just intermediate directories.
+    """
+    if pattern.endswith("/**"):
+        base = root / pattern[:-3]
+        if not base.exists():
+            return []
+        return base.rglob("*")
+    return root.glob(pattern)
 
 
 def _select_adapter_source_paths(

@@ -131,7 +131,7 @@ def _candidate_files(root: Path, profile: AdapterProfile) -> list[str]:
         return []
     candidates: list[str] = []
     for pattern in profile.relevant_file_patterns:
-        for matched in root.glob(pattern):
+        for matched in _iter_profile_matches(root, pattern):
             if not matched.is_file():
                 continue
             rel = matched.relative_to(root).as_posix()
@@ -139,6 +139,21 @@ def _candidate_files(root: Path, profile: AdapterProfile) -> list[str]:
                 continue
             candidates.append(rel)
     return _dedupe_preserve_order(candidates)[:_CANDIDATE_LIMIT]
+
+
+def _iter_profile_matches(root: Path, pattern: str):
+    """Yield matches for one adapter pattern.
+
+    `Path.glob("src/**")` is not reliable for file discovery across Python
+    versions because it primarily enumerates directories. Treat bare recursive
+    directory patterns as "all files under this subtree" explicitly.
+    """
+    if pattern.endswith("/**"):
+        base = root / pattern[:-3]
+        if not base.exists():
+            return []
+        return base.rglob("*")
+    return root.glob(pattern)
 
 
 def _static_scope_signal(profile: AdapterProfile) -> ScopeSignal:
