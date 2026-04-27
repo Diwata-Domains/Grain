@@ -76,7 +76,7 @@ class RankingWeights:
 
     def total_weight(self) -> float:
         """Return the sum of all configured weights."""
-        return sum(self.as_dict().values())
+        return round(sum(self.as_dict().values()), 12)
 
 
 def authority_signal_score(authority: str) -> float:

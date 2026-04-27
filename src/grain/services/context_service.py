@@ -436,7 +436,8 @@ def _rerank_adapter_sources(
     embedding_resolver: EmbeddingProviderResolver | None,
 ) -> tuple[list[str], ResolvedEmbeddingProvider | None, list[dict[str, object]], list[dict[str, object]]]:
     graph_derived_sources = [path for path in adapter_sources if path in selection_trace]
-    if not graph_derived_sources:
+    ranking_sources = graph_derived_sources or adapter_sources
+    if not ranking_sources:
         return adapter_sources[:_ADAPTER_SOURCE_LIMIT], None, [], []
 
     query = _read_task_objective(packet_dir / "task.md")
@@ -448,7 +449,7 @@ def _rerank_adapter_sources(
 
     candidate_texts = {
         path: _build_candidate_text(root, path)
-        for path in graph_derived_sources
+        for path in ranking_sources
     }
     text_to_path = {text: path for path, text in candidate_texts.items()}
     ranked = provider.score(query, list(candidate_texts.values()))
@@ -464,7 +465,7 @@ def _rerank_adapter_sources(
                 packet_priority=_packet_priority_for_path(path),
                 metadata={"selection_trace": selection_trace.get(path, [])},
             )
-            for path in graph_derived_sources
+            for path in ranking_sources
         ]
     )
     ranked_paths = [item.candidate for item in ranked_candidates]

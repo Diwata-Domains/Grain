@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
+import re
 
 try:
     from tree_sitter_language_pack import get_parser
@@ -97,8 +98,8 @@ def extract_structural_entities(file_path: Path, content: str | None = None) -> 
         return StructuralExtraction(
             file_path=str(file_path),
             language=language,
-            entities=[],
-            parser="none",
+            entities=_extract_entities_without_parser(text, language),
+            parser="tree-sitter" if parser_name else "none",
         )
 
     try:
@@ -108,8 +109,8 @@ def extract_structural_entities(file_path: Path, content: str | None = None) -> 
         return StructuralExtraction(
             file_path=str(file_path),
             language=language,
-            entities=[],
-            parser="none",
+            entities=_extract_entities_without_parser(text, language),
+            parser="tree-sitter",
         )
 
     entities = _extract_entities_by_language(tree.root_node, text, language)
@@ -155,6 +156,18 @@ def _extract_entities_by_language(root_node, text: str, language: str) -> list[S
     return _extract_generic_code_entities(root_node, text, language)
 
 
+def _extract_entities_without_parser(text: str, language: str) -> list[StructuralEntity]:
+    if language == "python":
+        return _extract_python_entities_fallback(text)
+    if language in {"javascript", "typescript", "tsx"}:
+        return _extract_js_family_entities_fallback(text, language)
+    if language == "markdown":
+        return _extract_markdown_entities_fallback(text)
+    if language in {"yaml", "dockerfile", "hcl", "toml", "shell"}:
+        return _extract_devops_entities_fallback(text, language)
+    return []
+
+
 def _extract_python_entities(root_node, text: str) -> list[StructuralEntity]:
     entities: list[StructuralEntity] = []
     for node in _walk(root_node):
@@ -174,6 +187,28 @@ def _extract_python_entities(root_node, text: str) -> list[StructuralEntity]:
             call_name = _call_name(func_node, text)
             if call_name:
                 entities.append(_entity("call_site", call_name, "python", node.start_point[0] + 1))
+    return entities
+
+
+def _extract_python_entities_fallback(text: str) -> list[StructuralEntity]:
+    entities: list[StructuralEntity] = []
+    for line_no, line in enumerate(text.splitlines(), start=1):
+        stripped = line.strip()
+        if stripped.startswith("import "):
+            for name in _python_import_names(stripped):
+                entities.append(_entity("import", name, "python", line_no))
+        elif stripped.startswith("from "):
+            for name in _python_import_names(stripped):
+                entities.append(_entity("import", name, "python", line_no))
+        match = re.match(r"class\s+([A-Za-z_][A-Za-z0-9_]*)", stripped)
+        if match:
+            entities.append(_entity("class", match.group(1), "python", line_no))
+        match = re.match(r"def\s+([A-Za-z_][A-Za-z0-9_]*)\s*\(", stripped)
+        if match:
+            entities.append(_entity("function", match.group(1), "python", line_no))
+        for call in re.findall(r"([A-Za-z_][A-Za-z0-9_\.]*)\s*\(", stripped):
+            if call not in {"def", "class", "if", "for", "while", "return"}:
+                entities.append(_entity("call_site", call, "python", line_no))
     return entities
 
 
@@ -224,6 +259,25 @@ def _extract_js_family_entities(root_node, text: str, language: str) -> list[Str
     return entities
 
 
+def _extract_js_family_entities_fallback(text: str, language: str) -> list[StructuralEntity]:
+    entities: list[StructuralEntity] = []
+    for line_no, line in enumerate(text.splitlines(), start=1):
+        stripped = line.strip()
+        match = re.match(r'import\s+.+?\s+from\s+[\'"]([^\'"]+)[\'"]', stripped)
+        if match:
+            entities.append(_entity("import", match.group(1), language, line_no))
+        match = re.match(r"function\s+([A-Za-z_][A-Za-z0-9_]*)\s*\(", stripped)
+        if match:
+            entities.append(_entity("function", match.group(1), language, line_no))
+        match = re.match(r"class\s+([A-Za-z_][A-Za-z0-9_]*)", stripped)
+        if match:
+            entities.append(_entity("class", match.group(1), language, line_no))
+        for call in re.findall(r"([A-Za-z_][A-Za-z0-9_\.]*)\s*\(", stripped):
+            if call not in {"function", "if", "for", "while", "return"}:
+                entities.append(_entity("call_site", call, language, line_no))
+    return entities
+
+
 def _extract_markdown_entities(root_node, text: str) -> list[StructuralEntity]:
     entities: list[StructuralEntity] = []
     for node in _walk(root_node):
@@ -233,6 +287,19 @@ def _extract_markdown_entities(root_node, text: str) -> list[StructuralEntity]:
             if heading:
                 entities.append(_entity("heading", heading, "markdown", node.start_point[0] + 1))
 
+    for link_name, line in _scan_markdown_links(text):
+        entities.append(_entity("link", link_name, "markdown", line, {"label": ""}))
+    return entities
+
+
+def _extract_markdown_entities_fallback(text: str) -> list[StructuralEntity]:
+    entities: list[StructuralEntity] = []
+    for line_no, line in enumerate(text.splitlines(), start=1):
+        stripped = line.strip()
+        if stripped.startswith("#"):
+            heading = stripped.lstrip("#").strip()
+            if heading:
+                entities.append(_entity("heading", heading, "markdown", line_no))
     for link_name, line in _scan_markdown_links(text):
         entities.append(_entity("link", link_name, "markdown", line, {"label": ""}))
     return entities
@@ -275,6 +342,14 @@ def _extract_devops_entities(root_node, text: str, language: str) -> list[Struct
     return []
 
 
+def _extract_devops_entities_fallback(text: str, language: str) -> list[StructuralEntity]:
+    if language == "dockerfile":
+        return _extract_dockerfile_entities_fallback(text)
+    if language == "yaml":
+        return _extract_yaml_entities_fallback(text)
+    return []
+
+
 def _extract_dockerfile_entities(root_node, text: str) -> list[StructuralEntity]:
     entities: list[StructuralEntity] = []
     for node in _walk(root_node):
@@ -290,6 +365,18 @@ def _extract_dockerfile_entities(root_node, text: str) -> list[StructuralEntity]
     return entities
 
 
+def _extract_dockerfile_entities_fallback(text: str) -> list[StructuralEntity]:
+    entities: list[StructuralEntity] = []
+    for line_no, line in enumerate(text.splitlines(), start=1):
+        stripped = line.strip()
+        if not stripped.upper().startswith("FROM "):
+            continue
+        dep = stripped[5:].strip().split(" AS ", 1)[0].split(" as ", 1)[0].strip()
+        if dep:
+            entities.append(_entity("dependency", dep, "dockerfile", line_no, {"source": "FROM"}))
+    return entities
+
+
 def _extract_yaml_entities(root_node, text: str) -> list[StructuralEntity]:
     entities: list[StructuralEntity] = []
     for node in _walk(root_node):
@@ -302,6 +389,31 @@ def _extract_yaml_entities(root_node, text: str) -> list[StructuralEntity]:
             continue
         for value in _yaml_scalar_values(value_node, text):
             entities.append(_entity("dependency", value, "yaml", node.start_point[0] + 1))
+    return entities
+
+
+def _extract_yaml_entities_fallback(text: str) -> list[StructuralEntity]:
+    entities: list[StructuralEntity] = []
+    lines = text.splitlines()
+    for idx, line in enumerate(lines):
+        stripped = line.strip()
+        if stripped.rstrip(":").lower() not in _DEPENDENCY_KEYS and not any(
+            stripped.lower().startswith(f"{key}:") for key in _DEPENDENCY_KEYS
+        ):
+            continue
+        line_no = idx + 1
+        base_indent = len(line) - len(line.lstrip())
+        for child in lines[idx + 1 :]:
+            if not child.strip():
+                continue
+            indent = len(child) - len(child.lstrip())
+            if indent <= base_indent:
+                break
+            value = child.strip()
+            if value.startswith("- "):
+                dep = value[2:].strip().strip('"').strip("'")
+                if dep:
+                    entities.append(_entity("dependency", dep, "yaml", line_no))
     return entities
 
 

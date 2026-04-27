@@ -45,7 +45,13 @@ def test_phase13_onboard_json_manifest_shape(tmp_path: Path):
     result = _run(tmp_path, "--format", "json", "onboard", str(tmp_path), "--dry-run")
     assert result.exit_code == 0, result.output
     payload = json.loads(result.output)
-    assert set(payload.keys()) == {"created", "skipped", "root"}
+    assert set(payload.keys()) == {
+        "created",
+        "skipped",
+        "root",
+        "agents_md_action",
+        "claude_md_exists",
+    }
     assert payload["root"] == str(tmp_path.resolve())
 
 
@@ -179,4 +185,3 @@ def test_phase13_end_to_end_onboard_then_scan_then_generate_additive(tmp_path: P
         "docs/working/backlog.md",
         "docs/working/open_questions.md",
     ]
-

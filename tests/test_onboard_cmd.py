@@ -68,7 +68,13 @@ def test_onboard_json_output_matches_contract(tmp_path: Path):
     result = _run(tmp_path, "--format", "json", "onboard", str(tmp_path), "--dry-run")
     assert result.exit_code == 0, result.output
     payload = json.loads(result.output)
-    assert set(payload.keys()) == {"created", "skipped", "root"}
+    assert set(payload.keys()) == {
+        "created",
+        "skipped",
+        "root",
+        "agents_md_action",
+        "claude_md_exists",
+    }
     assert isinstance(payload["created"], list)
     assert isinstance(payload["skipped"], list)
     assert payload["root"] == str(tmp_path.resolve())
@@ -78,7 +84,13 @@ def test_onboard_local_format_option_matches_contract(tmp_path: Path):
     result = _run(tmp_path, "onboard", str(tmp_path), "--dry-run", "--format", "json")
     assert result.exit_code == 0, result.output
     payload = json.loads(result.output)
-    assert set(payload.keys()) == {"created", "skipped", "root"}
+    assert set(payload.keys()) == {
+        "created",
+        "skipped",
+        "root",
+        "agents_md_action",
+        "claude_md_exists",
+    }
 
 
 def test_onboard_text_output_has_created_and_skipped_sections(tmp_path: Path):

@@ -42,11 +42,11 @@ class GraphAwareAdapterCapability:
             produced_by=f"adapter_capability.detect_scope.{self.profile.adapter_id}",
         )
         if not result.ok or artifact is None:
-            return _static_scope_signal(self.profile)
+            return _fallback_scope_signal(self.profile, candidates)
 
         file_paths = _graph_file_paths(artifact)
         if not file_paths:
-            return _static_scope_signal(self.profile)
+            return _fallback_scope_signal(self.profile, candidates)
 
         relevant_areas = sorted(
             {self.profile.domain_type, *self.profile.applies_to, *[node.kind for node in artifact.nodes]}
@@ -144,6 +144,13 @@ def _candidate_files(root: Path, profile: AdapterProfile) -> list[str]:
 def _static_scope_signal(profile: AdapterProfile) -> ScopeSignal:
     return ScopeSignal(
         file_patterns=profile.relevant_file_patterns,
+        relevant_areas=sorted({profile.domain_type, *profile.applies_to}),
+    )
+
+
+def _fallback_scope_signal(profile: AdapterProfile, candidates: list[str]) -> ScopeSignal:
+    return ScopeSignal(
+        file_patterns=candidates or profile.relevant_file_patterns,
         relevant_areas=sorted({profile.domain_type, *profile.applies_to}),
     )
 
