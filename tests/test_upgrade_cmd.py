@@ -26,7 +26,7 @@ def test_upgrade_updates_stale_prompt(tmp_path: Path):
     target = tmp_path / "prompts" / "task.execute.md"
     _write(target, "old hollow wrapper content")
 
-    result = upgrade_repo(tmp_path)
+    result = upgrade_repo(tmp_path, allow_customized_updates=True)
 
     assert "prompts/task.execute.md" in result.updated
     assert "Read" in target.read_text(encoding="utf-8")
@@ -133,6 +133,7 @@ def test_upgrade_cmd_json_output_matches_contract(tmp_path: Path):
     assert "added" in data
     assert "unchanged" in data
     assert "protected" in data
+    assert "skipped_customized" in data
     assert "dry_run" in data
 
 
@@ -201,6 +202,39 @@ def test_upgrade_no_diffs_when_flag_not_set(tmp_path: Path):
     result = upgrade_repo(tmp_path)
 
     assert result.diffs == {}
+
+
+def test_upgrade_skips_customized_file_by_default(tmp_path: Path):
+    target = tmp_path / "prompts" / "task.execute.md"
+    _write(target, "custom local line\n")
+
+    result = upgrade_repo(tmp_path)
+
+    assert "prompts/task.execute.md" in result.customized
+    assert "prompts/task.execute.md" in result.skipped_customized
+    assert target.read_text(encoding="utf-8") == "custom local line\n"
+
+
+def test_upgrade_can_apply_customized_file_when_explicitly_allowed(tmp_path: Path):
+    target = tmp_path / "prompts" / "task.execute.md"
+    _write(target, "custom local line\n")
+
+    result = upgrade_repo(tmp_path, allow_customized_updates=True)
+
+    assert "prompts/task.execute.md" in result.customized
+    assert "prompts/task.execute.md" not in result.skipped_customized
+    assert "Read" in target.read_text(encoding="utf-8")
+
+
+def test_upgrade_cmd_text_output_lists_skipped_customized_files(tmp_path: Path):
+    target = tmp_path / "prompts" / "task.execute.md"
+    _write(target, "custom local line\n")
+
+    result = _run(tmp_path, "upgrade")
+
+    assert result.exit_code == 0
+    assert "Skipped Customized:" in result.output
+    assert "prompts/task.execute.md" in result.output
 
 
 def test_unified_diff_helper_shows_delta():

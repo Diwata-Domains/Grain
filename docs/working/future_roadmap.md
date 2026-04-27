@@ -166,7 +166,7 @@ If an item is actively being executed, the working docs own the operational stat
 
 ### FR-004b — Grain Distribution and Installation Paths
 
-* **Status:** graduated — delivered through Phase 11 (closed 2026-04-11); Homebrew path (P11-T05) deferred
+* **Status:** graduated — delivered through Phase 11 (closed 2026-04-11); Homebrew path (P11-T05) intentionally left outside the supported release story
 * **Suggested Target:** v0.1.0
 * **Why it matters:**
 
@@ -176,7 +176,7 @@ If an item is actively being executed, the working docs own the operational stat
 
   * PyPI publishing for `pip install grain`
   * `uv tool install grain` compatibility and documentation
-  * Homebrew distribution for macOS users (`brew install grain`)
+  * optional Homebrew distribution only if a maintained tap/release pipeline is introduced later
   * clear versioned install and upgrade instructions
   * installation verification and troubleshooting docs
 * **Dependencies:**

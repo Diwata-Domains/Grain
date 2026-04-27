@@ -800,6 +800,143 @@ Default status for new backlog items in this file: `draft`
 
 ---
 
+## 23. Phase 20 — Workflow Drift Remediation from Field Usage ✓ CLOSED
+
+> **Status:** CLOSED. 6 tasks done (P20-T01 through P20-T06). Closed 2026-04-23 after workflow correctness, state handling, upgrade-safety, and packet-first prompt hardening landed. P20-T07 deferred as a lower-priority follow-up.
+
+### P20 Planning Notes
+- Scope: fix real workflow drift discovered while using Grain across Assay, DOMICILE, CRM, and other Grain-managed repos
+- Primary target: make the authoritative workflow surfaces (`workflow next`, `workflow run`, task ID allocation, project terminal state, upgrade safety) match real operator expectations
+- Excluded from this phase:
+  - Assay ingestion or other Assay-specific feature work
+  - TUI/GUI work
+  - bugs already fixed in v0.1.10 through v0.1.11 or Phase 15
+- Source signals consolidated from:
+  - `Assay/docs/working/tooling_notes.md`
+  - `Documents/DOMICILE/docs/working/tooling_notes.md`
+  - `Documents/Limitless Vault/docs/working/tooling_notes.md`
+  - `Limitless/CRM/docs/working/tooling_notes.md`
+
+### P20-T01 — Route executed tasks to review instead of execute (TASK-0135)
+- **Status:** done
+- **Description:** Fix workflow evaluation so an active task with execution artifacts already recorded does not keep routing to `task_execute`. Once execution output exists, `grain workflow next` and `grain workflow run` should surface review as the next legal step unless the packet is already reviewed/closeable by contract.
+- **Files:** `src/grain/services/`, `src/grain/domain/`, `tests/`
+- **Model:** frontier_model
+- **Dependencies:** none
+- **Ready:** yes — reproduced in Limitless Vault tooling notes
+
+### P20-T02 — Make task IDs globally monotonic across archived packets (TASK-0136)
+- **Status:** done
+- **Description:** Fix packet ID allocation so `TASK-XXXX` values remain globally monotonic even after packets are archived under `tasks/archive/`. `next_task_id()` must scan both active and archived packet directories and keep deterministic behavior for new packet creation.
+- **Files:** `src/grain/domain/`, `src/grain/services/`, `tests/`
+- **Model:** open_model
+- **Dependencies:** none
+- **Ready:** after P20-T01 is complete to keep Phase 20 execution deterministic
+
+### P20-T03 — Treat completed current task state as non-active workflow state (TASK-0137)
+- **Status:** done
+- **Description:** Harden workflow evaluation so `current_task.md` pointing at a `done` packet does not cause `workflow next` to keep routing against that completed task. Grain should recognize terminal task status, clear or ignore stale active-task state deterministically, and route to the correct next phase/task boundary.
+- **Files:** `src/grain/services/`, `src/grain/domain/`, `tests/`
+- **Model:** frontier_model
+- **Dependencies:** P20-T01
+- **Ready:** after review-routing semantics are stable
+
+### P20-T04 — Add a recognized terminal project-complete workflow state (TASK-0138)
+- **Status:** done
+- **Description:** Add a valid terminal state for `docs/working/current_focus.md` so a completed project does not fail phase parsing. `grain workflow next` should stop cleanly with a deterministic no-op/project-complete signal instead of `required_docs_invalid` when the repo is intentionally complete.
+- **Files:** `src/grain/services/`, `src/grain/domain/`, `docs/canonical/`, `docs/runtime/`, `tests/`
+- **Model:** frontier_model
+- **Dependencies:** none
+- **Ready:** after P20-T01 and P20-T03 settle the workflow-state semantics
+
+### P20-T05 — Make upgrade safer for customized repo doc layouts
+- **Status:** done
+- **Description:** Harden `grain upgrade` so repos with deliberate working-doc or canonical-doc customization do not get noisy or misleading diffs that appear to revert the project back to Grain defaults. Detect clearly customized managed files and surface bounded guidance rather than proposing destructive-looking rewrites.
+- **Files:** `src/grain/services/`, `src/grain/data/`, `tests/`, `README.md`
+- **Model:** frontier_model
+- **Dependencies:** none
+- **Ready:** after the core workflow-state fixes land
+
+### P20-T06 — Strengthen packet-first guidance in bundled prompts and agent instructions
+- **Status:** done
+- **Description:** Harden the bundled prompt and instruction surface so resumed AI sessions do not skip task packet creation and jump straight to implementation. Add explicit packet-first guardrails to the relevant prompt/instruction assets without introducing hidden workflow steps or Assay coupling.
+- **Files:** `prompts/`, `src/grain/data/prompts/`, `docs/runtime/`, `tests/`
+- **Model:** open_model
+- **Dependencies:** none
+- **Ready:** after the workflow-state fixes land so prompts match the final behavior
+
+### P20-T07 — Normalize tooling-notes schema expectations for Grain-managed repos
+- **Status:** draft
+- **Description:** Standardize the `tooling_notes.md` contract so Grain-managed repos use the same machine-readable columns (`Date`, `Type`, `Command`, `Observation`, `Severity`, `Status`) and migration guidance. This is a lower-priority follow-up that improves cross-repo triage and reduces ambiguity when mining tooling notes for backlog work.
+- **Files:** `src/grain/data/runtime/`, `docs/canonical/`, `docs/runtime/`, `tests/`
+- **Model:** open_model
+- **Dependencies:** none
+- **Ready:** optional follow-up after the correctness fixes land
+
+---
+
+## 24. Phase 21 — v0.3.0 Planning and Release Confidence (planning not started)
+
+> **Status:** planning not started — seeded at Phase 20 close on 2026-04-23. This phase will define the first v0.3.0 execution slice after a full v0.2.0 once-over.
+
+### P21 Planning Notes
+- Scope: perform a full release-surface once-over, identify any remaining v0.2.0 blockers, and lock the first concrete v0.3.0 roadmap slice
+- Primary target: convert the current post-Phase-20 repo state into a publish-ready v0.2.0 release baseline plus an explicit Phase 21/22 direction
+- Excluded from this phase until planned:
+  - TUI/GUI implementation
+  - Assay feature work inside Grain
+  - broad speculative roadmap expansion without scoped backlog items
+
+### P21-T01 — Finalize v0.2.0 versioning and release notes
+- **Status:** ready
+- **Description:** Update package/release metadata for the actual v0.2.0 release: bump `pyproject.toml`, add a clean `0.2.0` changelog entry, and align any repo-local release references that still advertise `0.1.11`.
+- **Files:** `pyproject.toml`, `CHANGELOG.md`, `README.md`, release-facing docs as needed
+- **Model:** open_model
+- **Dependencies:** none
+- **Ready:** yes — release blocker identified during Phase 21 once-over
+
+### P21-T02 — Run full v0.2.0 release validation and smoke install pass
+- **Status:** draft
+- **Description:** Recreate the release-validation flow in a clean environment, run the full targeted pre-publish checks, and verify wheel/sdist install behavior plus key CLI smoke commands from built artifacts.
+- **Files:** `README.md`, release notes, validation artifacts if recorded
+- **Model:** frontier_model
+- **Dependencies:** P21-T01
+- **Ready:** after versioning and release notes are finalized
+
+### P21-T03 — Refresh or defer the Homebrew release surface explicitly
+- **Status:** draft
+- **Description:** Decide whether the in-repo formula remains part of the public release story. If yes, update it to the actual v0.2.0 artifact filename and sha; if not, move or mark it more explicitly as deferred so it does not present stale release metadata.
+- **Files:** `Formula/grain.rb`, `README.md`, related release docs
+- **Model:** open_model
+- **Dependencies:** P21-T01
+- **Ready:** after the final release artifact exists
+
+### P21-T04 — Remove runner post-create retry friction and reduce close-time reconcile drift
+- **Status:** draft
+- **Description:** Harden the workflow runner so newly created packets activate cleanly on the first `workflow run`, and reduce the routine need for `workflow reconcile --fix` after normal task closure when no true drift exists.
+- **Files:** `src/grain/services/`, `src/grain/cli/`, `tests/`
+- **Model:** frontier_model
+- **Dependencies:** none
+- **Ready:** after release-confidence tasks are no longer blocking publication
+
+### P21-T05 — Normalize tooling-notes schema and migration guidance
+- **Status:** draft
+- **Description:** Carry forward the deferred Phase 20 schema cleanup so Grain-managed repos use one machine-readable `tooling_notes.md` contract and clear migration guidance across seeded runtime docs and docs-facing instructions.
+- **Files:** `src/grain/data/runtime/`, `docs/runtime/`, `docs/canonical/`, `tests/`
+- **Model:** open_model
+- **Dependencies:** none
+- **Ready:** optional follow-up after immediate release-confidence work
+
+### P21-T06 — Define the first concrete v0.3.0 roadmap slice
+- **Status:** draft
+- **Description:** Convert post-v0.2.0 planning into a bounded roadmap: decide the first v0.3.0 milestone theme, identify 1–2 follow-on phases, and seed execution-ready backlog tasks instead of broad roadmap prose.
+- **Files:** `docs/working/current_focus.md`, `docs/working/backlog.md`, `docs/working/implementation_plan.md`, roadmap/planning docs if needed
+- **Model:** frontier_model
+- **Dependencies:** P21-T01
+- **Ready:** after the release baseline and immediate blockers are clear
+
+---
+
 ## 11. Future — Adapter Context Selection (absorbed into Phase 10)
 
 > **Status:** draft — FA-T01 is preserved here for reference. Once Phase 10 is active, FA-T01 is absorbed into P10-T01 and this section becomes historical.

@@ -14,6 +14,7 @@ _TASK_ID_RE = re.compile(r"TASK-\d{4,}")
 _GATE_MAP: dict[str, str] = {
     "required_docs_missing": "required_docs_missing",
     "required_docs_invalid": "required_docs_invalid",
+    "project_complete": "project_complete",
     "task_blocked": "task_blocked",
     "review_artifacts_incomplete": "review_artifacts_incomplete",
     "conflicting_next_actions": "ambiguous_next_action",
@@ -165,6 +166,26 @@ def run_workflow_step(root: Path, simple: bool = False) -> tuple[CommandResult, 
             command="workflow run",
             repo=str(root),
             errors=["task is in review; closure requires human or reviewer approval"],
+        )
+        return result, payload
+
+    # ── next_action == "task_review" ──────────────────────────────────────
+    if evaluation.next_action == "task_review":
+        payload = _gate_payload(
+            action_taken="none",
+            gate_reason="human_review_required",
+            gate_condition="task_review",
+            recommended_prompt=evaluation.recommended_prompt,
+            blocking_reasons=["task has execution artifacts and must be reviewed before closure"],
+            affected_artifacts=evaluation.affected_artifacts,
+            active_phase=evaluation.active_phase,
+            active_task_id=evaluation.active_task_id,
+        )
+        result = CommandResult(
+            ok=False,
+            command="workflow run",
+            repo=str(root),
+            errors=["task has execution artifacts and must be reviewed before closure"],
         )
         return result, payload
 

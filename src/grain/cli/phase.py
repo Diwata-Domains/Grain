@@ -37,6 +37,9 @@ def phase_next(ctx):
     if evaluation.stop_reason == "phase_boundary_review_close_required":
         phase_action = "phase_review_close"
         reason = "no executable tasks remain in active phase"
+    elif evaluation.stop_reason == "project_complete":
+        phase_action = "no_phase_action"
+        reason = "project is marked complete"
     elif evaluation.next_action == "task_planning" or evaluation.stop_reason == "task_planning_required":
         phase_action = "phase_planning"
         reason = "task planning is required before execution can continue"

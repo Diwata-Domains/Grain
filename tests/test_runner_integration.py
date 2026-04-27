@@ -191,6 +191,26 @@ def test_cross_command_agreement_ready_task_phase_next(tmp_path):
     assert data["phase_next"]["next_action"] == "task_execute"
 
 
+def test_activation_chain_results_written_routes_to_review(tmp_path):
+    _base_repo(tmp_path)
+    _ready_backlog(tmp_path, "P8-T09")
+    _packet(tmp_path, "P8-T09", "TASK-0069", "ready")
+
+    exit_code, output = _invoke(tmp_path, "workflow", "run")
+    assert exit_code == 0
+    assert "workflow run: ok" in output
+
+    (tmp_path / "tasks" / "P8-T09-TASK-0069" / "results.md").write_text(
+        "# Results\nComplete.\n",
+        encoding="utf-8",
+    )
+
+    data_after = _invoke_json(tmp_path, "workflow", "next")
+    assert data_after["evaluation"]["ok"] is True
+    assert data_after["evaluation"]["next_action"] == "task_review"
+    assert data_after["evaluation"]["recommended_prompt"] == "prompts/task.review.md"
+
+
 # ── Scenario C: Cross-command agreement on planning scenario ──────────────────
 
 

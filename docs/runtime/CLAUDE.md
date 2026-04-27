@@ -25,6 +25,7 @@ At the start of a session, read in this order:
 9. relevant working docs only if needed
 
 Do not begin implementation before identifying the active task boundary.
+If there is no active task packet on disk yet, stop and create or activate one before making code changes.
 
 ---
 
@@ -126,6 +127,8 @@ Read:
 - active task packet
 - only referenced canonical docs
 - relevant working docs only if needed
+
+If `current_task.md` is idle or the packet does not exist on disk, do not improvise from chat context. Create/select the packet first, then implement.
 
 ### For review
 Read:

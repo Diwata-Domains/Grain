@@ -7,7 +7,7 @@ from dataclasses import asdict
 from pathlib import Path
 from typing import Any
 
-from grain.domain.packets import find_packet_dir
+from grain.domain.packets import find_packet_dir, parse_task_metadata
 from grain.domain.workflow import WorkflowEvaluation, WorkflowTaskState
 from grain.validators.packet_validator import validate_packet
 
@@ -16,6 +16,7 @@ _TASK_HEADING = re.compile(r"^###\s+(P(\d+)-T(\d+))\s+—\s+(.+)$")
 _PHASE_HEADING = re.compile(r"^##\s+\d+\.\s+Phase\s+(\d+)\s+—")
 _BACKLOG_STATUS = re.compile(r"^- \*\*Status:\*\*\s*(\S+)")
 _CURRENT_PHASE_LINE = re.compile(r"^Phase\s+(\d+)\s+—")
+_CURRENT_PHASE_COMPLETE_LINE = re.compile(r"^(Phase:\s*)?(complete|done)\s*$", re.IGNORECASE)
 _PHASE_CLOSED_MARKER_RE = re.compile(r"^Phase\s+(\d+)\s+closed:")
 _DEFAULT_PHASE_DOC = "docs/working/current_focus.md"
 _DEFAULT_BACKLOG_DOC = "docs/working/backlog.md"
@@ -74,6 +75,18 @@ def evaluate_workflow_state(
             ),
             evaluation,
         )
+
+    if current_phase == "complete":
+        evaluation = WorkflowEvaluation(
+            ok=False,
+            stop_reason="project_complete",
+            blocking_reasons=[
+                "project is marked complete — no further workflow action is required"
+            ],
+            affected_artifacts=[_DEFAULT_PHASE_DOC],
+            active_phase=current_phase,
+        )
+        return _result_with_evaluation(root, evaluation)
 
     if current_phase == "0":
         evaluation = WorkflowEvaluation(
@@ -165,6 +178,14 @@ def evaluate_workflow_state(
             )
             return _result_with_evaluation(root, evaluation)
 
+        packet_status = parse_task_metadata(packet_dir / "task.md").get("status", "")
+        if packet_status == "done":
+            active_task_id = "none"
+            active_task_status = "idle"
+        else:
+            active_task_status = packet_status or active_task_status
+
+    if active_task_id != "none":
         if active_task_status == "blocked":
             evaluation = WorkflowEvaluation(
                 ok=False,
@@ -243,8 +264,8 @@ def evaluate_workflow_state(
 
         evaluation = WorkflowEvaluation(
             ok=True,
-            next_action="task_execute",
-            recommended_prompt="prompts/task.execute.md",
+            next_action="task_review",
+            recommended_prompt="prompts/task.review.md",
             affected_artifacts=[
                 _DEFAULT_CURRENT_TASK_DOC,
                 str(packet_dir.relative_to(root)),
@@ -352,6 +373,8 @@ def _command_result(**kwargs):
 def _read_current_phase(current_focus_path: Path) -> str:
     for line in current_focus_path.read_text(encoding="utf-8").splitlines():
         stripped = line.strip()
+        if _CURRENT_PHASE_COMPLETE_LINE.match(stripped):
+            return "complete"
         match = _CURRENT_PHASE_LINE.match(stripped)
         if match:
             return match.group(1)

@@ -1,7 +1,7 @@
 # Current Focus
 
 ## Current Phase
-Phase 20 — Planning Not Started
+Phase 21 — Planning Not Started
 
 v0.2.0 COMPLETE
 
@@ -27,7 +27,7 @@ CLOSED. All 7 tasks done. 561/561 tests passing (+67 new tests from Phase 8 clos
 CLOSED. All 6 tasks done (T01-T05 + T06 remediation). 575/575 tests passing. Phase required reopening — T01 review accepted AST fallback; T06 replaced extraction layer with proper tree-sitter bindings. Phase closed 2026-04-11.
 
 ## Phase 11 Status
-CLOSED. 4/5 tasks done (T01-T04). 577/577 tests passing. T05 (Homebrew formula) deferred by operator — resume when Homebrew tap/release flow is prioritized. Primary install paths are `pip install grain` and `uv tool install grain`. Phase closed 2026-04-11.
+CLOSED. 4/5 tasks done (T01-T04). 577/577 tests passing. T05 (Homebrew formula) was intentionally dropped from the active release story. Primary install paths are `pip install grain-kit` and `uv tool install grain-kit`. Phase closed 2026-04-11.
 
 ## Phase 12 Status
 CLOSED. All 4 tasks done (T01-T04). 595/595 tests passing (+18 new tests from Phase 11 close). Delivered: per-stage agent/model config (`workflow_loop.yaml`), `grain workflow loop` command, supervised/gated/autonomous supervision levels, --dry-run mode, 25-step cap, per-step logging, `grain orchestrate accept --plan <id>`, accepted-plan loop ordering for conflicting ready tasks. Phase closed 2026-04-10.
@@ -66,10 +66,13 @@ COMPLETE — Phases 15 through 19 are closed on `dev`. v0.2.0 implementation sco
 - `openai` — cloud API, opt-in, requires `GRAIN_OPENAI_API_KEY`
 - Config field: `grain.embedding_provider` in `docs_manifest.yaml` (already shipped in v0.1.7)
 
+## Phase 20 Status
+CLOSED. All 6 tasks done (P20-T01 through P20-T06). Delivered: review routing after execution artifacts exist, archived-packet-aware task IDs, done-task stale-pointer handling, terminal project-complete workflow state, safer upgrade behavior for customized repos, and packet-first guardrails across prompts and agent instructions. Phase closed 2026-04-23.
+
 ## Immediate Goals
-1. Define the next post-v0.2.0 phase scope and seed the backlog
-2. Preserve the closed Phase 19 community adapter registry contract while the next phase is planned
-3. Fix the remaining workflow/tooling drifts noted during Phases 16 through 19 when they materially affect the next phase
+1. Do a full release once-over before publishing v0.2.0
+2. Turn the Phase 21 planning placeholder into concrete v0.3.0 backlog items
+3. Preserve the closed Phase 20 workflow-hardening gains while defining the next milestone
 
 ## After Phase 8 — Using the Runner with Agent CLIs
 
@@ -112,7 +115,7 @@ Phase 11 makes Grain installable globally. Active install paths:
 - `pip install grain` — PyPI publish workflow in place (GitHub Actions, OIDC trusted publishing)
 - `uv tool install grain` — verified, installs `grain` CLI into global tool path without venv
 - `grain --version`, `grain init --help` — verified as install confirmation commands
-- Homebrew formula exists at `contrib/homebrew/Formula/grain.rb` — deferred, not yet validated
+- Homebrew is not part of the active release story; `pip` and `uv` are the supported install paths
 
 ## After Phase 12 — Automated Workflow Loop
 
@@ -147,10 +150,10 @@ All five phases must ship for v0.2.0 to close.
 - **Phase 17** — Ranking and Decision Layer (weighted candidate scoring, replaces static adapter priority rules, depends on Phase 16) ✓ closed 2026-04-21
 - **Phase 18** — Data Adapter (richer .ipynb context, ML artifact patterns, .ipynb migrated from code_adapter) ✓ closed 2026-04-21
 - **Phase 19** — Community Adapter Registry (`grain adapter install`, schema validation, discovery pipeline) ✓ closed 2026-04-22
-- **Phase 11-T05 (deferred)** — Homebrew formula, resume when tap/release flow is prioritized
+- **Phase 11-T05 (deferred indefinitely)** — Homebrew formula remains out of scope unless distribution priorities change
 
 ## Upcoming Phase Sequence
-1. **Phase 20** — Planning not started ← active now
+1. **Phase 21** — v0.3.0 planning and release confidence ← active now
 
 ## Active Constraints
 - use local filesystem only
@@ -161,9 +164,9 @@ All five phases must ship for v0.2.0 to close.
 - keep intelligence-layer outputs deterministic, local-only, and proposal-only
 
 ## Do Not Work On Right Now
-- P11-T05 Homebrew formula until tap/release flow is prioritized
+- Homebrew/tap distribution work unless release priorities change materially
 - Assay — independent companion project, separate repo, not a Grain feature
-- broad Phase 20 implementation before task planning is written
+- broad Phase 21 implementation before task planning is written
 - telemetry automation (v2 — FR-011)
 - autonomous multi-step execution without explicit operator gate
 - TUI/GUI implementation (future paid tier, separate codebase)
@@ -177,3 +180,5 @@ Phase 17 closed: 2026-04-21 — 6 tasks done (grain-verified)
 Phase 18 closed: 2026-04-21 — 6 tasks done (grain-verified)
 
 Phase 19 closed: 2026-04-22 — 6 tasks done (grain-verified)
+
+Phase 20 closed: 2026-04-23 — 6 tasks done (grain-verified)

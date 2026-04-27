@@ -1,7 +1,7 @@
 # Grain
 
 [![PyPI](https://img.shields.io/pypi/v/grain-kit)](https://pypi.org/project/grain-kit/)
-[![CI](https://github.com/Diwata-Labs/Grain/actions/workflows/publish-pypi.yml/badge.svg)](https://github.com/Diwata-Labs/Grain/actions)
+[![CI](https://github.com/Diwata-Labs/Grain/actions/workflows/ci.yml/badge.svg)](https://github.com/Diwata-Labs/Grain/actions/workflows/ci.yml)
 
 **Deterministic workflow for agent CLIs.**
 
@@ -109,6 +109,17 @@ Verify:
 
 ```bash
 grain --version
+```
+
+For release validation:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -e .[release] pytest
+pytest -q
+python -m build
+python -m twine check dist/*
 ```
 
 ---
@@ -357,6 +368,16 @@ grain context build --id TASK-0001
 grain context show --id TASK-0001
 grain context export --id TASK-0001
 ```
+
+## Release checklist
+
+Before publishing a release:
+
+1. Update `pyproject.toml` and `CHANGELOG.md`.
+2. Run the release validation commands above.
+3. Verify `grain init`, `grain onboard`, `grain workflow next`, and `grain prompt show` still behave correctly on a clean repo.
+4. Check that bundled prompts, templates, and runtime docs do not contain local absolute paths or stale project names.
+5. Publish to TestPyPI first when validating packaging changes.
 
 The context system can also include selected working docs and adapter-specific hints when relevant.
 

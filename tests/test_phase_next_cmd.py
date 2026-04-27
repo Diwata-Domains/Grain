@@ -102,3 +102,27 @@ def test_phase_next_json_output_includes_phase_payload(tmp_path):
     assert data["ok"] is True
     assert data["phase_next"]["phase_action"] == "no_phase_action"
     assert data["phase_next"]["active_phase"] == "8"
+
+
+def test_phase_next_reports_no_action_for_project_complete_state(tmp_path):
+    _write(
+        tmp_path / "docs" / "runtime" / "PROJECT_RULES.md",
+        "",
+    )
+    _write(
+        tmp_path / "docs" / "working" / "current_focus.md",
+        "# Current Focus\n\n## Current Phase\nPhase: complete\n",
+    )
+    _write(
+        tmp_path / "docs" / "working" / "current_task.md",
+        "# Current Task\n\nTask ID: none\nTask Path: none\nStatus: idle\n",
+    )
+    _write(tmp_path / "docs" / "working" / "backlog.md", "# Backlog\n")
+
+    runner = CliRunner()
+    result = runner.invoke(main, ["--repo", str(tmp_path), "phase", "next"])
+
+    assert result.exit_code == 0, result.output
+    assert "phase_action      no_phase_action" in result.output
+    assert "project is marked complete" in result.output
+    assert "stop_reason       project_complete" in result.output

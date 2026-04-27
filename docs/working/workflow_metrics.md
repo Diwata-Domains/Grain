@@ -258,6 +258,34 @@ Record the following in each task packet `results.md`:
 * Rework count: 0
 * Drift incidents: 1 (working-doc drift after P8-T09 — repaired by P8-T11)
 * Phase duration: Sessions 8–9
+
+---
+
+### Phase 20
+
+* Tasks completed: 6 (P20-T01 through P20-T06)
+* Blocked tasks: 0
+* Prompt runs: ~18 (6 execute/documentation passes + 6 review handoffs + 6 close passes)
+* Avg prompt runs per completed task: 3.0
+* Manual interventions: 0 (all review approvals were inline operator approvals, no design decisions required)
+* First-pass success rate: 6/6 implementation slices landed without follow-up task splits
+* Rework count: 0
+* Drift incidents: 3 (stale `current_task.md` after close on TASK-0139 and TASK-0140; bundled/runtime context-loading drift surfaced during TASK-0140 activation)
+* Phase duration: Session 20 hardening closeout on 2026-04-23
+* Tests run during phase: targeted regression slices only (59 + 9 + 29 + 15 + 25 + 20 passing across task-local runs)
+* Token tracking: proxy metrics only
+
+### Phase 20 Notes
+
+* What felt efficient: the workflow runner and reconciliation surfaces were strong enough to let six correctness fixes land and close in one continuous pass; the new review-routing and stale-task handling reduced manual state cleanup immediately.
+* What created friction: immediate post-create `workflow run` occasionally needed a retry to activate a newly created packet; `workflow reconcile --fix` was still needed after task close to sync backlog/current_task state; phase-close still depends on a manually maintained metrics section.
+* What to tighten next: remove the post-create runner retry quirk; reduce close-time doc drift so reconcile is exceptional rather than routine; consider making phase metrics easier to seed or derive.
+
+### Phase Retrospective Classification
+
+* **Fix now:** none required before Phase 21 planning starts
+* **Batch next phase:** tooling-notes schema normalization, phase-close ergonomics, runner retry quirk after packet creation, broader release-surface once-over before v0.2.0 publish
+* **Ignore:** one-off `__pycache__` churn from local test runs
 * Tests at phase close: 494 (+75 new tests from Phase 7 close)
 * Conversation model: multi-agent (separate executor / reviewer / closer conversations)
 * Token tracking: proxy metrics only

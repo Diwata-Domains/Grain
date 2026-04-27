@@ -35,12 +35,12 @@ class PacketRecord:
 
 
 def next_task_id(tasks_root: Path) -> str:
-    """Return the next available TASK-#### ID by scanning tasks_root directory names."""
+    """Return the next available TASK-#### ID by scanning active and archived packet dirs."""
     if not tasks_root.exists():
         return "TASK-0001"
 
     numbers = []
-    for entry in tasks_root.iterdir():
+    for entry in tasks_root.rglob("*"):
         if entry.is_dir():
             match = TASK_ID_PATTERN.search(entry.name)
             if match:

@@ -55,3 +55,20 @@ def test_next_id_ignores_non_packet_dirs(tmp_path):
     (tasks_root / ".gitkeep").mkdir()
     (tasks_root / "readme").mkdir()
     assert next_task_id(tasks_root) == "TASK-0001"
+
+
+def test_next_id_includes_archived_packets(tmp_path):
+    tasks_root = tmp_path / "tasks"
+    archive_root = tasks_root / "archive" / "phase-15"
+    archive_root.mkdir(parents=True)
+    (archive_root / "P15-T01-TASK-0103").mkdir()
+    (tasks_root / "P20-T01-TASK-0135").mkdir(parents=True)
+
+    assert next_task_id(tasks_root) == "TASK-0136"
+
+
+def test_next_id_ignores_archive_container_dirs_without_task_ids(tmp_path):
+    tasks_root = tmp_path / "tasks"
+    (tasks_root / "archive" / "phase-15").mkdir(parents=True)
+
+    assert next_task_id(tasks_root) == "TASK-0001"

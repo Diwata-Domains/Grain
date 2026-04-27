@@ -261,6 +261,17 @@ Do not start these before their prerequisite phases are stable:
 
 ---
 
+## 9. Current Planning Horizon
+
+v0.2.0 implementation is complete. Post-release planning now shifts to a new phase sequence starting with Phase 21.
+
+Immediate planning focus:
+- perform a full release once-over on the v0.2.0 surface
+- define the first concrete v0.3.0 phase slice
+- preserve workflow correctness and packaging quality while widening scope
+
+---
+
 ## 9. Phase Completion Standard
 
 A phase is complete when:
@@ -447,13 +458,13 @@ Make Grain installable globally by anyone. This is the public usability gate.
 - PyPI publish workflow (`pip install grain` from PyPI, GitHub Actions OIDC publish) ✓
 - `uv tool install grain` verified and documented ✓
 - Install verification and troubleshooting docs ✓
-- Homebrew formula for macOS — deferred (P11-T05 blocked; resume when tap/release flow prioritized)
+- Homebrew formula for macOS — deferred indefinitely; not part of the active release story
 
 ### Notes
-- Phase 11 complete: 4/5 tasks done (T05 Homebrew deferred by operator)
+- Phase 11 complete: 4/5 tasks done (T05 Homebrew intentionally left outside the supported release paths)
 - 577/577 tests passing at phase close (+2 new tests from Phase 10 close)
 - Primary install paths active: `pip install grain`, `uv tool install grain`
-- Homebrew path (P11-T05) deferred — no blocking external infrastructure available in-repo at phase time
+- Homebrew path (P11-T05) deferred indefinitely — external tap/artifact maintenance remains out of scope
 - Phase closed 2026-04-11
 - Roadmap reference: FR-004b
 

@@ -181,3 +181,37 @@ def test_prompt_show_task_review_state_recommends_close_prompt(tmp_path):
     assert result.exit_code == 0, result.output
     data = json.loads(result.output)
     assert "close" in data["prompt"]["recommended_prompt"]
+
+
+def test_prompt_show_in_progress_task_with_results_recommends_review_prompt(tmp_path):
+    packet_dir = tmp_path / "tasks" / "P8-T07-TASK-0001"
+    packet_dir.mkdir(parents=True)
+    (packet_dir / "task.md").write_text(
+        "# Task\n\n## Metadata\n- **ID:** TASK-0001\n- **Status:** in_progress\n- **Phase:** Phase 8\n",
+        encoding="utf-8",
+    )
+    for name in ("context.md", "plan.md", "deliverable_spec.md", "results.md"):
+        (packet_dir / name).write_text(f"# {name}\ncontent", encoding="utf-8")
+
+    _base_repo(tmp_path, task_status="in_progress", task_id="TASK-0001", task_path="tasks/P8-T07-TASK-0001")
+    _write(
+        tmp_path / "docs" / "working" / "backlog.md",
+        (
+            "## 10. Phase 8 — Workflow Automation Runner Foundation\n\n"
+            "### P8-T07 — Add forge prompt show\n"
+            "- **Status:** in_progress\n"
+        ),
+    )
+    _write(
+        tmp_path / "prompts" / "task.review.md",
+        "# Review\n\nMetadata:\n- scope: task\n- stage: review\n- recommended_model_class: reviewer_model\n",
+    )
+
+    runner = CliRunner()
+    result = runner.invoke(
+        main, ["--repo", str(tmp_path), "--format", "json", "prompt", "show"]
+    )
+    assert result.exit_code == 0, result.output
+    data = json.loads(result.output)
+    assert data["prompt"]["recommended_prompt"] == "prompts/task.review.md"
+    assert data["prompt"]["next_action"] == "task_review"
