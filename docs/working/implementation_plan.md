@@ -281,9 +281,10 @@ Locked milestone contract:
 
 Locked first TUI slice:
 - thin terminal operator shell over the existing CLI and file-backed workflow
+- implementation stack: Python + Textual
 - required views: workflow dashboard, current task/phase, backlog-by-phase, packet artifact inspector, prompt preview, context bundle inspector
 - required actions: launch execute/review/close flows, inspect blockers and packet artifacts, wrap safe non-code review actions when available
-- explicit deferrals: embedded agent consoles, multi-project dashboards, collaboration surfaces, broad canonical editing UI
+- explicit deferrals: embedded agent consoles, multi-project dashboards, collaboration surfaces, broad canonical editing UI, separate JS/TS or Electron-style UI stack
 
 ---
 

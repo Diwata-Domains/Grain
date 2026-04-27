@@ -96,6 +96,7 @@ CLOSED. All 6 tasks done (P20-T01 through P20-T06). Delivered: review routing af
 
 ## First TUI Slice
 - Shape: thin terminal operator shell over the existing CLI and file-backed workflow
+- Stack: Python + Textual
 - Required views:
   - workflow dashboard
   - current task and phase view
@@ -112,6 +113,7 @@ CLOSED. All 6 tasks done (P20-T01 through P20-T06). Delivered: review routing af
   - multi-project views
   - live collaboration
   - broad canonical editing UI
+  - separate JS/TS or Electron-style TUI stack
 
 ## After Phase 8 — Using the Runner with Agent CLIs
 

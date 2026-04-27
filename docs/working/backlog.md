@@ -933,7 +933,7 @@ Default status for new backlog items in this file: `draft`
 
 ### P21-T02 — Define the first Grain TUI slice
 - **Status:** done
-- **Description:** First TUI slice defined on 2026-04-27 as a thin operator shell over the existing CLI/file-backed workflow. Required surfaces: workflow dashboard, current task/phase view, backlog-by-phase list, packet artifact inspector, prompt preview, and context-bundle inspector. Required actions: launch task execute/review/close flows, open packet artifacts, view blockers, and trigger safe non-code review actions when those land. Navigation model: one app shell with pane switching, detail panel, and command/status footer. The TUI must call stable Grain commands and read the same files the CLI already uses; it must not invent hidden state or alternate workflow transitions.
+- **Description:** First TUI slice defined on 2026-04-27 as a thin operator shell over the existing CLI/file-backed workflow. Required surfaces: workflow dashboard, current task/phase view, backlog-by-phase list, packet artifact inspector, prompt preview, and context-bundle inspector. Required actions: launch task execute/review/close flows, open packet artifacts, view blockers, and trigger safe non-code review actions when those land. Navigation model: one app shell with pane switching, detail panel, and command/status footer. Stack choice: Python + Textual, running in-process with existing Grain services and CLI/domain logic. The TUI must call stable Grain commands and read the same files the CLI already uses; it must not invent hidden state or alternate workflow transitions.
 - **Files:** planning docs, future canonical proposal inputs if needed
 - **Model:** frontier_model
 - **Dependencies:** P21-T01
@@ -1022,11 +1022,14 @@ Default status for new backlog items in this file: `draft`
   - no alternate lifecycle transitions
   - CLI remains the source of truth for execution
   - TUI actions should wrap existing Grain commands before introducing new stateful behavior
+  - implementation stack is Python + Textual
+  - prefer in-process reuse of Grain services over a separate JS/TS frontend runtime
 - Explicitly deferred from the first slice:
   - embedded agent execution consoles
   - multi-project dashboarding
   - live collaboration or remote sessions
   - broad form-based canonical editing
+  - separate web or Electron-style UI stack
 
 ---
 
