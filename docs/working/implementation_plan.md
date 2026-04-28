@@ -300,6 +300,15 @@ Locked desktop integration strategy:
 - ChatGPT/OpenAI app-style integrations should reuse the same shared tool contract through an MCP/app-server boundary
 - integration remains local-first and file-backed; hosted service behavior is deferred
 
+Locked Obsidian direction:
+- introduce a dedicated `obsidian_adapter`
+- keep `docs_adapter` for generic markdown/docx/pdf work
+- v0.3.0 Obsidian scope should cover vault-aware context loading, wiki-link validation, frontmatter-sensitive review, and safe note-maintenance flows
+
+Future adapter direction:
+- `database_adapter` / `db_adapter` for schema, migration, query, seed, and ORM-oriented workflows
+- `crawler_adapter` / `scraping_adapter` for crawl configs, selectors, extraction schemas, rate-limit policies, and output validation
+
 ---
 
 ## 9. Phase Completion Standard

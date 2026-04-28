@@ -956,12 +956,12 @@ Default status for new backlog items in this file: `draft`
 - **Ready:** complete
 
 ### P21-T05 — Decide Obsidian support shape
-- **Status:** draft
-- **Description:** Decide whether Obsidian should remain inside `docs_adapter` or become a first-class `obsidian_adapter`. Evaluate vault-specific semantics such as wiki-links, frontmatter, attachments, `.obsidian/` config, canvases, and daily-note structures, then define the minimum supported v0.3.0 surface.
+- **Status:** done
+- **Description:** Obsidian support shape defined on 2026-04-28. Grain should ship a dedicated `obsidian_adapter` rather than treating Obsidian as generic `docs_adapter` scope. The reason is that vault semantics materially exceed plain markdown: wiki-links, frontmatter-heavy workflows, `.obsidian/` config, canvases, attachments, and vault conventions such as daily notes all affect context selection, safe edits, and validation. Minimum v0.3.0 surface: vault-aware context loading, wiki-link/reference validation, frontmatter-sensitive review, and safe note-maintenance workflows. `docs_adapter` remains responsible for generic markdown/docx/pdf content; `obsidian_adapter` specializes markdown-vault workflows.
 - **Files:** planning docs, adapter profiles, future design docs if needed
 - **Model:** frontier_model
 - **Dependencies:** P21-T01
-- **Ready:** after the milestone contract is locked
+- **Ready:** complete
 
 ### P21-T06 — Define reviewable diffs, validators, and safety modes for non-code artifacts
 - **Status:** draft
@@ -1077,10 +1077,11 @@ Default status for new backlog items in this file: `draft`
   - local-first file-backed behavior is required; hosted desktop orchestration is deferred
 
 ### Future Adapter Notes
+- Obsidian support is promoted into a dedicated `obsidian_adapter` for v0.3.0 rather than remaining inside `docs_adapter`.
 - Database-related work does not currently have an official core adapter.
-- If repeated database workflows become common, prefer a dedicated `database_adapter` or `db_adapter` rather than overloading `data_adapter`.
+- Database-related work should be planned as a dedicated `database_adapter` or `db_adapter`, not overloaded into `data_adapter`, because schema, migrations, seed flows, query artifacts, and ORM boundaries are a separate domain.
 - Scraping/crawler work also does not currently have an official core adapter.
-- If it becomes a recurring workflow, prefer a dedicated `crawler_adapter` or `scraping_adapter` with clear boundaries around crawl configs, selectors, extraction schemas, and output validation.
+- Scraping/crawler work should be planned as a dedicated `crawler_adapter` or `scraping_adapter` with clear boundaries around crawl configs, selectors, extraction schemas, robots/rate-limit policies, and output validation.
 
 ---
 

@@ -114,6 +114,20 @@ CLOSED. All 6 tasks done (P20-T01 through P20-T06). Delivered: review routing af
 - ChatGPT/OpenAI app-style path: reuse the same shared tool contract through an MCP/app-server boundary
 - Constraint: local-first, file-backed, compatible with the broader toolkit contract layer
 
+## Obsidian Decision
+- Shape: dedicated `obsidian_adapter`
+- Why:
+  - wiki-links are not generic markdown links
+  - frontmatter and vault metadata affect safe edits
+  - `.obsidian/` config, canvases, attachments, and daily-note conventions are vault-specific
+- Boundary:
+  - `docs_adapter` remains generic markdown/docx/pdf
+  - `obsidian_adapter` owns vault-aware note workflows
+
+## Future Adapter Direction
+- `database_adapter` / `db_adapter` is warranted for recurring full-stack database work
+- `crawler_adapter` / `scraping_adapter` is warranted for recurring scraping and crawler workflows
+
 ## First TUI Slice
 - Shape: thin terminal operator shell over the existing CLI and file-backed workflow
 - Stack: Python + Textual

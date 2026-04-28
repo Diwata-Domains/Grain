@@ -462,6 +462,45 @@ If an item is actively being executed, the working docs own the operational stat
 
 ---
 
+### FR-019 — Database Adapter
+
+* **Status:** candidate
+* **Suggested Target:** post-v0.3.0 unless pulled forward by repeated use
+* **Why it matters:**
+
+  * database work is a first-class part of full-stack development and has different review and validation needs than generic data files
+  * schema changes, migrations, seed flows, query artifacts, and ORM boundaries should not be overloaded into `data_adapter`
+* **Scope:**
+
+  * schema and migration artifact awareness
+  * query-file and ORM-surface context hints
+  * database-specific review and validation guidance
+  * optional future support for safe migration planning and diff summaries
+* **Notes:**
+
+  * keep this as a dedicated adapter family (`database_adapter` / `db_adapter`) rather than a `data_adapter` extension
+
+---
+
+### FR-020 — Scraping and Crawler Adapter
+
+* **Status:** candidate
+* **Suggested Target:** post-v0.3.0 unless pulled forward by repeated use
+* **Why it matters:**
+
+  * scraping and crawling workflows have their own operational constraints, selectors, extraction schemas, and output-review patterns
+  * these workflows benefit from explicit boundaries around robots/rate-limit policy, crawl config, and extracted-output validation
+* **Scope:**
+
+  * crawl-config and selector awareness
+  * extraction-schema and output-validation guidance
+  * review focus around politeness constraints, retries, and data-shape stability
+* **Notes:**
+
+  * prefer a dedicated `crawler_adapter` or `scraping_adapter` rather than hiding this inside `data_adapter`
+
+---
+
 ### FR-008 — Multi-Project / Template System
 
 * **Status:** candidate
