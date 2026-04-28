@@ -894,8 +894,10 @@ Default status for new backlog items in this file: `draft`
   - reviewable non-code artifact changes with validators and safety modes
   - explicit desktop invocation strategy, including a thin MCP path where required
   - explicit Obsidian support decision with at least one supported vault-aware path
+  - first-class `database_adapter` planning and implementation slice
+  - first-class `crawler_adapter` planning and implementation slice
 - Stretch deliverables if core lands cleanly:
-  - reusable workflow recipes for repeated office/vault workflows
+  - reusable workflow recipes for repeated office, vault, database, and crawler workflows
   - richer TUI inspection surfaces such as context bundle views and prompt previews
   - contract freshness warnings for prompt/runtime drift during long sessions
 - Success criteria:
@@ -912,6 +914,8 @@ Default status for new backlog items in this file: `draft`
 - Product assumptions for v0.3.0:
   - a TUI is required
   - writable `.docx` and spreadsheet flows are in scope
+  - database workflows are in scope
+  - crawler and scraping workflows are in scope through a dedicated `crawler_adapter`
   - desktop-app compatibility should be explicit, especially for Claude ecosystem MCP and OpenAI Codex workflows
   - likely integration split: CLI-first for Codex execution paths; MCP/server wrapper for Claude Desktop and ChatGPT app surfaces
   - Obsidian may justify a dedicated adapter if vault semantics exceed generic markdown/docs handling
@@ -972,12 +976,12 @@ Default status for new backlog items in this file: `draft`
 - **Ready:** complete
 
 ### P21-T07 — Define reusable workflow recipes
-- **Status:** draft
-- **Description:** Identify a small reusable recipe layer for repeated operator tasks such as updating a PRD, revising notes from source material, updating spreadsheets, or fixing Obsidian vault links without over-abstracting the core workflow.
+- **Status:** done
+- **Description:** Recipe layer and adapter-scope expansion defined on 2026-04-28. Grain should ship a small recipe layer for repeated structured workflows, but recipes remain thin entrypoints over the existing packet/workflow model rather than a second orchestration system. Initial v0.3.0 recipe set: update PRD or planning doc from source inputs, revise meeting or research notes, update spreadsheet/report artifact, fix Obsidian vault links or metadata drift, plan a database schema or migration change, and review crawler extraction/config updates. At the same time, v0.3.0 scope is expanded to include first-class `database_adapter` and `crawler_adapter` work. `crawler_adapter` is the preferred name because it covers scraping as one subset of a broader crawl/extraction domain.
 - **Files:** planning docs, runtime docs, future prompt or recipe docs if needed
 - **Model:** open_model
 - **Dependencies:** P21-T01
-- **Ready:** after the milestone contract is locked
+- **Ready:** complete
 
 ### P21-T08 — Normalize tooling-notes schema and migration guidance
 - **Status:** draft
@@ -1078,10 +1082,8 @@ Default status for new backlog items in this file: `draft`
 
 ### Future Adapter Notes
 - Obsidian support is promoted into a dedicated `obsidian_adapter` for v0.3.0 rather than remaining inside `docs_adapter`.
-- Database-related work does not currently have an official core adapter.
-- Database-related work should be planned as a dedicated `database_adapter` or `db_adapter`, not overloaded into `data_adapter`, because schema, migrations, seed flows, query artifacts, and ORM boundaries are a separate domain.
-- Scraping/crawler work also does not currently have an official core adapter.
-- Scraping/crawler work should be planned as a dedicated `crawler_adapter` or `scraping_adapter` with clear boundaries around crawl configs, selectors, extraction schemas, robots/rate-limit policies, and output validation.
+- Database-related work is promoted into a dedicated `database_adapter` for v0.3.0 rather than being overloaded into `data_adapter`.
+- Crawler and scraping work is promoted into a dedicated `crawler_adapter` for v0.3.0 with clear boundaries around crawl configs, selectors, extraction schemas, robots/rate-limit policies, and output validation.
 
 ---
 

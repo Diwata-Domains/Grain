@@ -84,6 +84,8 @@ CLOSED. All 6 tasks done (P20-T01 through P20-T06). Delivered: review routing af
   - reviewable non-code artifact changes with validators and safety modes
   - desktop invocation strategy for Claude-style MCP and Codex-style CLI usage
   - explicit Obsidian support shape
+  - `database_adapter`
+  - `crawler_adapter`
 - Stretch:
   - reusable workflow recipes
   - richer TUI inspection surfaces
@@ -125,8 +127,8 @@ CLOSED. All 6 tasks done (P20-T01 through P20-T06). Delivered: review routing af
   - `obsidian_adapter` owns vault-aware note workflows
 
 ## Future Adapter Direction
-- `database_adapter` / `db_adapter` is warranted for recurring full-stack database work
-- `crawler_adapter` / `scraping_adapter` is warranted for recurring scraping and crawler workflows
+- `database_adapter` is in-scope for v0.3.0
+- `crawler_adapter` is in-scope for v0.3.0 and is the preferred name over `scraping_adapter`
 
 ## Non-Code Review Model
 - Every non-code write must emit a review bundle before close
@@ -141,6 +143,16 @@ CLOSED. All 6 tasks done (P20-T01 through P20-T06). Delivered: review routing af
   - reference validators
   - policy validators
 - Grain must force `propose` or `export-as-new-file` instead of `apply` when risk is high or validation is partial
+
+## Workflow Recipes
+- Recipes are thin entrypoints over the normal packet/workflow model
+- Initial v0.3.0 recipe targets:
+  - update PRD or planning docs from source inputs
+  - revise meeting or research notes
+  - update spreadsheet or report artifacts
+  - fix Obsidian vault links or metadata drift
+  - plan a database schema or migration change
+  - review crawler config, selector, or extraction-schema changes
 
 ## First TUI Slice
 - Shape: thin terminal operator shell over the existing CLI and file-backed workflow

@@ -276,7 +276,7 @@ Immediate planning focus:
 
 Locked milestone contract:
 - Theme: `Operator Surface for Structured Knowledge Work`
-- Core: TUI, writable office artifacts, reviewable non-code diffs/validators/safety modes, desktop integration path, and explicit Obsidian support shape
+- Core: TUI, writable office artifacts, reviewable non-code diffs/validators/safety modes, desktop integration path, explicit Obsidian support shape, `database_adapter`, and `crawler_adapter`
 - Stretch: reusable workflow recipes, richer TUI inspection surfaces, and contract-freshness warnings if the core ships cleanly
 
 Locked first TUI slice:
@@ -306,14 +306,18 @@ Locked Obsidian direction:
 - v0.3.0 Obsidian scope should cover vault-aware context loading, wiki-link validation, frontmatter-sensitive review, and safe note-maintenance flows
 
 Future adapter direction:
-- `database_adapter` / `db_adapter` for schema, migration, query, seed, and ORM-oriented workflows
-- `crawler_adapter` / `scraping_adapter` for crawl configs, selectors, extraction schemas, rate-limit policies, and output validation
+- `database_adapter` for schema, migration, query, seed, and ORM-oriented workflows
+- `crawler_adapter` for crawl configs, selectors, extraction schemas, rate-limit policies, and output validation
 
 Locked non-code review model:
 - every non-code write emits a review bundle before close
 - review bundles must include artifact paths, operation mode, structured change summary, validator results, and residual-risk notes when needed
 - validator families: structure, reference, and policy
 - Grain should fall back to `propose` or `export-as-new-file` when `apply` is not sufficiently safe
+
+Locked recipe layer:
+- recipes are thin entrypoints over the normal packet/workflow model
+- initial recipe targets: planning-doc updates, notes revision, spreadsheet/report updates, Obsidian maintenance, database-change planning, and crawler-change review
 
 ---
 
