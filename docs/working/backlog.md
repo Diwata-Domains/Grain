@@ -964,12 +964,12 @@ Default status for new backlog items in this file: `draft`
 - **Ready:** complete
 
 ### P21-T06 — Define reviewable diffs, validators, and safety modes for non-code artifacts
-- **Status:** draft
-- **Description:** Define how `.docx`, spreadsheets, and markdown-vault artifacts remain reviewable and safe. Cover change summaries or diffs, artifact-specific validators, and operator safety modes such as `propose`, `apply`, and `export-as-new-file`.
+- **Status:** done
+- **Description:** Non-code review and safety model defined on 2026-04-28. Every non-code write flow must produce a review bundle before close. Minimum review bundle: touched artifact paths, operation mode (`propose` / `apply` / `export-as-new-file`), structured change summary, validator results, and explicit residual-risk notes when validation is partial or best-effort. `.docx` review surfaces should include heading/section/table change summaries; spreadsheet review surfaces should include touched sheets/ranges/formulas and schema-sensitive changes; Obsidian review surfaces should include wiki-link/frontmatter/reference changes. Validators are required before an artifact can report ready: structure validators (headings/tables/sheets), reference validators (wiki-links, required sheet names, required headings), and policy validators (safe mode honored, expected files updated, comparison artifact created when required). Grain should automatically force `propose` or `export-as-new-file` instead of `apply` when the artifact is high-risk, validation is partial, or the operator has not given explicit in-place mutation intent. Binary changes are allowed only when accompanied by a human-readable review surface; opaque mutation without review artifacts is out of scope.
 - **Files:** planning docs, adapter planning docs, review docs, future design docs if needed
 - **Model:** frontier_model
 - **Dependencies:** P21-T01, P21-T03, P21-T05
-- **Ready:** after the milestone contract is locked
+- **Ready:** complete
 
 ### P21-T07 — Define reusable workflow recipes
 - **Status:** draft

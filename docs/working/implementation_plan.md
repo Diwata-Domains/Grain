@@ -309,6 +309,12 @@ Future adapter direction:
 - `database_adapter` / `db_adapter` for schema, migration, query, seed, and ORM-oriented workflows
 - `crawler_adapter` / `scraping_adapter` for crawl configs, selectors, extraction schemas, rate-limit policies, and output validation
 
+Locked non-code review model:
+- every non-code write emits a review bundle before close
+- review bundles must include artifact paths, operation mode, structured change summary, validator results, and residual-risk notes when needed
+- validator families: structure, reference, and policy
+- Grain should fall back to `propose` or `export-as-new-file` when `apply` is not sufficiently safe
+
 ---
 
 ## 9. Phase Completion Standard

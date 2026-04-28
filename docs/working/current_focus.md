@@ -128,6 +128,20 @@ CLOSED. All 6 tasks done (P20-T01 through P20-T06). Delivered: review routing af
 - `database_adapter` / `db_adapter` is warranted for recurring full-stack database work
 - `crawler_adapter` / `scraping_adapter` is warranted for recurring scraping and crawler workflows
 
+## Non-Code Review Model
+- Every non-code write must emit a review bundle before close
+- Review bundle minimum:
+  - touched artifact paths
+  - operation mode
+  - structured change summary
+  - validator results
+  - residual risk notes when validation is partial
+- Validators:
+  - structure validators
+  - reference validators
+  - policy validators
+- Grain must force `propose` or `export-as-new-file` instead of `apply` when risk is high or validation is partial
+
 ## First TUI Slice
 - Shape: thin terminal operator shell over the existing CLI and file-backed workflow
 - Stack: Python + Textual
