@@ -940,12 +940,12 @@ Default status for new backlog items in this file: `draft`
 - **Ready:** complete
 
 ### P21-T03 — Define writable document and spreadsheet workflows
-- **Status:** draft
-- **Description:** Decide how Grain should move from read/extract support to safe write/update support for `.docx` and spreadsheet files, including packet integration, review expectations, and whether edits are direct, patch-like, or export-based.
+- **Status:** done
+- **Description:** Writable office workflow defined on 2026-04-28. Grain should support direct local updates to `.docx` and spreadsheet artifacts, but only through explicit safety modes and review surfaces. Default mode is `propose`: generate a change plan plus human-readable diff/change summary without mutating the source file. `apply` writes in place only after operator approval or explicit command intent. `export-as-new-file` writes a sibling artifact for low-trust or comparison-first workflows. Every write-capable flow must attach to a task packet, record touched artifact paths in `results.md`, emit a reviewable summary before close, and run artifact-specific validators before reporting ready. `.docx` flows should review heading/section/table preservation and summarize textual/structural edits; spreadsheet flows should review touched sheets, ranges, formulas, and required-table invariants. The workflow is direct-write capable, not patch-file-only, but must always produce a text review surface before closure.
 - **Files:** planning docs, adapter planning docs, potential canonical proposal inputs
 - **Model:** frontier_model
 - **Dependencies:** P21-T01
-- **Ready:** after the milestone contract is locked
+- **Ready:** complete
 
 ### P21-T04 — Define desktop-app integration strategy
 - **Status:** draft
@@ -1045,6 +1045,16 @@ Default status for new backlog items in this file: `draft`
   - review-safe diff or change-summary outputs
   - artifact-specific validators
   - explicit write safety modes such as `propose`, `apply`, and `export-as-new-file`
+- Workflow rules:
+  - every write operation belongs to an active task packet
+  - `propose` is the default write posture
+  - `apply` requires explicit operator intent
+  - `export-as-new-file` remains available for cautious comparison-first workflows
+  - every successful write path must emit a human-readable review surface before close
+  - validators run before a packet can claim the artifact update is ready for review
+- Artifact-specific review expectations:
+  - `.docx`: heading/section preservation, table integrity, and structural change summary
+  - spreadsheets: touched sheets/ranges, formula changes, and required-table/sheet validation
 
 ---
 

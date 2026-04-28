@@ -94,6 +94,19 @@ CLOSED. All 6 tasks done (P20-T01 through P20-T06). Delivered: review routing af
   - Sentinel work
   - broad new adapter expansion beyond office/document and Obsidian surfaces
 
+## Writable Office Workflow
+- Write modes:
+  - `propose` by default
+  - `apply` for explicit in-place updates
+  - `export-as-new-file` for cautious comparison-first workflows
+- Workflow rules:
+  - every write belongs to an active task packet
+  - every write emits a human-readable review surface before close
+  - validators must pass before the artifact update is considered ready
+- Artifact expectations:
+  - `.docx` should surface structural/textual change summaries
+  - spreadsheets should surface touched sheets, ranges, and formula-sensitive changes
+
 ## First TUI Slice
 - Shape: thin terminal operator shell over the existing CLI and file-backed workflow
 - Stack: Python + Textual

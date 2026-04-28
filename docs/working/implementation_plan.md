@@ -286,6 +286,13 @@ Locked first TUI slice:
 - required actions: launch execute/review/close flows, inspect blockers and packet artifacts, wrap safe non-code review actions when available
 - explicit deferrals: embedded agent consoles, multi-project dashboards, collaboration surfaces, broad canonical editing UI, separate JS/TS or Electron-style UI stack
 
+Locked writable office workflow:
+- direct local artifact updates are allowed, but only through explicit safety modes
+- default mode is `propose`
+- `apply` performs in-place mutation only with explicit operator intent
+- `export-as-new-file` supports comparison-first workflows
+- every write attaches to a task packet, emits a reviewable text surface, and passes validators before ready state
+
 ---
 
 ## 9. Phase Completion Standard
