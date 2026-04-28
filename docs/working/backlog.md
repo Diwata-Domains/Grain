@@ -948,12 +948,12 @@ Default status for new backlog items in this file: `draft`
 - **Ready:** complete
 
 ### P21-T04 — Define desktop-app integration strategy
-- **Status:** draft
-- **Description:** Decide how Grain should be invoked from desktop agent environments. Cover direct CLI usage, Claude MCP/server compatibility, and OpenAI Codex/ChatGPT app pathways, including where a thin MCP wrapper is required versus where command execution is enough.
+- **Status:** done
+- **Description:** Desktop integration strategy defined on 2026-04-28. Grain should keep the CLI as the canonical operator surface and command contract. Codex-style environments use Grain directly through CLI invocation. Claude/Desktop-style environments use a thin local MCP wrapper over the same Grain command surfaces, preferably stdio-first for local operation. ChatGPT/OpenAI app-style integrations, if pursued, should reuse the same shared tool contract through an MCP/app-server layer rather than introducing a separate bespoke command model. The integration priority is one core Grain tool contract with multiple adapters at the boundary: CLI-native where possible, MCP-wrapped where required. The desktop path must remain local-first, file-backed, and compatible with the monorepo contract layer so Grain can participate in broader toolkit workflows without becoming a hosted service.
 - **Files:** planning docs, runtime guidance, future roadmap docs if needed
 - **Model:** frontier_model
 - **Dependencies:** P21-T01
-- **Ready:** after the milestone contract is locked
+- **Ready:** complete
 
 ### P21-T05 — Decide Obsidian support shape
 - **Status:** draft
@@ -1069,6 +1069,18 @@ Default status for new backlog items in this file: `draft`
   - CLI-first Codex integration guidance and helpers
   - Obsidian vault semantics, whether via dedicated adapter or an extended docs profile
   - reusable recipes for desktop-driven office and vault workflows
+- Desktop integration rules:
+  - CLI remains the canonical Grain command surface
+  - Codex-style usage should call Grain directly where command execution is available
+  - Claude/Desktop-style usage should wrap the same actions through a local MCP server layer
+  - ChatGPT/OpenAI app-style integrations should reuse the same shared tool contract rather than inventing a parallel API surface
+  - local-first file-backed behavior is required; hosted desktop orchestration is deferred
+
+### Future Adapter Notes
+- Database-related work does not currently have an official core adapter.
+- If repeated database workflows become common, prefer a dedicated `database_adapter` or `db_adapter` rather than overloading `data_adapter`.
+- Scraping/crawler work also does not currently have an official core adapter.
+- If it becomes a recurring workflow, prefer a dedicated `crawler_adapter` or `scraping_adapter` with clear boundaries around crawl configs, selectors, extraction schemas, and output validation.
 
 ---
 

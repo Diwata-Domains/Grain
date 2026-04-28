@@ -293,6 +293,13 @@ Locked writable office workflow:
 - `export-as-new-file` supports comparison-first workflows
 - every write attaches to a task packet, emits a reviewable text surface, and passes validators before ready state
 
+Locked desktop integration strategy:
+- CLI is the canonical Grain command surface
+- Codex-style environments use direct CLI invocation
+- Claude/Desktop-style environments use a thin local MCP wrapper over the same actions
+- ChatGPT/OpenAI app-style integrations should reuse the same shared tool contract through an MCP/app-server boundary
+- integration remains local-first and file-backed; hosted service behavior is deferred
+
 ---
 
 ## 9. Phase Completion Standard

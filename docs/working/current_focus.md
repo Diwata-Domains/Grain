@@ -107,6 +107,13 @@ CLOSED. All 6 tasks done (P20-T01 through P20-T06). Delivered: review routing af
   - `.docx` should surface structural/textual change summaries
   - spreadsheets should surface touched sheets, ranges, and formula-sensitive changes
 
+## Desktop Integration Strategy
+- Canonical surface: Grain CLI
+- Codex-style path: direct CLI invocation
+- Claude/Desktop-style path: thin local MCP wrapper over the same Grain actions
+- ChatGPT/OpenAI app-style path: reuse the same shared tool contract through an MCP/app-server boundary
+- Constraint: local-first, file-backed, compatible with the broader toolkit contract layer
+
 ## First TUI Slice
 - Shape: thin terminal operator shell over the existing CLI and file-backed workflow
 - Stack: Python + Textual
