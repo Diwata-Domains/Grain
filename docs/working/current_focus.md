@@ -72,9 +72,9 @@ CLOSED. All 6 tasks done (P20-T01 through P20-T06). Delivered: review routing af
 ## Immediate Goals
 1. Execute the locked v0.3.0 milestone contract on `dev`
 2. Define the first TUI/operator slice, writable office-surface strategy, and desktop-app integration path
-3. Make Obsidian support explicit before implementation starts
+3. Land dedicated Obsidian, database, and crawler adapter phases in the execution sequence
 4. Ensure non-code artifact writes are reviewable through diffs, validators, and safety modes
-5. Capture high-value reusable workflow recipes only if the core milestone lands cleanly
+5. Keep the recipe layer thin and secondary to the core operator surfaces
 
 ## v0.3.0 Contract
 - Theme: `Operator Surface for Structured Knowledge Work`
@@ -258,6 +258,9 @@ All five phases must ship for v0.2.0 to close.
 2. **Phase 22** — TUI foundation and workflow surfaces
 3. **Phase 23** — writable office artifacts (`.docx`, spreadsheets)
 4. **Phase 24** — desktop integrations and Obsidian support
+5. **Phase 25** — database adapter
+6. **Phase 26** — crawler adapter
+7. **Phase 27** — recipe layer and operator ergonomics
 
 ## Active Constraints
 - use local filesystem only

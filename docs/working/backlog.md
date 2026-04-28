@@ -992,12 +992,12 @@ Default status for new backlog items in this file: `draft`
 - **Ready:** optional follow-up after the operator-surface plan is stable
 
 ### P21-T09 — Seed the first v0.3.0 execution phases and tasks
-- **Status:** draft
-- **Description:** Turn the approved v0.3.0 plan into concrete implementation phases on `dev`, including task inventory for the first TUI slice, writable office-surface support, desktop integration work, Obsidian support, reviewable artifact flows, and workflow recipes.
+- **Status:** done
+- **Description:** Execution phases seeded on 2026-04-28. v0.3.0 now breaks into Phase 22 (TUI foundation and workflow surfaces), Phase 23 (writable office artifacts), Phase 24 (desktop integrations and Obsidian support), Phase 25 (database adapter), Phase 26 (crawler adapter), and Phase 27 (recipe layer and operator ergonomics). This turns the expanded operator-surface scope into implementation-ready buckets instead of one broad milestone.
 - **Files:** `docs/working/backlog.md`, `docs/working/current_focus.md`, `docs/working/implementation_plan.md`
 - **Model:** frontier_model
 - **Dependencies:** P21-T01 through P21-T07
-- **Ready:** after the operator-surface plan is approved
+- **Ready:** complete
 
 ---
 
@@ -1084,6 +1084,50 @@ Default status for new backlog items in this file: `draft`
 - Obsidian support is promoted into a dedicated `obsidian_adapter` for v0.3.0 rather than remaining inside `docs_adapter`.
 - Database-related work is promoted into a dedicated `database_adapter` for v0.3.0 rather than being overloaded into `data_adapter`.
 - Crawler and scraping work is promoted into a dedicated `crawler_adapter` for v0.3.0 with clear boundaries around crawl configs, selectors, extraction schemas, robots/rate-limit policies, and output validation.
+
+---
+
+## 28. Phase 25 — Database Adapter (seeded, not started)
+
+> **Status:** seeded — implementation phase for full-stack database workflows after the operator-surface foundations are in place.
+
+### P25 Planning Notes
+- Scope: first-class `database_adapter` for recurring database work
+- Initial surfaces:
+  - schema and migration artifact awareness
+  - query-file and ORM-surface context hints
+  - database-specific review and validation guidance
+  - migration/change-planning recipe hooks
+
+---
+
+## 29. Phase 26 — Crawler Adapter (seeded, not started)
+
+> **Status:** seeded — implementation phase for crawler and scraping workflows after the desktop and review surfaces are stable.
+
+### P26 Planning Notes
+- Scope: first-class `crawler_adapter` for crawl/extraction workflows
+- Initial surfaces:
+  - crawl-config and selector awareness
+  - extraction-schema and output-validation guidance
+  - robots/rate-limit/retry review focus
+  - crawler-change review recipe hooks
+
+---
+
+## 30. Phase 27 — Recipe Layer and Operator Ergonomics (seeded, not started)
+
+> **Status:** seeded — implementation phase for reusable operator recipes once the core adapters and surfaces exist.
+
+### P27 Planning Notes
+- Scope: thin reusable recipes over the normal workflow and packet model
+- Initial surfaces:
+  - planning-doc update recipe
+  - notes-revision recipe
+  - spreadsheet/report update recipe
+  - Obsidian maintenance recipe
+  - database-change planning recipe
+  - crawler-change review recipe
 
 ---
 

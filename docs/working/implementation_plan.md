@@ -319,6 +319,14 @@ Locked recipe layer:
 - recipes are thin entrypoints over the normal packet/workflow model
 - initial recipe targets: planning-doc updates, notes revision, spreadsheet/report updates, Obsidian maintenance, database-change planning, and crawler-change review
 
+Seeded execution sequence:
+- Phase 22 — TUI foundation and workflow surfaces
+- Phase 23 — writable office artifacts
+- Phase 24 — desktop integrations and Obsidian support
+- Phase 25 — database adapter
+- Phase 26 — crawler adapter
+- Phase 27 — recipe layer and operator ergonomics
+
 ---
 
 ## 9. Phase Completion Standard
