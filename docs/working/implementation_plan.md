@@ -327,6 +327,14 @@ Seeded execution sequence:
 - Phase 26 — crawler adapter
 - Phase 27 — recipe layer and operator ergonomics
 
+Seeded Phase 22 task sequence:
+- P22-T01 — scaffold Textual app shell
+- P22-T02 — workflow dashboard and status summary
+- P22-T03 — backlog, task, and packet inspector views
+- P22-T04 — action launcher wiring for execute/review/close flows
+- P22-T05 — prompt preview, context inspection, and blocker detail
+- P22-T06 — TUI tests, smoke flow, and docs
+
 ---
 
 ## 9. Phase Completion Standard

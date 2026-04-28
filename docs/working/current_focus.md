@@ -1,7 +1,7 @@
 # Current Focus
 
 ## Current Phase
-Phase 21 — v0.3.0 Planning and Operator Surface Definition
+Phase 22 — TUI Foundation and Workflow Surfaces
 
 v0.2.0 COMPLETE
 
@@ -70,11 +70,11 @@ COMPLETE — Phases 15 through 19 are closed on `dev`. v0.2.0 implementation sco
 CLOSED. All 6 tasks done (P20-T01 through P20-T06). Delivered: review routing after execution artifacts exist, archived-packet-aware task IDs, done-task stale-pointer handling, terminal project-complete workflow state, safer upgrade behavior for customized repos, and packet-first guardrails across prompts and agent instructions. Phase closed 2026-04-23.
 
 ## Immediate Goals
-1. Execute the locked v0.3.0 milestone contract on `dev`
-2. Define the first TUI/operator slice, writable office-surface strategy, and desktop-app integration path
-3. Land dedicated Obsidian, database, and crawler adapter phases in the execution sequence
-4. Ensure non-code artifact writes are reviewable through diffs, validators, and safety modes
-5. Keep the recipe layer thin and secondary to the core operator surfaces
+1. Scaffold the Textual app shell and TUI structure
+2. Build workflow dashboard, backlog, and packet inspection views
+3. Wire safe execute/review/close action launches without creating alternate workflow state
+4. Keep the TUI thin over existing Grain services and CLI contracts
+5. Leave database, crawler, and recipe work for their own later phases
 
 ## v0.3.0 Contract
 - Theme: `Operator Surface for Structured Knowledge Work`
@@ -254,13 +254,12 @@ All five phases must ship for v0.2.0 to close.
 - **Phase 11-T05 (deferred indefinitely)** — Homebrew formula remains out of scope unless distribution priorities change
 
 ## Upcoming Phase Sequence
-1. **Phase 21** — v0.3.0 planning and operator surface definition ← active now
-2. **Phase 22** — TUI foundation and workflow surfaces
-3. **Phase 23** — writable office artifacts (`.docx`, spreadsheets)
-4. **Phase 24** — desktop integrations and Obsidian support
-5. **Phase 25** — database adapter
-6. **Phase 26** — crawler adapter
-7. **Phase 27** — recipe layer and operator ergonomics
+1. **Phase 22** — TUI foundation and workflow surfaces ← active now
+2. **Phase 23** — writable office artifacts (`.docx`, spreadsheets)
+3. **Phase 24** — desktop integrations and Obsidian support
+4. **Phase 25** — database adapter
+5. **Phase 26** — crawler adapter
+6. **Phase 27** — recipe layer and operator ergonomics
 
 ## Active Constraints
 - use local filesystem only

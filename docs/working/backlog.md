@@ -1001,9 +1001,9 @@ Default status for new backlog items in this file: `draft`
 
 ---
 
-## 25. Phase 22 — TUI Foundation and Workflow Surfaces (seeded, not started)
+## 25. Phase 22 — TUI Foundation and Workflow Surfaces (planned, ready to start)
 
-> **Status:** seeded — implementation phase for the first required TUI slice once Phase 21 planning is closed.
+> **Status:** planned — Phase 21 scope is now locked enough to begin TUI execution. This phase delivers the first usable operator shell over Grain’s existing CLI and file-backed workflow.
 
 ### P22 Planning Notes
 - Scope: operator-first TUI for local Grain usage
@@ -1034,6 +1034,54 @@ Default status for new backlog items in this file: `draft`
   - live collaboration or remote sessions
   - broad form-based canonical editing
   - separate web or Electron-style UI stack
+
+### P22-T01 — Scaffold Textual app shell
+- **Status:** ready
+- **Description:** Create the base Textual application shell and project structure for the Grain TUI. Include app bootstrap, screen/pane layout skeleton, keyboard/action wiring foundation, and a clear boundary for calling existing Grain services without duplicating workflow logic.
+- **Files:** `src/grain/tui/` (new), CLI/TUI entry wiring, tests
+- **Model:** frontier_model
+- **Dependencies:** none
+- **Ready:** yes
+
+### P22-T02 — Workflow dashboard and status summary
+- **Status:** draft
+- **Description:** Build the first dashboard view showing current phase, active task, next legal action, blockers, and key working-doc state in a compact operator-readable layout.
+- **Files:** TUI views, state adapters, tests
+- **Model:** frontier_model
+- **Dependencies:** P22-T01
+- **Ready:** after the app shell exists
+
+### P22-T03 — Backlog, task, and packet inspector views
+- **Status:** draft
+- **Description:** Add backlog-by-phase navigation plus focused inspectors for packet metadata and packet artifact files so the operator can move from phase overview to task detail without leaving the TUI.
+- **Files:** TUI views, packet/backlog readers, tests
+- **Model:** frontier_model
+- **Dependencies:** P22-T01
+- **Ready:** after the app shell exists
+
+### P22-T04 — Action launcher wiring for execute/review/close flows
+- **Status:** draft
+- **Description:** Wire safe TUI actions that launch or wrap existing Grain execute/review/close commands and show status or errors without creating alternate workflow transitions.
+- **Files:** TUI action layer, command wrappers, tests
+- **Model:** frontier_model
+- **Dependencies:** P22-T02, P22-T03
+- **Ready:** after the core views exist
+
+### P22-T05 — Prompt preview, context inspection, and blocker detail
+- **Status:** draft
+- **Description:** Add prompt-preview and context-bundle inspection views plus a detailed blocker/status footer so operators can see why a workflow state is blocked and what Grain expects next.
+- **Files:** TUI views, context/prompt readers, tests
+- **Model:** frontier_model
+- **Dependencies:** P22-T02, P22-T03
+- **Ready:** after the core views exist
+
+### P22-T06 — TUI tests, smoke flow, and docs
+- **Status:** draft
+- **Description:** Add focused TUI tests and a smoke execution path for the first operator shell, then document how the TUI fits with the CLI and what is intentionally deferred.
+- **Files:** tests, docs, runtime guidance
+- **Model:** open_model
+- **Dependencies:** P22-T04, P22-T05
+- **Ready:** after interactive surfaces are stable
 
 ---
 
