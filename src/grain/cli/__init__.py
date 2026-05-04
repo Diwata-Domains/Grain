@@ -23,6 +23,7 @@ from .phase import phase_group
 from .prompt import prompt_group
 from .orchestrate import orchestrate_group
 from .review import review_group
+from .tui import tui_cmd
 from .workflow import workflow_group
 from .onboard import onboard_cmd
 from .upgrade import upgrade_cmd
@@ -195,6 +196,7 @@ main.add_command(phase_group)
 main.add_command(prompt_group)
 main.add_command(orchestrate_group)
 main.add_command(review_group)
+main.add_command(tui_cmd)
 main.add_command(workflow_group)
 main.add_command(onboard_cmd)
 main.add_command(upgrade_cmd)
