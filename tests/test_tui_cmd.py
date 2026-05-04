@@ -1,6 +1,7 @@
 from click.testing import CliRunner
 
 from grain.cli import main
+from grain.domain.packets import parse_task_metadata
 from grain.tui.app import (
     ActionLaunchResult,
     BacklogTaskSnapshot,
@@ -47,6 +48,108 @@ def _base_repo(repo):
             "- **Status:** ready\n\n"
             "### P22-T03 — Backlog, task, and packet inspector views\n"
             "- **Status:** draft\n"
+        ),
+    )
+
+
+_APPROVED_RESULTS = """# Results: TASK-0001
+
+## Summary
+Work completed.
+
+## User Review
+- **State:** approved
+- **Summary:** Ready to close.
+- **Resolution Mode:** close_task
+
+### Required Fixes
+- None
+
+### Open Questions To Log
+- None
+
+### Proposal Candidates To Log
+- None
+
+### Follow-Ups To Log
+- None
+
+### Residual Risks
+- None
+
+## Verification Review
+- **State:** not_run
+- **Summary:** No verifier configured.
+
+### Findings
+- None
+
+## Closure Decision
+- **Decision:** pending
+- **Reason:** Awaiting close command.
+
+### Closure Blockers
+- None
+"""
+
+
+def _base_workflow_repo(repo):
+    _write(repo / "docs" / "runtime" / "PROJECT_RULES.md", "")
+    _write(
+        repo / "docs" / "working" / "current_focus.md",
+        "# Current Focus\n\n## Current Phase\nPhase 8 — Workflow Automation Runner Foundation\n",
+    )
+    _write(
+        repo / "docs" / "working" / "current_task.md",
+        "# Current Task\n\nTask ID: none\nTask Path: none\nStatus: unset\n",
+    )
+    _write(
+        repo / "docs" / "working" / "backlog.md",
+        (
+            "## 10. Phase 8 — Workflow Automation Runner Foundation\n\n"
+            "### P8-T08 — Example task\n"
+            "- **Status:** ready\n"
+        ),
+    )
+
+
+def _packet(
+    repo,
+    task_ref,
+    task_id,
+    status,
+    with_results=False,
+    with_handoff=False,
+):
+    packet_dir = repo / "tasks" / f"{task_ref}-{task_id}"
+    packet_dir.mkdir(parents=True, exist_ok=True)
+    _write(
+        packet_dir / "task.md",
+        (
+            "# Task: Example\n\n## Metadata\n"
+            f"- **ID:** {task_id}\n"
+            f"- **Status:** {status}\n"
+            "- **Phase:** Phase 8 — Workflow Automation Runner Foundation\n"
+        ),
+    )
+    _write(packet_dir / "context.md", "# Context\n")
+    _write(packet_dir / "plan.md", "# Plan\n")
+    _write(packet_dir / "deliverable_spec.md", "# Deliverable\n")
+    if with_results:
+        _write(packet_dir / "results.md", _APPROVED_RESULTS)
+    if with_handoff:
+        _write(packet_dir / "handoff.md", "# Handoff\nReady.\n")
+    return packet_dir
+
+
+def _active_task(repo, task_id, task_ref, status):
+    _write(
+        repo / "docs" / "working" / "current_task.md",
+        (
+            "# Current Task\n\n"
+            f"Task ID: {task_id}\n"
+            f"Task Path: tasks/{task_ref}-{task_id}/\n"
+            f"Status: {status}\n"
         ),
     )
 
@@ -358,3 +461,39 @@ def test_launch_close_flow_surfaces_validation_error(tmp_path, monkeypatch):
     assert result.ok is False
     assert result.summary == "Close blocked"
     assert "approved" in result.detail
+
+
+def test_tui_launcher_smoke_flow_execute_review_close(tmp_path):
+    _base_workflow_repo(tmp_path)
+    packet_dir = _packet(tmp_path, "P8-T08", "TASK-0001", "ready")
+
+    execute_result = launch_execute_flow(tmp_path)
+    assert execute_result.ok is True
+    assert "activate_task" in execute_result.summary
+
+    _write(
+        tmp_path / "docs" / "working" / "backlog.md",
+        (
+            "## 10. Phase 8 — Workflow Automation Runner Foundation\n\n"
+            "### P8-T08 — Example task\n"
+            "- **Status:** review\n"
+        ),
+    )
+    _write(packet_dir / "results.md", _APPROVED_RESULTS)
+    task_md = packet_dir / "task.md"
+    task_md.write_text(
+        task_md.read_text(encoding="utf-8").replace("ready", "review", 1),
+        encoding="utf-8",
+    )
+    _active_task(tmp_path, "TASK-0001", "P8-T08", "review")
+
+    review_snapshot = build_shell_snapshot(tmp_path)
+    review_result = launch_review_flow(tmp_path, review_snapshot)
+    assert review_result.ok is True
+    assert (packet_dir / "handoff.md").exists()
+
+    close_snapshot = build_shell_snapshot(tmp_path)
+    close_result = launch_close_flow(tmp_path, close_snapshot)
+    assert close_result.ok is True
+    metadata = parse_task_metadata(packet_dir / "task.md")
+    assert metadata["status"] == "done"

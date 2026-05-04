@@ -259,6 +259,7 @@ grain workflow next
 grain prompt show
 grain review check --id TASK-0001
 grain task close --id TASK-0001
+grain tui
 ```
 
 If you want Grain to execute one legal state transition and stop at gates:
@@ -280,6 +281,30 @@ Grain controls:
 
 The agent controls:
 - executing the current step correctly
+
+## Terminal UI
+
+`grain tui` is the first operator shell over Grain’s existing CLI and file-backed workflow.
+
+Current TUI surfaces:
+- workflow dashboard and current task status
+- phase backlog and packet artifact inspection
+- prompt preview and compact context summary
+- blocker detail and action feedback
+- execute, review, and close launchers that delegate to the normal Grain workflow services
+
+The TUI is intentionally thin:
+- it reads the same repo files and service outputs the CLI already uses
+- it does not maintain hidden workflow state
+- it does not bypass review or close gates
+
+Current deferrals:
+- deep packet content editors
+- full prompt-body rendering
+- full context export rendering
+- embedded agent terminals
+- multi-project views
+- broad GUI beyond the terminal shell
 
 ## Onboarding flow
 
