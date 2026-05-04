@@ -2,9 +2,13 @@ from click.testing import CliRunner
 
 from grain.cli import main
 from grain.tui.app import (
+    BacklogTaskSnapshot,
     CandidateTaskSnapshot,
     GrainShellSnapshot,
+    PacketArtifactSnapshot,
     build_shell_snapshot,
+    _render_backlog_panel,
+    _render_packet_panel,
     _render_prompt_panel,
     _render_queue_panel,
     _render_status_panel,
@@ -29,7 +33,13 @@ def _base_repo(repo):
     )
     _write(
         repo / "docs" / "working" / "backlog.md",
-        "## 24. Phase 22 — TUI Foundation and Workflow Surfaces\n\n### P22-T02 — Workflow dashboard and status summary\n- **Status:** ready\n",
+        (
+            "## 24. Phase 22 — TUI Foundation and Workflow Surfaces\n\n"
+            "### P22-T02 — Workflow dashboard and status summary\n"
+            "- **Status:** ready\n\n"
+            "### P22-T03 — Backlog, task, and packet inspector views\n"
+            "- **Status:** draft\n"
+        ),
     )
 
 
@@ -88,6 +98,9 @@ def test_build_shell_snapshot_reads_workflow_state(tmp_path):
     assert snapshot.model_class == "open_model"
     assert snapshot.stop_reason == "previous_phase_not_closed"
     assert snapshot.blocking_reason_count == 1
+    assert snapshot.backlog_tasks[0].task_ref == "P22-T02"
+    assert snapshot.backlog_tasks[1].task_ref == "P22-T03"
+    assert snapshot.packet_artifacts is None
 
 
 def test_render_panels_surface_blocked_state():
@@ -140,3 +153,40 @@ def test_render_queue_panel_surfaces_candidate_tasks_when_not_blocked():
     queue = _render_queue_panel(snapshot)
     assert "Candidate Tasks" in queue
     assert "P22-T02 [ready] via backlog" in queue
+
+
+def test_render_backlog_and_packet_panels_surface_inspector_content():
+    snapshot = GrainShellSnapshot(
+        repo_root="/repo",
+        active_phase="22",
+        active_task_id="TASK-0148",
+        current_task_path="tasks/P22-T03-TASK-0148/",
+        current_task_status="in_progress",
+        next_action="task_execute",
+        recommended_prompt="prompts/task.execute.md",
+        prompt_stage="execute",
+        prompt_scope="task",
+        model_class="open_model",
+        stop_reason="",
+        blocking_reason_count=0,
+        blocking_reasons=[],
+        candidate_tasks=[],
+        backlog_tasks=[
+            BacklogTaskSnapshot("P22-T03", "Backlog, task, and packet inspector views", "in_progress"),
+            BacklogTaskSnapshot("P22-T04", "Action launcher wiring for execute/review/close flows", "draft"),
+        ],
+        packet_artifacts=PacketArtifactSnapshot(
+            packet_dir="tasks/P22-T03-TASK-0148/",
+            packet_status="in_progress",
+            files_present=["task.md", "context.md", "plan.md"],
+            files_missing=["results.md", "handoff.md"],
+        ),
+    )
+
+    backlog = _render_backlog_panel(snapshot)
+    packet = _render_packet_panel(snapshot)
+    assert "Phase Backlog" in backlog
+    assert "P22-T03 [in_progress]" in backlog
+    assert "Packet Inspector" in packet
+    assert "packet_dir: tasks/P22-T03-TASK-0148/" in packet
+    assert "missing: results.md, handoff.md" in packet
