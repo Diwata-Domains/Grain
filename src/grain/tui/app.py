@@ -6,6 +6,7 @@ from pathlib import Path
 
 from grain.domain.packets import parse_task_metadata
 from grain.services import task_service
+from grain.services.context_service import build_context_bundle, build_source_metadata
 from grain.services.handoff_service import materialize_handoff_artifact
 from grain.services.prompt_service import show_prompt
 from grain.services.workflow_service import evaluate_workflow_state
@@ -48,6 +49,16 @@ class ActionLaunchResult:
 
 
 @dataclass(frozen=True)
+class ContextPreviewSnapshot:
+    source_count: int
+    packet_source_count: int
+    canonical_doc_count: int
+    working_doc_count: int
+    primary_adapter: str
+    top_sources: list[str] = field(default_factory=list)
+
+
+@dataclass(frozen=True)
 class GrainShellSnapshot:
     repo_root: str
     active_phase: str
@@ -59,12 +70,15 @@ class GrainShellSnapshot:
     prompt_stage: str
     prompt_scope: str
     model_class: str
-    stop_reason: str
-    blocking_reason_count: int
+    prompt_preview_lines: list[str] = field(default_factory=list)
+    stop_reason: str = ""
+    blocking_reason_count: int = 0
     blocking_reasons: list[str] = field(default_factory=list)
+    affected_artifacts: list[str] = field(default_factory=list)
     candidate_tasks: list[CandidateTaskSnapshot] = field(default_factory=list)
     backlog_tasks: list[BacklogTaskSnapshot] = field(default_factory=list)
     packet_artifacts: PacketArtifactSnapshot | None = None
+    context_preview: ContextPreviewSnapshot | None = None
     last_action_summary: str = ""
 
 
@@ -154,10 +168,50 @@ def _inspect_packet(root: Path, task_path: str) -> PacketArtifactSnapshot | None
     )
 
 
+def _read_prompt_preview(root: Path, recommended_prompt: str) -> list[str]:
+    if not recommended_prompt:
+        return []
+    prompt_path = root / recommended_prompt
+    if not prompt_path.exists():
+        return []
+
+    preview: list[str] = []
+    for line in prompt_path.read_text(encoding="utf-8").splitlines():
+        stripped = line.strip()
+        if not stripped:
+            continue
+        preview.append(stripped)
+        if len(preview) >= 5:
+            break
+    return preview
+
+
+def _build_context_preview(root: Path, task_id: str) -> ContextPreviewSnapshot | None:
+    if not task_id or task_id == "none":
+        return None
+
+    result, bundle = build_context_bundle(root, task_id)
+    if not result.ok or bundle is None:
+        return None
+
+    source_metadata = build_source_metadata(root, bundle)
+    stats = bundle.export_metadata.get("context_stats", {})
+    adapter_context = bundle.export_metadata.get("adapter_context", {})
+    return ContextPreviewSnapshot(
+        source_count=len(source_metadata),
+        packet_source_count=int(stats.get("packet_sources", 0)),
+        canonical_doc_count=int(stats.get("canonical_sources", 0)),
+        working_doc_count=int(stats.get("working_sources", 0)),
+        primary_adapter=str(adapter_context.get("primary_adapter", "none")),
+        top_sources=[entry["path"] for entry in source_metadata[:5]],
+    )
+
+
 def build_shell_snapshot(root: Path) -> GrainShellSnapshot:
     result, evaluation = evaluate_workflow_state(root)
     _, prompt_payload = show_prompt(root)
     task_id, task_path, task_status = _read_current_task_pointer(root)
+    recommended_prompt = (prompt_payload or {}).get("recommended_prompt", "")
 
     if evaluation is None:
         return GrainShellSnapshot(
@@ -167,16 +221,20 @@ def build_shell_snapshot(root: Path) -> GrainShellSnapshot:
             current_task_path=task_path,
             current_task_status=task_status,
             next_action="",
-            recommended_prompt="",
+            recommended_prompt=recommended_prompt,
             prompt_stage="",
             prompt_scope="",
             model_class="",
+            prompt_preview_lines=_read_prompt_preview(root, recommended_prompt),
             stop_reason="workflow_evaluation_failed",
             blocking_reason_count=len(result.errors),
             blocking_reasons=list(result.errors),
+            affected_artifacts=[],
+            context_preview=_build_context_preview(root, task_id),
         )
 
     active_phase = evaluation.active_phase or "unknown"
+    recommended_prompt = (prompt_payload or {}).get("recommended_prompt", evaluation.recommended_prompt)
     return GrainShellSnapshot(
         repo_root=str(root),
         active_phase=active_phase,
@@ -184,19 +242,22 @@ def build_shell_snapshot(root: Path) -> GrainShellSnapshot:
         current_task_path=task_path,
         current_task_status=task_status,
         next_action=evaluation.next_action,
-        recommended_prompt=(prompt_payload or {}).get("recommended_prompt", evaluation.recommended_prompt),
+        recommended_prompt=recommended_prompt,
         prompt_stage=(prompt_payload or {}).get("stage", ""),
         prompt_scope=(prompt_payload or {}).get("scope", ""),
         model_class=(prompt_payload or {}).get("model_class", ""),
+        prompt_preview_lines=_read_prompt_preview(root, recommended_prompt),
         stop_reason=evaluation.stop_reason,
         blocking_reason_count=len(evaluation.blocking_reasons),
         blocking_reasons=list(evaluation.blocking_reasons),
+        affected_artifacts=list(evaluation.affected_artifacts),
         candidate_tasks=[
             CandidateTaskSnapshot(task.task_ref, task.status, task.source)
             for task in evaluation.candidate_tasks
         ],
         backlog_tasks=_read_phase_backlog_tasks(root, active_phase),
         packet_artifacts=_inspect_packet(root, task_path),
+        context_preview=_build_context_preview(root, evaluation.active_task_id or task_id),
     )
 
 
@@ -322,15 +383,17 @@ def _render_task_panel(snapshot: GrainShellSnapshot) -> str:
 
 
 def _render_prompt_panel(snapshot: GrainShellSnapshot) -> str:
-    return "\n".join(
-        [
-            "Prompt Status",
-            f"recommended_prompt: {snapshot.recommended_prompt or 'none'}",
-            f"scope: {snapshot.prompt_scope or 'none'}",
-            f"stage: {snapshot.prompt_stage or 'none'}",
-            f"model_class: {snapshot.model_class or 'none'}",
-        ]
-    )
+    lines = [
+        "Prompt Status",
+        f"recommended_prompt: {snapshot.recommended_prompt or 'none'}",
+        f"scope: {snapshot.prompt_scope or 'none'}",
+        f"stage: {snapshot.prompt_stage or 'none'}",
+        f"model_class: {snapshot.model_class or 'none'}",
+    ]
+    if snapshot.prompt_preview_lines:
+        lines.append("preview:")
+        lines.extend(f"- {line}" for line in snapshot.prompt_preview_lines[:3])
+    return "\n".join(lines)
 
 
 def _render_queue_panel(snapshot: GrainShellSnapshot) -> str:
@@ -406,6 +469,43 @@ def _render_action_panel(snapshot: GrainShellSnapshot) -> str:
     return "\n".join(lines)
 
 
+def _render_context_panel(snapshot: GrainShellSnapshot) -> str:
+    context = snapshot.context_preview
+    if context is None:
+        return "\n".join(
+            [
+                "Context Preview",
+                "- no active task context available",
+            ]
+        )
+
+    lines = [
+        "Context Preview",
+        f"primary_adapter: {context.primary_adapter}",
+        f"sources: {context.source_count}",
+        f"packet_sources: {context.packet_source_count}",
+        f"canonical_docs: {context.canonical_doc_count}",
+        f"working_docs: {context.working_doc_count}",
+    ]
+    if context.top_sources:
+        lines.append("top_sources:")
+        lines.extend(f"- {path}" for path in context.top_sources[:3])
+    return "\n".join(lines)
+
+
+def _render_blocker_detail_panel(snapshot: GrainShellSnapshot) -> str:
+    lines = ["Blocker Detail"]
+    if snapshot.blocking_reasons:
+        lines.extend(f"- {reason}" for reason in snapshot.blocking_reasons[:5])
+    else:
+        lines.append("- no active blocking reasons")
+
+    if snapshot.affected_artifacts:
+        lines.append("affected_artifacts:")
+        lines.extend(f"- {artifact}" for artifact in snapshot.affected_artifacts[:5])
+    return "\n".join(lines)
+
+
 def _import_textual():
     try:
         from textual.app import App, ComposeResult
@@ -462,6 +562,11 @@ def create_app(root: Path):
             height: 1fr;
         }
 
+        #center-column {
+            width: 2fr;
+            height: 1fr;
+        }
+
         .stack {
             height: 1fr;
         }
@@ -478,11 +583,14 @@ def create_app(root: Path):
                             classes="panel",
                         )
                         yield Static(_render_backlog_panel(snapshot), classes="panel", id="backlog")
-                    with Container(id="right-column", classes="stack"):
+                        yield Static(_render_context_panel(snapshot), classes="panel", id="context")
+                    with Container(id="center-column", classes="stack"):
                         yield Static(_render_task_panel(snapshot), classes="panel", id="task")
                         yield Static(_render_packet_panel(snapshot), classes="panel", id="packet")
                         yield Static(_render_prompt_panel(snapshot), classes="panel", id="prompt")
+                    with Container(id="right-column", classes="stack"):
                         yield Static(_render_queue_panel(snapshot), classes="panel", id="queue")
+                        yield Static(_render_blocker_detail_panel(snapshot), classes="panel", id="blockers")
                         yield Static(_render_action_panel(snapshot), classes="panel", id="actions")
             yield Footer()
 
@@ -498,10 +606,12 @@ def create_app(root: Path):
             )
             self.query_one("#summary", Static).update(_render_status_panel(snapshot))
             self.query_one("#backlog", Static).update(_render_backlog_panel(snapshot))
+            self.query_one("#context", Static).update(_render_context_panel(snapshot))
             self.query_one("#task", Static).update(_render_task_panel(snapshot))
             self.query_one("#packet", Static).update(_render_packet_panel(snapshot))
             self.query_one("#prompt", Static).update(_render_prompt_panel(snapshot))
             self.query_one("#queue", Static).update(_render_queue_panel(snapshot))
+            self.query_one("#blockers", Static).update(_render_blocker_detail_panel(snapshot))
             self.query_one("#actions", Static).update(_render_action_panel(snapshot))
 
         def action_execute_flow(self) -> None:

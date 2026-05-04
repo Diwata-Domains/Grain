@@ -5,6 +5,7 @@ from grain.tui.app import (
     ActionLaunchResult,
     BacklogTaskSnapshot,
     CandidateTaskSnapshot,
+    ContextPreviewSnapshot,
     GrainShellSnapshot,
     PacketArtifactSnapshot,
     build_shell_snapshot,
@@ -13,6 +14,8 @@ from grain.tui.app import (
     launch_review_flow,
     _render_action_panel,
     _render_backlog_panel,
+    _render_blocker_detail_panel,
+    _render_context_panel,
     _render_packet_panel,
     _render_prompt_panel,
     _render_queue_panel,
@@ -101,11 +104,14 @@ def test_build_shell_snapshot_reads_workflow_state(tmp_path):
     assert snapshot.prompt_stage == "execute"
     assert snapshot.prompt_scope == "task"
     assert snapshot.model_class == "open_model"
+    assert snapshot.prompt_preview_lines[0] == "# Execute"
     assert snapshot.stop_reason == "previous_phase_not_closed"
     assert snapshot.blocking_reason_count == 1
+    assert snapshot.affected_artifacts == ["docs/working/current_focus.md"]
     assert snapshot.backlog_tasks[0].task_ref == "P22-T02"
     assert snapshot.backlog_tasks[1].task_ref == "P22-T03"
     assert snapshot.packet_artifacts is None
+    assert snapshot.context_preview is None
 
 
 def test_render_panels_surface_blocked_state():
@@ -120,19 +126,26 @@ def test_render_panels_surface_blocked_state():
         prompt_stage="execute",
         prompt_scope="task",
         model_class="open_model",
+        prompt_preview_lines=["# Execute", "Metadata:", "- scope: task"],
         stop_reason="previous_phase_not_closed",
         blocking_reason_count=1,
         blocking_reasons=["Phase 21 was not sealed"],
+        affected_artifacts=["docs/working/current_focus.md"],
         candidate_tasks=[],
+        context_preview=None,
     )
 
     assert "Workflow Status" in _render_status_panel(snapshot)
     assert "previous_phase_not_closed" in _render_status_panel(snapshot)
     assert "Current Task Pointer" in _render_task_panel(snapshot)
     assert "Prompt Status" in _render_prompt_panel(snapshot)
+    assert "preview:" in _render_prompt_panel(snapshot)
     queue = _render_queue_panel(snapshot)
     assert "Workflow Blockers" in queue
     assert "Phase 21 was not sealed" in queue
+    blockers = _render_blocker_detail_panel(snapshot)
+    assert "affected_artifacts:" in blockers
+    assert "docs/working/current_focus.md" in blockers
 
 
 def test_render_queue_panel_surfaces_candidate_tasks_when_not_blocked():
@@ -147,13 +160,16 @@ def test_render_queue_panel_surfaces_candidate_tasks_when_not_blocked():
         prompt_stage="execute",
         prompt_scope="task",
         model_class="open_model",
+        prompt_preview_lines=[],
         stop_reason="",
         blocking_reason_count=0,
         blocking_reasons=[],
+        affected_artifacts=[],
         candidate_tasks=[
             CandidateTaskSnapshot("P22-T02", "ready", "backlog"),
             CandidateTaskSnapshot("P22-T03", "draft", "backlog"),
         ],
+        context_preview=None,
     )
     queue = _render_queue_panel(snapshot)
     assert "Candidate Tasks" in queue
@@ -172,9 +188,11 @@ def test_render_backlog_and_packet_panels_surface_inspector_content():
         prompt_stage="execute",
         prompt_scope="task",
         model_class="open_model",
+        prompt_preview_lines=["# Execute"],
         stop_reason="",
         blocking_reason_count=0,
         blocking_reasons=[],
+        affected_artifacts=[],
         candidate_tasks=[],
         backlog_tasks=[
             BacklogTaskSnapshot("P22-T03", "Backlog, task, and packet inspector views", "in_progress"),
@@ -186,15 +204,26 @@ def test_render_backlog_and_packet_panels_surface_inspector_content():
             files_present=["task.md", "context.md", "plan.md"],
             files_missing=["results.md", "handoff.md"],
         ),
+        context_preview=ContextPreviewSnapshot(
+            source_count=5,
+            packet_source_count=4,
+            canonical_doc_count=1,
+            working_doc_count=0,
+            primary_adapter="none",
+            top_sources=["tasks/P22-T03-TASK-0148/task.md", "docs/canonical/workflow_spec.md"],
+        ),
     )
 
     backlog = _render_backlog_panel(snapshot)
     packet = _render_packet_panel(snapshot)
+    context = _render_context_panel(snapshot)
     assert "Phase Backlog" in backlog
     assert "P22-T03 [in_progress]" in backlog
     assert "Packet Inspector" in packet
     assert "packet_dir: tasks/P22-T03-TASK-0148/" in packet
     assert "missing: results.md, handoff.md" in packet
+    assert "Context Preview" in context
+    assert "sources: 5" in context
 
 
 def test_render_action_panel_surfaces_last_action_summary():
@@ -209,12 +238,15 @@ def test_render_action_panel_surfaces_last_action_summary():
         prompt_stage="close",
         prompt_scope="task",
         model_class="reviewer_model",
+        prompt_preview_lines=[],
         stop_reason="",
         blocking_reason_count=0,
         blocking_reasons=[],
+        affected_artifacts=[],
         candidate_tasks=[],
         backlog_tasks=[],
         packet_artifacts=None,
+        context_preview=None,
         last_action_summary="Review handoff ready: tasks/P22-T04-TASK-0149/handoff.md",
     )
     panel = _render_action_panel(snapshot)
@@ -245,12 +277,15 @@ def test_launch_execute_flow_returns_mutation_result(tmp_path, monkeypatch):
         prompt_stage="review",
         prompt_scope="task",
         model_class="open_model",
+        prompt_preview_lines=[],
         stop_reason="",
         blocking_reason_count=0,
         blocking_reasons=[],
+        affected_artifacts=[],
         candidate_tasks=[],
         backlog_tasks=[],
         packet_artifacts=None,
+        context_preview=None,
     )
 
     monkeypatch.setattr("grain.tui.app.run_workflow_step", fake_run_workflow_step)
@@ -274,12 +309,15 @@ def test_launch_review_flow_requires_active_task(tmp_path):
         prompt_stage="",
         prompt_scope="",
         model_class="",
+        prompt_preview_lines=[],
         stop_reason="",
         blocking_reason_count=0,
         blocking_reasons=[],
+        affected_artifacts=[],
         candidate_tasks=[],
         backlog_tasks=[],
         packet_artifacts=None,
+        context_preview=None,
     )
     result = launch_review_flow(tmp_path, snapshot)
     assert result.ok is False
@@ -298,12 +336,15 @@ def test_launch_close_flow_surfaces_validation_error(tmp_path, monkeypatch):
         prompt_stage="close",
         prompt_scope="task",
         model_class="reviewer_model",
+        prompt_preview_lines=[],
         stop_reason="",
         blocking_reason_count=0,
         blocking_reasons=[],
+        affected_artifacts=[],
         candidate_tasks=[],
         backlog_tasks=[],
         packet_artifacts=None,
+        context_preview=None,
     )
 
     fake_snapshot = GrainShellSnapshot(**{**snapshot.__dict__, "last_action_summary": ""})
