@@ -5,8 +5,11 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from grain.domain.packets import parse_task_metadata
+from grain.services import task_service
+from grain.services.handoff_service import materialize_handoff_artifact
 from grain.services.prompt_service import show_prompt
 from grain.services.workflow_service import evaluate_workflow_state
+from grain.services.workflow_run_service import run_workflow_step
 
 _TASK_HEADING = re.compile(r"^###\s+(P(\d+)-T(\d+))\s+—\s+(.+)$")
 _PHASE_HEADING = re.compile(r"^##\s+\d+\.\s+Phase\s+(\d+)\s+—")
@@ -36,6 +39,15 @@ class PacketArtifactSnapshot:
 
 
 @dataclass(frozen=True)
+class ActionLaunchResult:
+    action_id: str
+    ok: bool
+    summary: str
+    detail: str = ""
+    snapshot: "GrainShellSnapshot | None" = None
+
+
+@dataclass(frozen=True)
 class GrainShellSnapshot:
     repo_root: str
     active_phase: str
@@ -53,6 +65,7 @@ class GrainShellSnapshot:
     candidate_tasks: list[CandidateTaskSnapshot] = field(default_factory=list)
     backlog_tasks: list[BacklogTaskSnapshot] = field(default_factory=list)
     packet_artifacts: PacketArtifactSnapshot | None = None
+    last_action_summary: str = ""
 
 
 def _read_current_task_pointer(root: Path) -> tuple[str, str, str]:
@@ -187,6 +200,100 @@ def build_shell_snapshot(root: Path) -> GrainShellSnapshot:
     )
 
 
+def launch_execute_flow(root: Path) -> ActionLaunchResult:
+    result, payload = run_workflow_step(root, simple=False)
+    snapshot = build_shell_snapshot(root)
+
+    if payload is None:
+        return ActionLaunchResult(
+            action_id="execute",
+            ok=False,
+            summary="Execute failed",
+            detail="; ".join(result.errors) or "workflow runner evaluation failed",
+            snapshot=snapshot,
+        )
+
+    action_taken = payload.get("action_taken", "none")
+    if action_taken == "none":
+        return ActionLaunchResult(
+            action_id="execute",
+            ok=False,
+            summary="Execute gated",
+            detail=payload.get("gate_reason", "") or "workflow step is currently gated",
+            snapshot=snapshot,
+        )
+
+    return ActionLaunchResult(
+        action_id="execute",
+        ok=True,
+        summary=f"Execute ok: {action_taken}",
+        detail=payload.get("recommended_prompt", ""),
+        snapshot=snapshot,
+    )
+
+
+def launch_review_flow(root: Path, snapshot: GrainShellSnapshot) -> ActionLaunchResult:
+    task_id = snapshot.active_task_id
+    if not task_id or task_id == "none":
+        return ActionLaunchResult(
+            action_id="review",
+            ok=False,
+            summary="Review unavailable",
+            detail="no active task is available for review handoff",
+            snapshot=snapshot,
+        )
+
+    result, artifact, resolved_path = materialize_handoff_artifact(root, task_id)
+    refreshed = build_shell_snapshot(root)
+    if artifact is None:
+        return ActionLaunchResult(
+            action_id="review",
+            ok=False,
+            summary="Review handoff failed",
+            detail="; ".join(result.errors) or "handoff generation failed",
+            snapshot=refreshed,
+        )
+
+    return ActionLaunchResult(
+        action_id="review",
+        ok=True,
+        summary="Review handoff ready",
+        detail=str(resolved_path),
+        snapshot=refreshed,
+    )
+
+
+def launch_close_flow(root: Path, snapshot: GrainShellSnapshot) -> ActionLaunchResult:
+    task_id = snapshot.active_task_id
+    if not task_id or task_id == "none":
+        return ActionLaunchResult(
+            action_id="close",
+            ok=False,
+            summary="Close unavailable",
+            detail="no active task is available for closure",
+            snapshot=snapshot,
+        )
+
+    result = task_service.close_packet(root, task_id)
+    refreshed = build_shell_snapshot(root)
+    if not result.ok:
+        return ActionLaunchResult(
+            action_id="close",
+            ok=False,
+            summary="Close blocked",
+            detail="; ".join(result.errors) or "closure validation failed",
+            snapshot=refreshed,
+        )
+
+    return ActionLaunchResult(
+        action_id="close",
+        ok=True,
+        summary="Close ok",
+        detail=task_id,
+        snapshot=refreshed,
+    )
+
+
 def _render_status_panel(snapshot: GrainShellSnapshot) -> str:
     return "\n".join(
         [
@@ -287,6 +394,18 @@ def _render_packet_panel(snapshot: GrainShellSnapshot) -> str:
     return "\n".join(lines)
 
 
+def _render_action_panel(snapshot: GrainShellSnapshot) -> str:
+    lines = [
+        "Actions",
+        "[e] execute workflow step",
+        "[r] review handoff",
+        "[c] close task",
+    ]
+    if snapshot.last_action_summary:
+        lines.extend(["", "Last Action", snapshot.last_action_summary])
+    return "\n".join(lines)
+
+
 def _import_textual():
     try:
         from textual.app import App, ComposeResult
@@ -307,6 +426,11 @@ def create_app(root: Path):
     class GrainApp(App):
         TITLE = "Grain"
         SUB_TITLE = "TUI foundation"
+        BINDINGS = [
+            ("e", "execute_flow", "Execute"),
+            ("r", "review_flow", "Review"),
+            ("c", "close_flow", "Close"),
+        ]
         CSS = """
         Screen {
             layout: vertical;
@@ -353,13 +477,41 @@ def create_app(root: Path):
                             id="summary",
                             classes="panel",
                         )
-                        yield Static(_render_backlog_panel(snapshot), classes="panel")
+                        yield Static(_render_backlog_panel(snapshot), classes="panel", id="backlog")
                     with Container(id="right-column", classes="stack"):
-                        yield Static(_render_task_panel(snapshot), classes="panel")
-                        yield Static(_render_packet_panel(snapshot), classes="panel")
-                        yield Static(_render_prompt_panel(snapshot), classes="panel")
-                        yield Static(_render_queue_panel(snapshot), classes="panel")
+                        yield Static(_render_task_panel(snapshot), classes="panel", id="task")
+                        yield Static(_render_packet_panel(snapshot), classes="panel", id="packet")
+                        yield Static(_render_prompt_panel(snapshot), classes="panel", id="prompt")
+                        yield Static(_render_queue_panel(snapshot), classes="panel", id="queue")
+                        yield Static(_render_action_panel(snapshot), classes="panel", id="actions")
             yield Footer()
+
+        def _apply_action_result(self, result: ActionLaunchResult) -> None:
+            nonlocal snapshot
+            next_snapshot = result.snapshot or snapshot
+            summary = result.summary if not result.detail else f"{result.summary}: {result.detail}"
+            snapshot = GrainShellSnapshot(
+                **{
+                    **next_snapshot.__dict__,
+                    "last_action_summary": summary,
+                }
+            )
+            self.query_one("#summary", Static).update(_render_status_panel(snapshot))
+            self.query_one("#backlog", Static).update(_render_backlog_panel(snapshot))
+            self.query_one("#task", Static).update(_render_task_panel(snapshot))
+            self.query_one("#packet", Static).update(_render_packet_panel(snapshot))
+            self.query_one("#prompt", Static).update(_render_prompt_panel(snapshot))
+            self.query_one("#queue", Static).update(_render_queue_panel(snapshot))
+            self.query_one("#actions", Static).update(_render_action_panel(snapshot))
+
+        def action_execute_flow(self) -> None:
+            self._apply_action_result(launch_execute_flow(root))
+
+        def action_review_flow(self) -> None:
+            self._apply_action_result(launch_review_flow(root, snapshot))
+
+        def action_close_flow(self) -> None:
+            self._apply_action_result(launch_close_flow(root, snapshot))
 
     return GrainApp()
 

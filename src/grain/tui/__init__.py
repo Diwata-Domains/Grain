@@ -1,6 +1,7 @@
 """Terminal UI entrypoints for Grain."""
 
 from .app import (
+    ActionLaunchResult,
     BacklogTaskSnapshot,
     CandidateTaskSnapshot,
     GrainShellSnapshot,
@@ -11,6 +12,7 @@ from .app import (
 )
 
 __all__ = [
+    "ActionLaunchResult",
     "BacklogTaskSnapshot",
     "CandidateTaskSnapshot",
     "GrainShellSnapshot",

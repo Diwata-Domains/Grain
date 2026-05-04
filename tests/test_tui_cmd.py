@@ -2,11 +2,16 @@ from click.testing import CliRunner
 
 from grain.cli import main
 from grain.tui.app import (
+    ActionLaunchResult,
     BacklogTaskSnapshot,
     CandidateTaskSnapshot,
     GrainShellSnapshot,
     PacketArtifactSnapshot,
     build_shell_snapshot,
+    launch_close_flow,
+    launch_execute_flow,
+    launch_review_flow,
+    _render_action_panel,
     _render_backlog_panel,
     _render_packet_panel,
     _render_prompt_panel,
@@ -190,3 +195,125 @@ def test_render_backlog_and_packet_panels_surface_inspector_content():
     assert "Packet Inspector" in packet
     assert "packet_dir: tasks/P22-T03-TASK-0148/" in packet
     assert "missing: results.md, handoff.md" in packet
+
+
+def test_render_action_panel_surfaces_last_action_summary():
+    snapshot = GrainShellSnapshot(
+        repo_root="/repo",
+        active_phase="22",
+        active_task_id="TASK-0149",
+        current_task_path="tasks/P22-T04-TASK-0149/",
+        current_task_status="review",
+        next_action="task_close",
+        recommended_prompt="prompts/task.close.md",
+        prompt_stage="close",
+        prompt_scope="task",
+        model_class="reviewer_model",
+        stop_reason="",
+        blocking_reason_count=0,
+        blocking_reasons=[],
+        candidate_tasks=[],
+        backlog_tasks=[],
+        packet_artifacts=None,
+        last_action_summary="Review handoff ready: tasks/P22-T04-TASK-0149/handoff.md",
+    )
+    panel = _render_action_panel(snapshot)
+    assert "[e] execute workflow step" in panel
+    assert "Last Action" in panel
+    assert "Review handoff ready" in panel
+
+
+def test_launch_execute_flow_returns_mutation_result(tmp_path, monkeypatch):
+    _base_repo(tmp_path)
+
+    def fake_run_workflow_step(root, simple=False):
+        assert root == tmp_path
+        assert simple is False
+        return (
+            type("Result", (), {"errors": []})(),
+            {"action_taken": "activate_task", "recommended_prompt": "prompts/task.execute.md"},
+        )
+
+    fake_snapshot = GrainShellSnapshot(
+        repo_root=str(tmp_path),
+        active_phase="22",
+        active_task_id="TASK-0149",
+        current_task_path="tasks/P22-T04-TASK-0149/",
+        current_task_status="in_progress",
+        next_action="task_review",
+        recommended_prompt="prompts/task.review.md",
+        prompt_stage="review",
+        prompt_scope="task",
+        model_class="open_model",
+        stop_reason="",
+        blocking_reason_count=0,
+        blocking_reasons=[],
+        candidate_tasks=[],
+        backlog_tasks=[],
+        packet_artifacts=None,
+    )
+
+    monkeypatch.setattr("grain.tui.app.run_workflow_step", fake_run_workflow_step)
+    monkeypatch.setattr("grain.tui.app.build_shell_snapshot", lambda root: fake_snapshot)
+
+    result = launch_execute_flow(tmp_path)
+    assert result.ok is True
+    assert result.summary == "Execute ok: activate_task"
+    assert result.snapshot == fake_snapshot
+
+
+def test_launch_review_flow_requires_active_task(tmp_path):
+    snapshot = GrainShellSnapshot(
+        repo_root=str(tmp_path),
+        active_phase="22",
+        active_task_id="none",
+        current_task_path="none",
+        current_task_status="idle",
+        next_action="",
+        recommended_prompt="",
+        prompt_stage="",
+        prompt_scope="",
+        model_class="",
+        stop_reason="",
+        blocking_reason_count=0,
+        blocking_reasons=[],
+        candidate_tasks=[],
+        backlog_tasks=[],
+        packet_artifacts=None,
+    )
+    result = launch_review_flow(tmp_path, snapshot)
+    assert result.ok is False
+    assert "no active task" in result.detail
+
+
+def test_launch_close_flow_surfaces_validation_error(tmp_path, monkeypatch):
+    snapshot = GrainShellSnapshot(
+        repo_root=str(tmp_path),
+        active_phase="22",
+        active_task_id="TASK-0149",
+        current_task_path="tasks/P22-T04-TASK-0149/",
+        current_task_status="review",
+        next_action="task_close",
+        recommended_prompt="prompts/task.close.md",
+        prompt_stage="close",
+        prompt_scope="task",
+        model_class="reviewer_model",
+        stop_reason="",
+        blocking_reason_count=0,
+        blocking_reasons=[],
+        candidate_tasks=[],
+        backlog_tasks=[],
+        packet_artifacts=None,
+    )
+
+    fake_snapshot = GrainShellSnapshot(**{**snapshot.__dict__, "last_action_summary": ""})
+    monkeypatch.setattr(
+        "grain.tui.app.task_service.close_packet",
+        lambda root, task_id: type("Result", (), {"ok": False, "errors": ["user review state must be approved"]})(),
+    )
+    monkeypatch.setattr("grain.tui.app.build_shell_snapshot", lambda root: fake_snapshot)
+
+    result = launch_close_flow(tmp_path, snapshot)
+    assert result.ok is False
+    assert result.summary == "Close blocked"
+    assert "approved" in result.detail
