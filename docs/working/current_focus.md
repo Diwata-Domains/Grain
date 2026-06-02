@@ -83,7 +83,7 @@ CLOSED. All 5 tasks done (P28-T01 through P28-T05). Delivered: `grain verify sub
 CLOSED. All 5 tasks done (P29-T01 through P29-T05). Delivered: stronger Grain/Assay loop guidance in prompts and runtime docs, earlier workflow misuse blockers, runner packet/template hydration and activation state sync, `grain workflow explain`, and closeout smoke/docs coverage for the hardened operator loop. Phase closed 2026-05-07.
 
 ## Phase 30 Status
-PLANNED. `v0.4.0` planning phase focused on turning Grain from a strong operator surface into a stronger toolkit component: reusable recipe execution, explicit inter-app contracts, safer real mutation flows, and a cleaner developer/runtime execution boundary.
+SEEDED. 6 task packets created (P30-T01 through P30-T06, TASK-0190 through TASK-0195). `v0.4.0` planning phase focused on turning Grain from a strong operator surface into a stronger toolkit component: reusable recipe execution, explicit inter-app contracts, safer real mutation flows, and a cleaner developer/runtime execution boundary. Ready to begin on `dev` branch.
 
 ## Immediate Goals
 1. Lock the `v0.4.0` milestone contract before starting new breadth work
