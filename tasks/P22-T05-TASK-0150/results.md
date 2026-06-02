@@ -51,9 +51,9 @@ Added read-only prompt preview, context inspection, and blocker-detail surfaces 
 
 ## User Review
 <!-- reviewer fills this section — executor must leave all fields below as-is -->
-- **State:** [pending / approved / needs_fix / misunderstood / followup_requested]
-- **Summary:** [reviewer fills]
-- **Resolution Mode:** [revise_current_task / replan_current_task / create_followup_task / close_task]
+- **State:** approved
+- **Summary:** Approved for phase close.
+- **Resolution Mode:** close_task
 
 ### Required Fixes
 - [fix, or "None"]
@@ -80,11 +80,11 @@ Added read-only prompt preview, context inspection, and blocker-detail surfaces 
 
 ## Closure Decision
 <!-- closer fills this section during final closeout -->
-- **Decision:** [pending / keep_open / close_task / closed]
-- **Reason:** [closer fills]
+- **Decision:** closed
+- **Reason:** Closed via grain task close.
 
 ### Closure Blockers
-- [blocker, or "None"]
+- None
 
 ## Deliverable Checklist
 - [x] the TUI shows a compact preview of the recommended prompt

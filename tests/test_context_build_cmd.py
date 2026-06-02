@@ -226,6 +226,26 @@ def test_context_build_stats_in_json_output(packet_repo):
     assert "canonical_sources" in stats
     assert "per_file" in stats
     assert all("path" in f and "lines" in f and "selection_method" in f for f in stats["per_file"])
+    budget = data["context_budget"]
+    assert budget["source_count"] >= 1
+    assert budget["estimated_tokens"] >= 0
+    assert isinstance(budget["trim_hints"], list)
+
+
+def test_context_build_text_output_surfaces_budget_hints(packet_repo):
+    _base_manifest(packet_repo)
+    workflow_doc = packet_repo / "docs" / "canonical" / "workflow_spec.md"
+    workflow_doc.parent.mkdir(parents=True, exist_ok=True)
+    workflow_doc.write_text("\n".join(f"line {i}" for i in range(200)), encoding="utf-8")
+    create_packet_directory(packet_repo, phase=4, task_num=5)
+
+    runner = CliRunner()
+    result = runner.invoke(
+        main, ["--repo", str(packet_repo), "context", "build", "--id", "TASK-0001"]
+    )
+    assert result.exit_code == 0, result.output
+    assert "estimated_tokens" in result.output
+    assert "trim_hints" in result.output
 
 
 def test_context_build_stats_line_counts_are_nonnegative(packet_repo):

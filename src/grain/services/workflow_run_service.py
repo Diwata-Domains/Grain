@@ -7,8 +7,12 @@ from pathlib import Path
 from typing import Any
 
 from grain.cli.output import CommandResult
+from grain.domain.packets import write_packet_status
+from grain.services.task_observability_service import update_task_observability
 
 _TASK_ID_RE = re.compile(r"TASK-\d{4,}")
+_BACKLOG_TASK_HEADING_RE = re.compile(r"^###\s+(P(\d+)-T(\d+))\s+—\s+(.+)$")
+_BACKLOG_PHASE_HEADING_RE = re.compile(r"^##\s+\d+\.\s+(Phase\s+\d+\s+—\s+.+)$")
 
 # Gate reasons mapped from stop conditions and next_action states.
 _GATE_MAP: dict[str, str] = {
@@ -118,13 +122,28 @@ def run_workflow_step(root: Path, simple: bool = False) -> tuple[CommandResult, 
                 packet_was_created = True
 
             task_id = _read_task_id_from_packet(packet_dir)
+            if task_id:
+                write_packet_status(packet_dir, "in_progress")
+                _write_backlog_task_status(root / "docs" / "working" / "backlog.md", task_ref, "in_progress")
             task_path = f"tasks/{packet_dir.name}/"
             _write_current_task(root, task_id or task_ref, task_path, "in_progress")
+            observability_path = None
+            try:
+                _, observability_path = update_task_observability(
+                    root,
+                    task_id or task_ref,
+                    stage="execute",
+                    workflow_action=f"workflow_run:{'create_and_activate_task' if packet_was_created else 'activate_task'}",
+                )
+            except FileNotFoundError:
+                observability_path = None
 
             action = "create_and_activate_task" if packet_was_created else "activate_task"
             files_updated = ["docs/working/current_task.md"]
             if packet_was_created:
                 files_updated.insert(0, task_path)
+            if observability_path is not None:
+                files_updated.append(str(observability_path.relative_to(root)))
 
             payload = {
                 "action_taken": action,
@@ -286,16 +305,32 @@ def _create_packet_for_ref(
 
     phase = int(m.group(1))
     task_num = int(m.group(2))
+    phase_label, task_title = _read_backlog_task_metadata(root / "docs" / "working" / "backlog.md", task_ref)
 
     from grain.services.task_service import create_packet_directory
 
-    create_result = create_packet_directory(root, phase=phase, task_num=task_num, simple=simple)
+    create_result = create_packet_directory(
+        root,
+        phase=phase,
+        task_num=task_num,
+        title=task_title,
+        simple=simple,
+    )
     if not create_result.ok:
         return None, "; ".join(create_result.errors)
 
     packet_dir = _find_packet_dir_for_ref(root, task_ref)
     if packet_dir is None:
         return None, f"packet directory not found after creation for {task_ref}"
+
+    task_id = _read_task_id_from_packet(packet_dir)
+    _hydrate_packet_templates(
+        packet_dir,
+        task_id=task_id,
+        task_ref=task_ref,
+        phase_label=phase_label or f"Phase {phase}",
+        task_title=task_title or task_ref,
+    )
 
     return packet_dir, ""
 
@@ -323,3 +358,94 @@ def _write_current_task(root: Path, task_id: str, task_path: str, status: str) -
         f"Status: {status}\n"
     )
     current_task_path.write_text(content, encoding="utf-8")
+
+
+def _read_backlog_task_metadata(backlog_path: Path, task_ref: str) -> tuple[str, str]:
+    current_phase_label = ""
+    for line in backlog_path.read_text(encoding="utf-8").splitlines():
+        phase_match = _BACKLOG_PHASE_HEADING_RE.match(line.strip())
+        if phase_match:
+            current_phase_label = phase_match.group(1)
+            continue
+        heading_match = _BACKLOG_TASK_HEADING_RE.match(line.strip())
+        if heading_match and heading_match.group(1) == task_ref:
+            return current_phase_label, heading_match.group(4).strip()
+    return "", ""
+
+
+def _hydrate_packet_templates(
+    packet_dir: Path,
+    *,
+    task_id: str,
+    task_ref: str,
+    phase_label: str,
+    task_title: str,
+) -> None:
+    replacements = {
+        "TASK-####": task_id,
+        "[Title]": task_title,
+        "[phase name]": phase_label,
+        "[backlog item]": task_ref,
+        "[packet-dir]": packet_dir.name,
+        "[none or TASK-IDs]": "none",
+        "[none or adapter_id]": "none",
+        "[none or comma-separated adapter_ids]": "none",
+        "[adapter_id or none]": "none",
+        "[adapter_ids or none]": "none",
+    }
+    static_overrides = {
+        "context.md": {
+            "- [doc path] — [relevant section or reason]": "- `docs/canonical/cli_spec.md` — task-specific canonical contract to refine during execution",
+            "- [doc path] — [reason, e.g. sequencing or blockers]": "- `docs/working/backlog.md` — sequencing reference for this task",
+            "- **Adapter Rationale:** [why this adapter applies to this task, or \"n/a\"]": "- **Adapter Rationale:** To be refined during execution based on the specific implementation slice.",
+            "- [doc or area excluded and why]": "- Unrelated repo areas are excluded until task-specific context is refined.",
+            "[One sentence confirming the selected docs are sufficient to implement and review this task.]": "Bootstrapped packet created by `workflow run`; refine task-specific context before major edits.",
+        },
+        "plan.md": {
+            "[One paragraph describing the overall implementation strategy.]": "Refine the task-specific implementation strategy before major edits; this bootstrap plan only establishes the packet shape.",
+            "## Step 1 — [Step name]": "## Step 1 — Refine scope",
+            "[What to do and why.]": "Replace this bootstrap content with task-specific execution steps before substantial implementation work.",
+            "## Step 2 — [Step name]": "## Step 2 — Implement the slice",
+            "## Step 3 — [Step name]": "## Step 3 — Verify and document",
+            "[How to confirm the implementation is correct before writing results.]": "Run the task-specific verification commands before writing `results.md`.",
+        },
+        "deliverable_spec.md": {
+            "- [path] — [brief description]": "- None",
+            "- [path] — [what changes]": "- Task-specific file targets to be refined during execution",
+            "- [ ] [criterion]": "- [ ] Refine task-specific acceptance criteria before substantial implementation work",
+            "- [explicitly out of scope for this task]": "- Any work not explicitly refined into this packet during execution",
+        },
+    }
+
+    for filename in ("task.md", "context.md", "plan.md", "deliverable_spec.md"):
+        path = packet_dir / filename
+        if not path.exists():
+            continue
+        content = path.read_text(encoding="utf-8")
+        for old, new in replacements.items():
+            content = content.replace(old, new)
+        for old, new in static_overrides.get(filename, {}).items():
+            content = content.replace(old, new)
+        path.write_text(content, encoding="utf-8")
+
+
+def _write_backlog_task_status(backlog_path: Path, task_ref: str, status: str) -> None:
+    lines = backlog_path.read_text(encoding="utf-8").splitlines()
+    updated_lines: list[str] = []
+    in_target = False
+
+    for line in lines:
+        stripped = line.strip()
+        heading_match = _BACKLOG_TASK_HEADING_RE.match(stripped)
+        if heading_match:
+            in_target = heading_match.group(1) == task_ref
+            updated_lines.append(line)
+            continue
+        if in_target and stripped.startswith("- **Status:**"):
+            prefix = line.split("- **Status:**", 1)[0]
+            updated_lines.append(f"{prefix}- **Status:** {status}")
+            in_target = False
+            continue
+        updated_lines.append(line)
+
+    backlog_path.write_text("\n".join(updated_lines) + "\n", encoding="utf-8")

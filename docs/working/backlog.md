@@ -1036,7 +1036,7 @@ Default status for new backlog items in this file: `draft`
   - separate web or Electron-style UI stack
 
 ### P22-T01 — Scaffold Textual app shell
-- **Status:** ready
+- **Status:** done
 - **Description:** Create the base Textual application shell and project structure for the Grain TUI. Include app bootstrap, screen/pane layout skeleton, keyboard/action wiring foundation, and a clear boundary for calling existing Grain services without duplicating workflow logic.
 - **Files:** `src/grain/tui/` (new), CLI/TUI entry wiring, tests
 - **Model:** frontier_model
@@ -1044,7 +1044,7 @@ Default status for new backlog items in this file: `draft`
 - **Ready:** yes
 
 ### P22-T02 — Workflow dashboard and status summary
-- **Status:** draft
+- **Status:** done
 - **Description:** Build the first dashboard view showing current phase, active task, next legal action, blockers, and key working-doc state in a compact operator-readable layout.
 - **Files:** TUI views, state adapters, tests
 - **Model:** frontier_model
@@ -1052,7 +1052,7 @@ Default status for new backlog items in this file: `draft`
 - **Ready:** after the app shell exists
 
 ### P22-T03 — Backlog, task, and packet inspector views
-- **Status:** draft
+- **Status:** done
 - **Description:** Add backlog-by-phase navigation plus focused inspectors for packet metadata and packet artifact files so the operator can move from phase overview to task detail without leaving the TUI.
 - **Files:** TUI views, packet/backlog readers, tests
 - **Model:** frontier_model
@@ -1060,7 +1060,7 @@ Default status for new backlog items in this file: `draft`
 - **Ready:** after the app shell exists
 
 ### P22-T04 — Action launcher wiring for execute/review/close flows
-- **Status:** draft
+- **Status:** done
 - **Description:** Wire safe TUI actions that launch or wrap existing Grain execute/review/close commands and show status or errors without creating alternate workflow transitions.
 - **Files:** TUI action layer, command wrappers, tests
 - **Model:** frontier_model
@@ -1068,7 +1068,7 @@ Default status for new backlog items in this file: `draft`
 - **Ready:** after the core views exist
 
 ### P22-T05 — Prompt preview, context inspection, and blocker detail
-- **Status:** draft
+- **Status:** done
 - **Description:** Add prompt-preview and context-bundle inspection views plus a detailed blocker/status footer so operators can see why a workflow state is blocked and what Grain expects next.
 - **Files:** TUI views, context/prompt readers, tests
 - **Model:** frontier_model
@@ -1076,7 +1076,7 @@ Default status for new backlog items in this file: `draft`
 - **Ready:** after the core views exist
 
 ### P22-T06 — TUI tests, smoke flow, and docs
-- **Status:** draft
+- **Status:** done
 - **Description:** Add focused TUI tests and a smoke execution path for the first operator shell, then document how the TUI fits with the CLI and what is intentionally deferred.
 - **Files:** tests, docs, runtime guidance
 - **Model:** open_model
@@ -1085,9 +1085,9 @@ Default status for new backlog items in this file: `draft`
 
 ---
 
-## 26. Phase 23 — Writable Office Artifacts (seeded, not started)
+## 26. Phase 23 — Writable Office Artifacts (closed)
 
-> **Status:** seeded — implementation phase for `.docx` and spreadsheet write/update support after the TUI slice is bounded.
+> **Status:** closed — Phase 23 shipped the first packet-first writable office artifact workflow on 2026-05-05.
 
 ### P23 Planning Notes
 - Scope: safe local updates to Office-style artifacts
@@ -1107,6 +1107,54 @@ Default status for new backlog items in this file: `draft`
 - Artifact-specific review expectations:
   - `.docx`: heading/section preservation, table integrity, and structural change summary
   - spreadsheets: touched sheets/ranges, formula changes, and required-table/sheet validation
+
+### P23-T01 — Shared office write contracts and safety modes
+- **Status:** done
+- **Description:** Define the shared domain model and service boundary for non-code artifact writes. Lock the operation modes (`propose`, `apply`, `export-as-new-file`), review-bundle contract, validator result shape, and artifact-operation metadata that both `.docx` and spreadsheet flows will reuse.
+- **Files:** domain models, service contracts, tests
+- **Model:** frontier_model
+- **Dependencies:** none
+- **Ready:** yes
+
+### P23-T02 — `.docx` propose and export workflow
+- **Status:** done
+- **Description:** Implement the first `.docx` write path with safe `propose` and `export-as-new-file` support. Include document load/update/save behavior plus structural change-summary output suitable for review.
+- **Files:** office/docx services, tests, fixtures
+- **Model:** frontier_model
+- **Dependencies:** P23-T01
+- **Ready:** after shared contracts exist
+
+### P23-T03 — Spreadsheet propose and export workflow
+- **Status:** done
+- **Description:** Implement the first spreadsheet write path with safe `propose` and `export-as-new-file` support. Include workbook load/update/save behavior, touched-sheet or touched-range reporting, and formula-aware summary output.
+- **Files:** office/spreadsheet services, tests, fixtures
+- **Model:** frontier_model
+- **Dependencies:** P23-T01
+- **Ready:** after shared contracts exist
+
+### P23-T04 — Review bundle and validator pipeline for office artifacts
+- **Status:** done
+- **Description:** Wire the shared review bundle output and validator pipeline across `.docx` and spreadsheet operations. Enforce structure/reference/policy validation and require residual-risk notes when validation is partial.
+- **Files:** review services, validator services, tests
+- **Model:** frontier_model
+- **Dependencies:** P23-T02, P23-T03
+- **Ready:** after both artifact write paths exist
+
+### P23-T05 — CLI entrypoints and workflow-safe mutation commands
+- **Status:** done
+- **Description:** Add Grain CLI entrypoints for office artifact mutations and review inspection. Commands must keep packet-first workflow discipline and surface operation mode, artifact outputs, and validation status without bypassing review.
+- **Files:** CLI commands, service wiring, tests
+- **Model:** frontier_model
+- **Dependencies:** P23-T04
+- **Ready:** after write and review services are stable
+
+### P23-T06 — Office artifact tests, smoke flow, and docs
+- **Status:** done
+- **Description:** Add end-to-end tests, smoke flows, and documentation for the first office-artifact slice. Cover `.docx` and spreadsheet propose/export behavior, validator gating, and review-bundle expectations.
+- **Files:** tests, docs, runtime guidance
+- **Model:** open_model
+- **Dependencies:** P23-T05
+- **Ready:** after the CLI and review path are stable
 
 ---
 
@@ -1133,6 +1181,46 @@ Default status for new backlog items in this file: `draft`
 - Database-related work is promoted into a dedicated `database_adapter` for v0.3.0 rather than being overloaded into `data_adapter`.
 - Crawler and scraping work is promoted into a dedicated `crawler_adapter` for v0.3.0 with clear boundaries around crawl configs, selectors, extraction schemas, robots/rate-limit policies, and output validation.
 
+### P24-T01 — Local MCP wrapper scaffold for desktop invocation
+- **Status:** done
+- **Description:** Add the first thin local MCP wrapper surface for Claude/Desktop-style environments while keeping Grain CLI commands canonical. Scope this to local tool exposure and shared action routing, not hosted orchestration.
+- **Files:** MCP wrapper module(s), CLI/service wiring, tests, docs
+- **Model:** frontier_model
+- **Dependencies:** Phase 23
+- **Ready:** yes
+
+### P24-T02 — Codex and CLI integration guidance/helpers
+- **Status:** done
+- **Description:** Add explicit Codex-facing guidance and any small helper surfaces needed for CLI-first usage in desktop or tool-execution environments. Keep this thin and documentation-heavy unless a real helper command is justified.
+- **Files:** docs, optional helper commands, tests
+- **Model:** open_model
+- **Dependencies:** P24-T01
+- **Ready:** after the local MCP wrapper shape is stable
+
+### P24-T03 — `obsidian_adapter` domain profile and vault contract scaffold
+- **Status:** done
+- **Description:** Create the first dedicated `obsidian_adapter` profile and vault-specific contract surface. Define supported artifact patterns, wiki-link/frontmatter expectations, and the initial adapter rationale.
+- **Files:** adapter profiles, adapter/domain code, tests, docs
+- **Model:** frontier_model
+- **Dependencies:** Phase 23
+- **Ready:** after Phase 24 starts
+
+### P24-T04 — Obsidian vault context and wiki-link handling
+- **Status:** done
+- **Description:** Implement the first Obsidian-specific vault context behavior, including wiki-link-aware selection or export behavior and vault-safe note adjacency handling.
+- **Files:** adapter/context services, tests, docs
+- **Model:** frontier_model
+- **Dependencies:** P24-T03
+- **Ready:** after the adapter scaffold exists
+
+### P24-T05 — Desktop and Obsidian smoke tests, docs, and closeout
+- **Status:** done
+- **Description:** Add smoke coverage and operator docs for the first desktop integration and Obsidian slices. Confirm the CLI-first boundary, local-first MCP wrapper behavior, and the dedicated Obsidian adapter surface.
+- **Files:** tests, docs, runtime guidance
+- **Model:** open_model
+- **Dependencies:** P24-T01, P24-T04
+- **Ready:** after the desktop wrapper and Obsidian context flows exist
+
 ---
 
 ## 28. Phase 25 — Database Adapter (seeded, not started)
@@ -1147,11 +1235,51 @@ Default status for new backlog items in this file: `draft`
   - database-specific review and validation guidance
   - migration/change-planning recipe hooks
 
+### P25-T01 — `database_adapter` profile and contract scaffold
+- **Status:** done
+- **Description:** Create the first dedicated `database_adapter` profile and contract surface. Define supported artifact patterns, schema/migration/query expectations, and the initial adapter rationale so database work is no longer implied through generic code context alone.
+- **Files:** adapter profiles, adapter/context code, tests, docs
+- **Model:** frontier_model
+- **Dependencies:** Phase 24
+- **Ready:** after Phase 25 starts
+
+### P25-T02 — Schema and migration context selection
+- **Status:** done
+- **Description:** Implement the first database-specific context behavior so `database_adapter` can prioritize schema files, migration directories, and adjacent data-model artifacts ahead of unrelated code.
+- **Files:** context services, tests, docs
+- **Model:** frontier_model
+- **Dependencies:** P25-T01
+- **Ready:** after the adapter scaffold exists
+
+### P25-T03 — Query and ORM surface hints
+- **Status:** done
+- **Description:** Extend `database_adapter` context behavior to include query files, ORM models, and repository/data-access layers as secondary context when the task objective points at query or persistence work.
+- **Files:** context services, tests, runtime guidance
+- **Model:** frontier_model
+- **Dependencies:** P25-T02
+- **Ready:** after schema and migration selection is stable
+
+### P25-T04 — Database review and validation guidance
+- **Status:** done
+- **Description:** Add database-specific review focus and validation guidance covering migration safety, destructive-change awareness, rollback expectations, and schema/query drift surfaces.
+- **Files:** runtime docs, adapter guidance, tests
+- **Model:** open_model
+- **Dependencies:** P25-T01, P25-T03
+- **Ready:** after the core database context surfaces exist
+
+### P25-T05 — Database smoke tests, docs, and closeout
+- **Status:** done
+- **Description:** Add integrated smoke coverage and operator docs for the first database adapter slice. Confirm the packet-first database workflow, adapter context behavior, and review/validation boundaries before Phase 25 closes.
+- **Files:** tests, docs, runtime guidance
+- **Model:** open_model
+- **Dependencies:** P25-T02, P25-T03, P25-T04
+- **Ready:** after the database adapter slices above exist
+
 ---
 
-## 29. Phase 26 — Crawler Adapter (seeded, not started)
+## 29. Phase 26 — Crawler Adapter ✓ CLOSED
 
-> **Status:** seeded — implementation phase for crawler and scraping workflows after the desktop and review surfaces are stable.
+> **Status:** CLOSED. All 5 tasks done (P26-T01 through P26-T05). Phase closed 2026-05-06.
 
 ### P26 Planning Notes
 - Scope: first-class `crawler_adapter` for crawl/extraction workflows
@@ -1161,11 +1289,51 @@ Default status for new backlog items in this file: `draft`
   - robots/rate-limit/retry review focus
   - crawler-change review recipe hooks
 
+### P26-T01 — `crawler_adapter` profile and contract scaffold
+- **Status:** done
+- **Description:** Create the first dedicated `crawler_adapter` profile and contract surface. Define supported crawl-config, selector, extraction-schema, and output artifact patterns so crawler work is no longer implied through generic code or docs context alone.
+- **Files:** adapter profiles, adapter/context code, tests, docs
+- **Model:** frontier_model
+- **Dependencies:** Phase 25
+- **Ready:** after Phase 26 starts
+
+### P26-T02 — Crawl config and selector context selection
+- **Status:** done
+- **Description:** Implement the first crawler-specific context behavior so `crawler_adapter` can prioritize crawl configs, selector definitions, and extraction-schema artifacts ahead of unrelated code.
+- **Files:** context services, tests, docs
+- **Model:** frontier_model
+- **Dependencies:** P26-T01
+- **Ready:** after the adapter scaffold exists
+
+### P26-T03 — Output-validation and extraction-surface hints
+- **Status:** done
+- **Description:** Extend `crawler_adapter` context behavior to include output schemas, normalization steps, and validation fixtures when the task objective is about extraction quality or downstream crawl outputs.
+- **Files:** context services, tests, runtime guidance
+- **Model:** frontier_model
+- **Dependencies:** P26-T02
+- **Ready:** after crawl-config and selector selection is stable
+
+### P26-T04 — Crawler review and safety guidance
+- **Status:** done
+- **Description:** Add crawler-specific review focus and validation guidance covering robots constraints, rate limits, retry policy risk, selector brittleness, and extraction-schema drift.
+- **Files:** runtime docs, adapter guidance, tests
+- **Model:** open_model
+- **Dependencies:** P26-T01, P26-T03
+- **Ready:** after the core crawler context surfaces exist
+
+### P26-T05 — Crawler smoke tests, docs, and closeout
+- **Status:** done
+- **Description:** Add integrated smoke coverage and operator docs for the first crawler adapter slice. Confirm the packet-first crawler workflow, adapter context behavior, and review/validation boundaries before Phase 26 closes.
+- **Files:** tests, docs, runtime guidance
+- **Model:** open_model
+- **Dependencies:** P26-T02, P26-T03, P26-T04
+- **Ready:** after the crawler adapter slices above exist
+
 ---
 
-## 30. Phase 27 — Recipe Layer and Operator Ergonomics (seeded, not started)
+## 30. Phase 27 — Recipe Layer and Operator Ergonomics ✓ CLOSED
 
-> **Status:** seeded — implementation phase for reusable operator recipes once the core adapters and surfaces exist.
+> **Status:** CLOSED. All 3 tasks done (P27-T01 through P27-T03). Phase closed 2026-05-06.
 
 ### P27 Planning Notes
 - Scope: thin reusable recipes over the normal workflow and packet model
@@ -1176,10 +1344,210 @@ Default status for new backlog items in this file: `draft`
   - Obsidian maintenance recipe
   - database-change planning recipe
   - crawler-change review recipe
+  - lightweight observability and token-budget surfaces for aggressive multi-agent usage
+  - TUI inspection panels that explain execution state and context cost without adding hidden state
+
+### P27-T01 — Task-level observability metadata and CLI surfaces
+- **Status:** done
+- **Description:** Add lightweight, file-backed observability metadata for task execution: executor identity, model class used, stage timestamps, and last workflow action. Surface the data through CLI-readable files or outputs without introducing background services or hidden state.
+- **Files:** workflow/task services, CLI outputs, tests
+- **Model:** frontier_model
+- **Dependencies:** Phase 22 TUI foundation, existing workflow services
+- **Ready:** after Phase 23 stabilizes
+
+### P27-T02 — Token-efficiency and context-budget reporting
+- **Status:** done
+- **Description:** Add task-scoped context-cost surfaces: source counts, context-size proxies, ranked source-trimming hints, and optional token-budget warnings when runtimes expose usage or when Grain can estimate cost proxies.
+- **Files:** context services, workflow/reporting outputs, tests
+- **Model:** frontier_model
+- **Dependencies:** P27-T01
+- **Ready:** after observability metadata exists
+
+### P27-T03 — TUI observability and context-cost panels
+- **Status:** done
+- **Description:** Extend the TUI with execution and debugging panels that show executor identity, model class, last action, recent packet-result changes, and context-budget summaries while staying a thin shell over existing services and files.
+- **Files:** `src/grain/tui/`, tests, docs
+- **Model:** frontier_model
+- **Dependencies:** P27-T01, P27-T02
+- **Ready:** after observability and token-budget data exists
+
+---
+
+## 31. Phase 28 — Assay Verification Integration
+
+> **Status:** ready for close — all 5 Phase 28 tasks are complete and the workflow now lands on phase review/close.
+
+### P28 Planning Notes
+- Scope: verification bridge between Grain workflow and Assay packet outputs
+- Primary outcomes:
+  - first-class `grain verify` command group
+  - task-scoped verification submission and status checks
+  - payload ingestion into packet-local workflow artifacts
+  - review/close gate behavior that respects pending or failed verification
+  - no auto-close, no auto-packet creation, no canonical mutation side effects
+
+### P28-T01 — Implement `grain verify submit` bridge command
+- **Status:** done
+- **Description:** Implement `grain verify submit` to create a verification request for a packet and return/store a `verification_id` in packet-local working artifacts. Command should validate task ID, required packet artifacts, and verifier configuration before submitting.
+- **Files:** `src/grain/cli/`, verification service layer, packet artifact helpers, tests
+- **Model:** frontier_model
+- **Dependencies:** existing packet and review services
+- **Ready:** now
+
+### P28-T02 — Implement `grain verify status` for pending checks
+- **Status:** done
+- **Description:** Implement `grain verify status --verification-id` to check current verification state (`pending`, `complete`, `failed`) and surface concise operator-facing outcomes in text/json formats.
+- **Files:** `src/grain/cli/`, verification service layer, tests
+- **Model:** frontier_model
+- **Dependencies:** P28-T01
+- **Ready:** after submit flow exists
+
+### P28-T03 — Implement `grain verify ingest` for Assay payloads
+- **Status:** done
+- **Description:** Implement `grain verify ingest --verification-id --payload <path>` to validate and ingest Assay result payloads (`verification_id`, `task_id`, `outcome`, `severity`, `summary`, `artifact_refs`, `followup_candidates`, `verified_at`) into packet-local review artifacts and workflow-facing state.
+- **Files:** `src/grain/cli/`, verification payload validator, review artifact writers, tests
+- **Model:** frontier_model
+- **Dependencies:** P28-T01
+- **Ready:** after verification artifact location is finalized
+
+### P28-T04 — Wire verification gates into review and close flow
+- **Status:** done
+- **Description:** Update workflow/review/close paths so unresolved verification state blocks closure, completed verification is visible during review, and failed verification requires explicit operator decision before task completion.
+- **Files:** workflow service, review service, task close checks, CLI outputs, tests
+- **Model:** frontier_model
+- **Dependencies:** P28-T02, P28-T03
+- **Ready:** after ingest + status are stable
+
+### P28-T05 — Operator docs and integration examples (Grain + Assay)
+- **Status:** done
+- **Description:** Add docs and prompt guidance for the full loop (`workflow next` -> execute -> `assay run --submit` -> `grain verify ingest` -> review -> close), including error handling and expected non-zero states.
+- **Files:** `README.md`, `docs/canonical/cli_spec.md`, `docs/runtime/PROJECT_RULES.md`, prompts, tests where applicable
+- **Model:** open_model
+- **Dependencies:** P28-T01 through P28-T04
+- **Ready:** after command behavior stabilizes
+
+---
+
+## 32. Phase 29 — Workflow Compliance Hardening
+
+> **Status:** planned — reduce live-session redirection by making Grain and Assay workflow boundaries harder to bypass and easier to diagnose.
+
+### P29 Planning Notes
+- Scope: workflow compliance, agent redirection reduction, and packet/verification guardrail hardening
+- Primary outcomes:
+  - clearer runtime guidance when an agent drifts off the Grain/Assay loop
+  - earlier detection of stale packet state and invalid workflow transitions
+  - stronger prompt/runtime/test coverage for packet-first and verifier-first behavior
+  - small operator diagnostics that explain why the workflow is blocked
+  - no new background services, no hidden state, no autonomous side channels
+
+### P29-T01 — Harden runtime and prompt guidance for Grain/Assay loop discipline
+- **Status:** done
+- **Description:** Tighten the shipped runtime docs and prompt assets so active-task, packet-first, and verification-loop rules are repeated in the places agents actually read during execution and close. Focus on reducing “forgot to use Grain/Assay” drift in long sessions.
+- **Files:** `docs/runtime/AGENTS.md`, `docs/runtime/PROJECT_RULES.md`, `docs/runtime/CLAUDE.md`, prompt assets, release-surface tests
+- **Model:** open_model
+- **Dependencies:** P28 close
+- **Ready:** now
+
+### P29-T02 — Add workflow misuse blockers for common off-rails states
+- **Status:** done
+- **Description:** Detect and surface common drift states earlier: execution attempts with no active packet, close/review attempts while verification is still pending, and packet pointers that no longer match backlog state. Keep all checks read-only except where existing reconcile flows already own the fix path.
+- **Files:** workflow service, review/task services, tests
+- **Model:** frontier_model
+- **Dependencies:** P29-T01
+- **Ready:** after Phase 29 starts
+
+### P29-T03 — Reduce runner packet/template drift on activation
+- **Status:** done
+- **Description:** Harden `workflow run` and task activation so runner-created packets are immediately usable without manual template replacement, and reduce the stale `current_task.md` / backlog drift that still appears after closeout.
+- **Files:** workflow run service, packet bootstrap helpers, reconciliation logic, tests
+- **Model:** frontier_model
+- **Dependencies:** P29-T02
+- **Ready:** after misuse blockers are stable
+
+### P29-T04 — Add operator-facing workflow diagnostics
+- **Status:** done
+- **Description:** Add a lightweight diagnostic surface that explains why Grain is blocked and what file-backed action resolves it, without adding daemon state. This can be a `workflow doctor` or `workflow explain` style surface if that stays thin over existing services.
+- **Files:** CLI surface, workflow/readiness services, tests, docs
+- **Model:** frontier_model
+- **Dependencies:** P29-T02
+- **Ready:** after blocker signals are explicit enough
+
+### P29-T05 — Hardening smoke tests and closeout docs
+- **Status:** done
+- **Description:** Add focused smoke/integration coverage for long-session workflow discipline and update operator docs with the hardened loop. This task closes the phase only after the common live-session redirection paths are covered by tests.
+- **Files:** tests, `README.md`, runtime docs, workflow metrics/current focus
+- **Model:** open_model
+- **Dependencies:** P29-T01 through P29-T04
+- **Ready:** after behavior stabilizes
+
+---
+
+## 33. Phase 30 — v0.4.0 Planning and Toolkit Boundary Definition
+
+> **Status:** planned — define the next milestone after the v0.3.0 operator-surface buildout. Focus on recipe execution, toolkit contracts, safe real mutation, and active-development runtime alignment.
+
+### P30 Planning Notes
+- Scope: milestone definition and execution seeding for `v0.4.0`
+- Primary outcomes:
+  - promote recipes from planned direction into explicit executable scope
+  - define the Grain ↔ Assay ↔ sibling-tool contract boundary clearly enough for real toolkit interoperability
+  - decide where office and vault artifact flows can safely graduate from `propose/export` into real `apply`
+  - reduce development friction from invoking stale installed CLI binaries instead of current repo code
+  - seed the next execution phases without reopening broad adapter-sprawl planning
+
+### P30-T01 — Lock the `v0.4.0` milestone contract
+- **Status:** draft
+- **Description:** Define the milestone theme, required deliverables, explicit non-goals, and release boundary for `v0.4.0`. This should decide whether the milestone is primarily recipe-centric, contract-centric, mutation-centric, or a bounded combination, and should keep the scope tighter than the broad operator-surface expansion in `v0.3.0`.
+- **Files:** `docs/working/current_focus.md`, `docs/working/implementation_plan.md`, `docs/working/backlog.md`
+- **Model:** frontier_model
+- **Dependencies:** Phase 29 close
+- **Ready:** now
+
+### P30-T02 — Define recipe execution surfaces and packet scaffolds
+- **Status:** draft
+- **Description:** Move the recipe layer from “direction” to “product contract”. Define the CLI surface, recipe metadata, packet expectations, and how recipes compose with the existing workflow runner without becoming a second orchestration system.
+- **Files:** working docs, potentially canonical proposal notes if command contracts need formalization
+- **Model:** frontier_model
+- **Dependencies:** P30-T01
+- **Ready:** after milestone contract exists
+
+### P30-T03 — Define shared toolkit contracts for sibling-app interop
+- **Status:** draft
+- **Description:** Define the Grain-side contract boundary for sibling tools such as Assay and future toolkit apps. Scope should include exchange artifacts, ownership boundaries, and how tool-to-tool communication stays file-backed and inspectable instead of chat-memory-driven.
+- **Files:** working docs, change proposals if canonical contract docs need updates later
+- **Model:** frontier_model
+- **Dependencies:** P30-T01
+- **Ready:** after milestone contract exists
+
+### P30-T04 — Define safe `apply` graduation criteria for non-code artifacts
+- **Status:** draft
+- **Description:** Decide which `.docx`, spreadsheet, and Obsidian flows can safely move from `propose/export` into true `apply` behavior, what validator thresholds are required, and what still remains intentionally comparison-first.
+- **Files:** working docs, office/vault planning notes
+- **Model:** frontier_model
+- **Dependencies:** P30-T01
+- **Ready:** after milestone contract exists
+
+### P30-T05 — Define active-development runtime alignment strategy
+- **Status:** draft
+- **Description:** Eliminate the repeated development-time drift where the installed `grain` binary lags the repo code. Decide the supported active-development invocation path, diagnostic warnings, and whether Grain should gain an explicit self-check for source-tree vs installed-version mismatch.
+- **Files:** working docs, release/development notes
+- **Model:** open_model
+- **Dependencies:** P30-T01
+- **Ready:** after milestone contract exists
+
+### P30-T06 — Seed the first `v0.4.0` execution phases and tasks
+- **Status:** draft
+- **Description:** Break the locked `v0.4.0` milestone into concrete execution phases and small task groups so the next implementation cycle can start cleanly once planning is accepted.
+- **Files:** `docs/working/backlog.md`, `docs/working/current_focus.md`, `docs/working/implementation_plan.md`
+- **Model:** frontier_model
+- **Dependencies:** P30-T02 through P30-T05
+- **Ready:** after the planning surfaces above are locked
 
 ---
 
 ## 11. Future — Adapter Context Selection (absorbed into Phase 10)
+
 
 > **Status:** draft — FA-T01 is preserved here for reference. Once Phase 10 is active, FA-T01 is absorbed into P10-T01 and this section becomes historical.
 

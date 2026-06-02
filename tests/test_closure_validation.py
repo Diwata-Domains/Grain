@@ -127,3 +127,21 @@ def test_validate_closure_tolerates_missing_task_md_status_check(tmp_path):
     errors = validate_closure(tmp_path)
     # Should report missing task.md from file validator, not crash
     assert any("task.md" in e for e in errors)
+
+
+def test_validate_closure_fails_pending_verification(tmp_path):
+    _make_closure_ready(tmp_path)
+    (tmp_path / "results.md").write_text(
+        _RESULTS_CONTENT.replace("- **State:** not_run", "- **State:** pending"),
+    )
+    errors = validate_closure(tmp_path)
+    assert any("verification state is 'pending'" in e for e in errors)
+
+
+def test_validate_closure_fails_failed_verification(tmp_path):
+    _make_closure_ready(tmp_path)
+    (tmp_path / "results.md").write_text(
+        _RESULTS_CONTENT.replace("- **State:** not_run", "- **State:** failed"),
+    )
+    errors = validate_closure(tmp_path)
+    assert any("verification state is 'failed'" in e for e in errors)

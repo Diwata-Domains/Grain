@@ -20,6 +20,7 @@ Do not perform review or phase closeout in this prompt.
 
 Small fixes and hotfixes still use normal task packets. Do not bypass packet creation just because the change is small.
 This prompt does not authorize implementation without a packet. If no active packet exists on disk yet, create or activate one before editing code.
+If you are resuming a long conversation and the packet or workflow state is no longer certain, stop and refresh from `grain workflow next --format json` plus the packet on disk before implementing anything.
 
 If `docs/working/current_task.md` already points to an active task:
 
@@ -84,6 +85,7 @@ Before proceeding, confirm the workflow state is packet-first:
 * if `docs/working/current_task.md` points to `none` or `idle`, you must create or activate exactly one task packet before implementation
 * if a packet directory already exists for the active task, reuse that packet instead of drafting a fresh one from memory
 * do not keep execution state only in chat; the packet on disk is the authority
+* if Grain and Assay are both part of the task loop, do not treat review or verification as “implicitly done” until the packet artifacts on disk show it
 
 ---
 
@@ -177,6 +179,7 @@ Rules:
 * do not modify canonical docs directly
 
 If implementation reveals a blocking ambiguity or unresolved open question, stop and record it rather than improvising.
+If the implementation path starts to diverge from the active packet or from the on-disk verification state, stop and return to the Grain workflow rather than steering by chat summary alone.
 
 ---
 

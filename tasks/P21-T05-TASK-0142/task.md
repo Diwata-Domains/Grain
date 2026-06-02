@@ -2,7 +2,7 @@
 
 ## Metadata
 - **ID:** TASK-0142
-- **Status:** draft
+- **Status:** done
 - **Mode:** simple
 - **Phase:** Phase 21 — v0.3.0 Planning and Operator Surface Definition
 - **Backlog:** P21-T05 — Decide Obsidian support shape

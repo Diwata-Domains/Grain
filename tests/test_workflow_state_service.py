@@ -182,7 +182,30 @@ def test_evaluate_workflow_state_recommends_task_close_for_review_ready_packet(t
         ),
     )
     packet_dir = _packet(tmp_path, "P8-T02-TASK-0001", "TASK-0001", "review")
-    _write(packet_dir / "results.md", "# Results\nComplete.\n")
+    _write(
+        packet_dir / "results.md",
+        (
+            "# Results: TASK-0001\n\n"
+            "## Summary\nDone.\n\n"
+            "## User Review\n"
+            "- **State:** approved\n"
+            "- **Summary:** Ready.\n"
+            "- **Resolution Mode:** close_task\n\n"
+            "### Required Fixes\n- None\n\n"
+            "### Open Questions To Log\n- None\n\n"
+            "### Proposal Candidates To Log\n- None\n\n"
+            "### Follow-Ups To Log\n- None\n\n"
+            "### Residual Risks\n- None\n\n"
+            "## Verification Review\n"
+            "- **State:** not_run\n"
+            "- **Summary:** No verifier configured.\n\n"
+            "### Findings\n- None\n\n"
+            "## Closure Decision\n"
+            "- **Decision:** pending\n"
+            "- **Reason:** Awaiting close.\n\n"
+            "### Closure Blockers\n- None\n"
+        ),
+    )
     _write(packet_dir / "handoff.md", "# Handoff\nReady.\n")
 
     result, evaluation = evaluate_workflow_state(tmp_path)
@@ -191,6 +214,79 @@ def test_evaluate_workflow_state_recommends_task_close_for_review_ready_packet(t
     assert evaluation is not None
     assert evaluation.next_action == "task_close"
     assert evaluation.recommended_prompt == "prompts/task.close.md"
+
+
+def test_evaluate_workflow_state_ignores_non_phase_sections_after_active_phase(tmp_path: Path):
+    _base_docs(
+        tmp_path,
+        "# Current Task\n\nTask ID: none\nTask Path: none\nStatus: unset\n",
+        (
+            "## 10. Phase 8 — Workflow Automation Runner Foundation\n\n"
+            "### P8-T09 — Harden machine-readable automation outputs and runner integration tests\n"
+            "- **Status:** ready\n\n"
+            "## 11. Future — Historical Notes\n\n"
+            "### FA-T01 — Future adapter work\n"
+            "- **Status:** done\n"
+        ),
+    )
+
+    result, evaluation = evaluate_workflow_state(tmp_path)
+
+    assert result.ok is True
+    assert evaluation is not None
+    assert evaluation.next_action == "task_execute"
+    assert evaluation.candidate_tasks[0].task_ref == "P8-T09"
+
+
+def test_evaluate_workflow_state_blocks_task_close_for_pending_verification(tmp_path: Path):
+    _base_docs(
+        tmp_path,
+        (
+            "# Current Task\n\n"
+            "Task ID: TASK-0001\n"
+            "Task Path: tasks/P8-T02-TASK-0001/\n"
+            "Status: review\n"
+        ),
+        (
+            "## 10. Phase 8 — Workflow Automation Runner Foundation\n\n"
+            "### P8-T02 — Implement workflow state evaluator service\n"
+            "- **Status:** review\n"
+        ),
+    )
+    packet_dir = _packet(tmp_path, "P8-T02-TASK-0001", "TASK-0001", "review")
+    _write(
+        packet_dir / "results.md",
+        (
+            "# Results: TASK-0001\n\n"
+            "## Summary\nDone.\n\n"
+            "## User Review\n"
+            "- **State:** approved\n"
+            "- **Summary:** Ready.\n"
+            "- **Resolution Mode:** close_task\n\n"
+            "### Required Fixes\n- None\n\n"
+            "### Open Questions To Log\n- None\n\n"
+            "### Proposal Candidates To Log\n- None\n\n"
+            "### Follow-Ups To Log\n- None\n\n"
+            "### Residual Risks\n- None\n\n"
+            "## Verification Review\n"
+            "- **State:** pending\n"
+            "- **Summary:** Waiting on Assay verification.\n\n"
+            "### Findings\n- None\n\n"
+            "## Closure Decision\n"
+            "- **Decision:** pending\n"
+            "- **Reason:** Awaiting verification.\n\n"
+            "### Closure Blockers\n- None\n"
+        ),
+    )
+    _write(packet_dir / "handoff.md", "# Handoff\nReady.\n")
+
+    result, evaluation = evaluate_workflow_state(tmp_path)
+
+    assert result.ok is False
+    assert evaluation is not None
+    assert evaluation.stop_reason == "review_close_blocked"
+    assert any("verification state is 'pending'" in reason for reason in evaluation.blocking_reasons)
+    assert evaluation.recommended_prompt == "prompts/task.review.md"
 
 
 def test_evaluate_workflow_state_recommends_execute_for_single_ready_task(tmp_path: Path):
@@ -210,6 +306,51 @@ def test_evaluate_workflow_state_recommends_execute_for_single_ready_task(tmp_pa
     assert evaluation is not None
     assert evaluation.next_action == "task_execute"
     assert [task.task_ref for task in evaluation.candidate_tasks] == ["P8-T02"]
+
+
+def test_evaluate_workflow_state_stops_when_backlog_has_active_task_but_current_task_is_unset(tmp_path: Path):
+    _base_docs(
+        tmp_path,
+        "# Current Task\n\nTask ID: none\nTask Path: none\nStatus: unset\n",
+        (
+            "## 10. Phase 8 — Workflow Automation Runner Foundation\n\n"
+            "### P8-T02 — Implement workflow state evaluator service\n"
+            "- **Status:** in_progress\n"
+        ),
+    )
+
+    result, evaluation = evaluate_workflow_state(tmp_path)
+
+    assert result.ok is False
+    assert evaluation is not None
+    assert evaluation.stop_reason == "workflow_state_drift"
+    assert any("current_task.md is unset" in reason for reason in evaluation.blocking_reasons)
+    assert [task.task_ref for task in evaluation.candidate_tasks] == ["P8-T02"]
+
+
+def test_evaluate_workflow_state_stops_when_active_packet_status_disagrees_with_backlog(tmp_path: Path):
+    _base_docs(
+        tmp_path,
+        (
+            "# Current Task\n\n"
+            "Task ID: TASK-0001\n"
+            "Task Path: tasks/P8-T02-TASK-0001/\n"
+            "Status: in_progress\n"
+        ),
+        (
+            "## 10. Phase 8 — Workflow Automation Runner Foundation\n\n"
+            "### P8-T02 — Implement workflow state evaluator service\n"
+            "- **Status:** ready\n"
+        ),
+    )
+    _packet(tmp_path, "P8-T02-TASK-0001", "TASK-0001", "in_progress")
+
+    result, evaluation = evaluate_workflow_state(tmp_path)
+
+    assert result.ok is False
+    assert evaluation is not None
+    assert evaluation.stop_reason == "workflow_state_drift"
+    assert any("does not match backlog status 'ready'" in reason for reason in evaluation.blocking_reasons)
 
 
 def test_evaluate_workflow_state_recommends_task_review_when_results_exist(tmp_path: Path):

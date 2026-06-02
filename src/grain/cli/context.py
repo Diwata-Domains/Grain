@@ -89,6 +89,7 @@ def context_build(ctx, task_id, include_working, context_tags):
             "export_metadata": bundle.export_metadata,
         }
         data["context_stats"] = bundle.export_metadata.get("context_stats", {})
+        data["context_budget"] = bundle.export_metadata.get("context_budget", {})
         click.echo(json.dumps(data, indent=2))
         return
 
@@ -99,6 +100,7 @@ def context_build(ctx, task_id, include_working, context_tags):
     click.echo(f"  primary_adapter   {adapter_context.get('primary_adapter', 'none')}")
 
     stats = bundle.export_metadata.get("context_stats", {})
+    budget = bundle.export_metadata.get("context_budget", {})
     if stats:
         click.echo(f"  total_sources     {stats['total_sources']}")
         click.echo(f"  total_lines       {stats['total_lines']}")
@@ -111,6 +113,15 @@ def context_build(ctx, task_id, include_working, context_tags):
         for entry in stats.get("per_file", []):
             depth_str = f"  depth={entry['graph_depth']}" if entry["graph_depth"] >= 0 else ""
             click.echo(f"    [{entry['selection_method']:<12}] {entry['lines']:>5} lines  {entry['path']}{depth_str}")
+    if budget:
+        click.echo(f"  total_bytes       {budget['total_bytes']}")
+        click.echo(f"  estimated_tokens  {budget['estimated_tokens']}")
+        click.echo(f"  token_warning     {'yes' if budget['warning_active'] else 'no'}")
+        hints = budget.get("trim_hints", [])
+        if hints:
+            click.echo(f"  trim_hints        {len(hints)}")
+            for hint in hints:
+                click.echo(f"    - {hint['path']} ({hint['estimated_tokens']} tokens): {hint['reason']}")
 
     review_hints = adapter_context.get("review_focus_hints", [])
     validation_hints = adapter_context.get("test_or_validation_hints", [])
@@ -258,6 +269,7 @@ def context_export(ctx, task_id, output_path, include_working, context_tags):
             "generated_at": bundle.export_metadata.get("generated_at"),
             "sources": source_metadata,
             "adapter_context": bundle.export_metadata.get("adapter_context", {}),
+            "context_budget": bundle.export_metadata.get("context_budget", {}),
         }
         click.echo(json.dumps(data, indent=2))
         return
@@ -273,7 +285,16 @@ def context_export(ctx, task_id, output_path, include_working, context_tags):
     click.echo(f"  output            {export_path}")
     click.echo(f"  sources           {len(source_metadata)}")
     adapter_context = bundle.export_metadata.get("adapter_context", {})
+    budget = bundle.export_metadata.get("context_budget", {})
     click.echo(f"  primary_adapter   {adapter_context.get('primary_adapter', 'none')}")
+    if budget:
+        click.echo(f"  estimated_tokens  {budget['estimated_tokens']}")
+        click.echo(f"  token_warning     {'yes' if budget['warning_active'] else 'no'}")
+        hints = budget.get("trim_hints", [])
+        if hints:
+            click.echo(f"  trim_hints        {len(hints)}")
+            for hint in hints:
+                click.echo(f"    - {hint['path']} ({hint['estimated_tokens']} tokens): {hint['reason']}")
     review_hints = adapter_context.get("review_focus_hints", [])
     validation_hints = adapter_context.get("test_or_validation_hints", [])
     if review_hints:

@@ -155,6 +155,8 @@ def test_context_export_json_metadata_only(packet_repo):
     assert data["export"]["task_id"] == "TASK-0001"
     assert "generated_at" in data["export"]
     assert isinstance(data["export"]["sources"], list)
+    assert "context_budget" in data["export"]
+    assert "estimated_tokens" in data["export"]["context_budget"]
     assert "content" not in json.dumps(data["export"])
 
     packet_dir = find_packet_dir(packet_repo / "tasks", "TASK-0001")

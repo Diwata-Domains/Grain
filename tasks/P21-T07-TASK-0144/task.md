@@ -2,7 +2,7 @@
 
 ## Metadata
 - **ID:** TASK-0144
-- **Status:** draft
+- **Status:** done
 - **Mode:** simple
 - **Phase:** Phase 21 — v0.3.0 Planning and Operator Surface Definition
 - **Backlog:** P21-T07 — Define reusable workflow recipes

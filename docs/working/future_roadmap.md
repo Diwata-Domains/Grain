@@ -612,6 +612,7 @@ If an item is actively being executed, the working docs own the operational stat
   * token efficiency should be treated as a first-class workflow quality metric, not just a side effect
   * one of Forge's core product claims is that structured workflow should increase useful work completed before model usage limits or context ceilings are hit
   * future work may include model-routing decisions based partly on token or cost budgets
+  * for the active `v0.3.0` operator surface, the near-term subset is narrower: task-scoped context-size reporting, source-count proxies, trimming hints, and TUI/CLI budget visibility rather than full cost-routing automation
   * **tree-sitter pattern (2026-04-07):** structural extraction via tree-sitter (import/call graph parsing, local, zero LLM tokens) is the preferred direction for adapter context selection improvements across multiple adapters. Instead of loading all files matching broad glob patterns, parse the dependency graph of what the task actually touches and load only those files. Applicable adapters: `code_adapter` (Python, Rust, Go, Java), `frontend_adapter` (TypeScript, JavaScript, TSX, CSS), `docs_adapter` (Markdown link/cross-reference graphs), `devops_adapter` (Bash, Dockerfile, HCL, YAML). Not applicable to `spreadsheet_adapter` (formula dependencies require different tooling). Observed reference: Graphify project (MIT) demonstrates this pattern at scale with 19-language tree-sitter support. Implementation deferred until adapter context selection is the proven bottleneck.
 
 ---

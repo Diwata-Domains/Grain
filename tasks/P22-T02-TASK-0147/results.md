@@ -52,9 +52,9 @@ Turned the initial Textual shell into a real workflow dashboard. The TUI now bui
 
 ## User Review
 <!-- reviewer fills this section — executor must leave all fields below as-is -->
-- **State:** [pending / approved / needs_fix / misunderstood / followup_requested]
-- **Summary:** [reviewer fills]
-- **Resolution Mode:** [revise_current_task / replan_current_task / create_followup_task / close_task]
+- **State:** approved
+- **Summary:** Approved for phase close.
+- **Resolution Mode:** close_task
 
 ### Required Fixes
 - [fix, or "None"]
@@ -81,11 +81,11 @@ Turned the initial Textual shell into a real workflow dashboard. The TUI now bui
 
 ## Closure Decision
 <!-- closer fills this section during final closeout -->
-- **Decision:** [pending / keep_open / close_task / closed]
-- **Reason:** [closer fills]
+- **Decision:** closed
+- **Reason:** Closed via grain task close.
 
 ### Closure Blockers
-- [blocker, or "None"]
+- None
 
 ## Deliverable Checklist
 - [x] the TUI dashboard shows active phase, current task, next step, and prompt status

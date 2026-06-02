@@ -2,7 +2,7 @@
 
 ## Metadata
 - **ID:** TASK-0143
-- **Status:** draft
+- **Status:** done
 - **Mode:** simple
 - **Phase:** Phase 21 — v0.3.0 Planning and Operator Surface Definition
 - **Backlog:** P21-T06 — Define reviewable diffs, validators, and safety modes for non-code artifacts

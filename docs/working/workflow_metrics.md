@@ -663,4 +663,188 @@ Released between Phase 14 close and Phase 15 start. Not tracked as formal phases
 * V2 planning docs created: v2_plan.md, v2_adapters.md, v2_onboarding.md
 * **v0.1.0 status: COMPLETE** — all planned phases closed; 662 tests passing; version tagged and PyPI published
 * **v0.1.x patch series: COMPLETE** — v0.1.0 through v0.1.11; ~713+ tests at v0.1.11
-* **v0.2.0 status: IN PROGRESS** — Phase 19 closed; next phase planning required; latest targeted community-registry gate 57 checks passing
+* **v0.2.0 status: COMPLETE** — Phases 15 through 20 closed; release shipped
+
+---
+
+### Phase 22
+
+* Tasks completed: 6 (P22-T01 through P22-T06)
+* Tasks blocked: 0
+* Prompt runs: 1 (single continuous session — single-agent conversational model)
+* Avg prompt runs per completed task: n/a (single-agent model; all stages in one session)
+* Manual interventions: 3 (Phase 21 seal was missing and had to be restored manually before close; P22 packet review approvals were normalized before close; one stale backlog status for P22-T06 required manual correction)
+* First-pass success rate: 6/6 (all TUI slices landed without reopening; tests and docs closeout completed in the same phase stream)
+* Rework count: 0 (no task was reopened or routed back from review)
+* Drift incidents: 1 (phase-close readiness was blocked by a missing Phase 21 seal marker even though planning work was complete)
+* Phase duration: Session 23
+* Tests at phase close: 58 targeted TUI/workflow/context checks passing; full repo suite not run in this phase-close session
+* Conversation model: single-agent conversational (Codex in-session; tasks executed, reviewed, and closed in one continuous conversation)
+* Token tracking: proxy metrics only
+
+### Phase 22 Notes
+
+* What felt efficient: the TUI broke cleanly into shell, dashboard, inspectors, action launchers, preview/detail panels, and closeout coverage; the Textual layer stayed thin over existing Grain services and commands; packet-level commits kept the new Trace convention useful without fragmenting the phase across many branches
+* What created friction: historical phase-close state drift still depends on explicit working-doc updates; review normalization was still manual; backlog text lagged the packet state once at the end of the phase
+* What to tighten next: reduce manual review-state normalization, make phase-close markers less fragile, and carry the same testable thin-shell discipline into the writable office artifact work
+
+---
+
+### Phase 23
+
+* Tasks completed: 6 (P23-T01 through P23-T06)
+* Tasks blocked: 0
+* Prompt runs: 1 (single continuous session — single-agent conversational model)
+* Avg prompt runs per completed task: n/a (single-agent model; all stages in one session)
+* Manual interventions: 4 (backlog status drift had to be normalized at multiple task boundaries; `P23-T06` packet creation was duplicated, producing `TASK-0157` and `TASK-0158`; review approvals were normalized manually before close; phase-close docs required explicit sync before closure)
+* First-pass success rate: 6/6 (all office slices landed without reopening; smoke/docs closeout completed in the same phase stream)
+* Rework count: 0 (no task was reopened or routed back from review)
+* Drift incidents: 2 (workflow state selected stale backlog status after task closure; `P23-T06` duplicate packet drift after manual create plus workflow auto-create)
+* Phase duration: Session 24
+* Tests at phase close: 26 focused office CLI/service tests passing; full repo suite not run in this phase-close session
+* Conversation model: single-agent conversational (Codex in-session; tasks executed, reviewed, and closed in one continuous conversation)
+* Token tracking: proxy metrics only
+
+### Phase 23 Notes
+
+* What felt efficient: the office slice broke cleanly into shared contracts, artifact-specific write services, shared review logic, CLI exposure, and closeout smoke/docs work; packet-first review artifacts kept non-code writes inspectable without inventing hidden state; the focused office test slice stayed fast while covering meaningful workflow behavior
+* What created friction: workflow/backlog drift still required manual normalization; the manual `task create` before `workflow run` caused duplicate packet drift for `P23-T06`; full-suite verification remained deferred because the phase stayed tightly scoped
+* What to tighten next: make workflow activation idempotent when a packet already exists, reduce manual backlog/status normalization, and carry the same packet-first discipline into desktop and Obsidian surfaces
+
+---
+
+### Phase 24
+
+* Tasks completed: 5 (P24-T01 through P24-T05)
+* Tasks blocked: 0
+* Prompt runs: 1 (single continuous session — single-agent conversational model)
+* Avg prompt runs per completed task: n/a (single-agent model; all stages in one session)
+* Manual interventions: 4 (duplicate task drift had to be archived before continuing; stale `current_task.md` pointers required reconcile after task close; backlog task state had to be normalized before activating `P24-T05`; phase close required an explicit metrics entry before sealing)
+* First-pass success rate: 5/5 (desktop and Obsidian slices landed without reopening; closeout smoke/docs completed in the same phase stream)
+* Rework count: 0 (no task was reopened or routed back from review)
+* Drift incidents: 2 (duplicate packet drift near the phase start; stale runner/backlog state after task close remained a recurring manual fix)
+* Phase duration: Session 25
+* Tests at phase close: 32 focused MCP, Obsidian integration, adapter profile, and release-surface checks passing; full repo suite not run in this phase-close session
+* Conversation model: single-agent conversational (Codex in-session; tasks executed, reviewed, and closed in one continuous conversation)
+* Token tracking: proxy metrics only
+
+### Phase 24 Notes
+
+* What felt efficient: the phase broke cleanly into wrapper scaffold, CLI/Desktop guidance, Obsidian adapter scaffold, first vault-aware context behavior, and closeout smoke/docs work; the local MCP layer stayed thin over the existing CLI; Obsidian support advanced through bounded, file-backed slices instead of a broad vault rewrite
+* What created friction: packet and backlog drift still required manual reconcile; the Obsidian selection fix had to preserve anchor ordering after semantic reranking; full-suite verification remained intentionally deferred in favor of a tighter phase-close slice
+* What to tighten next: reduce runner drift after task close, keep desktop/tooling documentation synchronized with shipped surfaces, and carry the same bounded-adapter discipline into the upcoming database and crawler phases
+
+---
+
+### Phase 25
+
+* Tasks completed: 5 (P25-T01 through P25-T05)
+* Tasks blocked: 0
+* Prompt runs: 1 (single continuous session — single-agent conversational model)
+* Avg prompt runs per completed task: n/a (single-agent model; all stages in one session)
+* Manual interventions: 5 (runner/task template drift required packet fill-in on every activated task; stale `current_task.md` pointers required reconcile after each task close; backlog task state repeatedly lagged packet status; Phase 25 required explicit `ready` promotion before each downstream task; phase close required an explicit metrics entry before sealing)
+* First-pass success rate: 5/5 (all database slices landed without reopening; closeout smoke/docs completed in the same phase stream)
+* Rework count: 0 (no task was reopened or routed back from review)
+* Drift incidents: 2 (activation produced template-only task packets that required manual packet completion; stale runner/backlog state after task close remained recurring manual fix)
+* Phase duration: Session 26
+* Tests at phase close: 30 focused database integration, adapter profile, and release-surface checks passing; full repo suite not run in this phase-close session
+* Conversation model: single-agent conversational (Codex in-session; tasks executed, reviewed, and closed in one continuous conversation)
+* Token tracking: proxy metrics only
+
+### Phase 25 Notes
+
+* What felt efficient: the phase broke cleanly into scaffold, schema/migration selection, persistence-oriented query/repository hints, review guidance, and closeout smoke work; `database_adapter` advanced through bounded slices without needing live database tooling; focused integration tests kept the validation loop fast while still proving meaningful end-to-end behavior
+* What created friction: task packet activation still yielded template-only packets that had to be filled manually; backlog and `current_task.md` drift required reconcile after every close; the shipped runtime copy needed continuous alignment with the live adapter contract as the phase grew
+* What to tighten next: reduce packet-template drift on activation, keep bundled/runtime adapter docs synchronized automatically where possible, and carry the same bounded-adapter pattern into the crawler phase
+
+---
+
+### Phase 26
+
+* Tasks completed: 5 (P26-T01 through P26-T05)
+* Tasks blocked: 0
+* Prompt runs: 1 (single continuous session — single-agent conversational model)
+* Avg prompt runs per completed task: n/a (single-agent model; all stages in one session)
+* Manual interventions: 5 (runner/task template drift required packet fill-in on every activated task; stale `current_task.md` pointers required reconcile after each task close; backlog task state repeatedly lagged packet status; Phase 26 required explicit `ready` promotion before each downstream task; phase close required an explicit metrics entry before sealing)
+* First-pass success rate: 5/5 (all crawler slices landed without reopening; closeout smoke/docs completed in the same phase stream)
+* Rework count: 0 (no task was reopened or routed back from review)
+* Drift incidents: 2 (activation produced template-only task packets that required manual packet completion; stale runner/backlog state after task close remained recurring manual fix)
+* Phase duration: Session 27
+* Tests at phase close: 34 focused crawler integration, adapter profile, and release-surface checks passing; full repo suite not run in this phase-close session
+* Conversation model: single-agent conversational (Codex in-session; tasks executed, reviewed, and closed in one continuous conversation)
+* Token tracking: proxy metrics only
+
+### Phase 26 Notes
+
+* What felt efficient: the phase broke cleanly into scaffold, config/selector selection, extraction-quality hints, review guidance, and closeout smoke work; `crawler_adapter` advanced through bounded slices without needing live crawler tooling; focused integration tests kept the validation loop fast while still proving meaningful end-to-end behavior
+* What created friction: task packet activation still yielded template-only packets that had to be filled manually; backlog and `current_task.md` drift required reconcile after every close; the shipped runtime copy needed continuous alignment with the live adapter contract as the phase grew
+* What to tighten next: reduce packet-template drift on activation, keep bundled/runtime adapter docs synchronized automatically where possible, and carry the same bounded-adapter pattern into the recipe/ergonomics phase
+
+---
+
+### Phase 27
+
+* Tasks completed: 3 (P27-T01 through P27-T03)
+* Tasks blocked: 0
+* Prompt runs: 1 (single continuous session — single-agent conversational model)
+* Avg prompt runs per completed task: n/a (single-agent model; all stages in one session)
+* Manual interventions: 4 (runner task activation still created template-only packets that required manual packet completion; backlog task state repeatedly lagged packet status after close; `current_task.md` still needed reconcile after close; phase close still requires an explicit metrics entry before sealing)
+* First-pass success rate: 3/3 (all observability, budget, and TUI slices landed without reopening)
+* Rework count: 0 (no task was reopened or routed back from review)
+* Drift incidents: 2 (runner-created placeholder packets still needed manual completion; stale runner/backlog state after task close remained a recurring manual fix)
+* Phase duration: Session 28
+* Tests at phase close: 52 focused TUI, context, observability, and workflow command tests passing; full repo suite not run in this phase-close session
+* Conversation model: single-agent conversational (Codex in-session; tasks executed, reviewed, and closed in one continuous conversation)
+* Token tracking: file-size and line-count proxy metrics only
+
+### Phase 27 Notes
+
+* What felt efficient: observability, budget reporting, and TUI wiring stacked cleanly because each slice reused packet-local files and existing service metadata instead of inventing new state channels; focused command tests stayed fast while still proving meaningful operator-facing behavior
+* What created friction: runner activation still yielded placeholder packets that had to be filled manually; reconcile remained necessary after each close; review check surfaced the known status drift because packet closure is still being driven directly after packet completion in-session
+* What to tighten next: make runner-created packets ready for real execution without manual fill-in, reduce post-close reconcile work, and reuse the same file-backed patterns when wiring the upcoming Assay verification bridge
+
+---
+
+### Phase 28
+
+* Tasks completed: 5 (P28-T01 through P28-T05)
+* Tasks blocked: 0
+* Prompt runs: 1 (single continuous session — single-agent conversational model)
+* Avg prompt runs per completed task: n/a (single-agent model; all stages in one session)
+* Manual interventions: 5 (runner/task template drift required manual packet completion for the mid-phase tasks; stale `current_task.md` required manual reset; backlog phase labels lagged actual execution state; a missing CLI import broke the first ingest test pass; phase close still requires an explicit metrics entry before sealing)
+* First-pass success rate: 3/5 (submit and status landed cleanly; ingest needed one CLI import fix; verification gates needed one focused test/CLI-output refinement pass; docs closeout landed in one pass)
+* Rework count: 2 (P28-T03 ingest fix; P28-T04 gate-output refinement)
+* Drift incidents: 2 (placeholder packet drift remained on activation; working docs still lagged actual task completion until manually normalized)
+* Phase duration: Session 29
+* Tests at phase close: 102 focused verification, workflow-gate, close-command, and release-surface checks passing; full repo suite not run in this phase-close session
+* Conversation model: single-agent conversational (Codex in-session; tasks executed, reviewed, and closed in one continuous conversation)
+* Token tracking: proxy metrics only
+
+### Phase 28 Notes
+
+* What felt efficient: the verification bridge stacked cleanly once it stayed packet-local; submit, status, ingest, workflow gating, and docs each built on the same small artifact set (`verification_request.json`, `verification_result.json`, and `results.md`) without introducing hidden state
+* What created friction: the repo shell binary was behind the source tree at first, placeholder packets still needed manual fill-in, and one missing `Path` import plus one missing close-command error print delayed the focused verification slice
+* What to tighten next: reduce packet-template drift on activation, keep the installed CLI entrypoint aligned with the repo code during active development, and decide the next post-bridge execution phase before reopening implementation
+
+---
+
+### Phase 29
+
+* Tasks completed: 5 (P29-T01 through P29-T05)
+* Tasks blocked: 0
+* Prompt runs: 1 (single continuous session — single-agent conversational model)
+* Avg prompt runs per completed task: n/a (single-agent model; all stages in one session)
+* Manual interventions: 6 (manual task approvals/closeouts still required; `current_task.md` and backlog state still needed normalization between tasks; duplicate `P29-T04` packet drift had to be archived; the installed CLI entrypoint was behind the repo code; phase close still required an explicit metrics entry before sealing)
+* First-pass success rate: 3/5 (prompt/runtime hardening, workflow misuse blockers, and runner-drift hardening landed cleanly; `workflow explain` needed one phase-guard refinement in tests; phase closeout needed one parser-edge fix when the final ready task was hidden behind a non-phase section)
+* Rework count: 2 (P29-T04 fixture/stop-reason refinement; P29-T05 parser edge fix)
+* Drift incidents: 3 (manual current-task reset after close, duplicate packet drift on `P29-T04`, and the backlog parser inheriting status from the later `Future` section)
+* Phase duration: Session 30
+* Tests at phase close: 80 focused workflow explain/next/state, command-group, and release-surface checks passing; full repo suite not run in this phase-close session
+* Conversation model: single-agent conversational (Codex in-session; tasks executed, reviewed, and closed in one continuous conversation)
+* Token tracking: proxy metrics only
+
+### Phase 29 Notes
+
+* What felt efficient: the hardening slices stayed tightly layered — prompt/runtime guardrails, misuse blockers, runner drift reduction, operator diagnostics, then closeout smoke/docs — so each fix built directly on the last one without reopening earlier feature phases
+* What created friction: the installed CLI entrypoint lagged the repo code, duplicate packet drift still appeared when manual and automatic activation mixed, and the backlog parser edge only surfaced at the very end of the phase
+* What to tighten next: keep the active CLI path pinned to the current source tree during development, further reduce manual backlog/current-task normalization after close, and continue adding explicit guidance whenever new workflow stop reasons are introduced

@@ -57,8 +57,15 @@ def test_parse_runtime_adapter_profiles_includes_data_adapter_contract():
     )
 
     code_profile = next(profile for profile in profiles if profile.adapter_id == "code_adapter")
+    obsidian_profile = next(profile for profile in profiles if profile.adapter_id == "obsidian_adapter")
     data_profile = next(profile for profile in profiles if profile.adapter_id == "data_adapter")
+    database_profile = next(profile for profile in profiles if profile.adapter_id == "database_adapter")
+    crawler_profile = next(profile for profile in profiles if profile.adapter_id == "crawler_adapter")
     assert "**/*.ipynb" not in code_profile.relevant_file_patterns
+    assert obsidian_profile.domain_type == "docs"
+    assert "**/*.md" in obsidian_profile.relevant_file_patterns
+    assert any("wiki-link" in hint for hint in obsidian_profile.review_focus_hints)
+    assert any(".obsidian/" in hint for hint in obsidian_profile.context_priority_rules)
     assert data_profile.domain_type == "data"
     assert "**/*.ipynb" in data_profile.relevant_file_patterns
     assert "**/*.parquet" in data_profile.relevant_file_patterns
@@ -66,6 +73,22 @@ def test_parse_runtime_adapter_profiles_includes_data_adapter_contract():
     assert "requirements.txt" in data_profile.relevant_file_patterns
     assert any("metadata-only" in hint for hint in data_profile.build_or_run_hints)
     assert any(".ipynb" in hint for hint in data_profile.context_priority_rules)
+    assert database_profile.domain_type == "code"
+    assert "**/*.sql" in database_profile.relevant_file_patterns
+    assert "schema.prisma" in database_profile.relevant_file_patterns
+    assert "queries/**" in database_profile.relevant_file_patterns
+    assert "src/repositories/**" in database_profile.relevant_file_patterns
+    assert any("migration" in hint for hint in database_profile.test_or_validation_hints)
+    assert any("rollback" in hint for hint in database_profile.review_focus_hints)
+    assert any("schema files and migration directories" in hint for hint in database_profile.context_priority_rules)
+    assert crawler_profile.domain_type == "code"
+    assert "scrapy.cfg" in crawler_profile.relevant_file_patterns
+    assert "selectors/**" in crawler_profile.relevant_file_patterns
+    assert "normalizers/**" in crawler_profile.relevant_file_patterns
+    assert "tests/fixtures/**" in crawler_profile.relevant_file_patterns
+    assert any("selector coverage" in hint for hint in crawler_profile.test_or_validation_hints)
+    assert any("robots policy" in hint for hint in crawler_profile.review_focus_hints)
+    assert any("crawl configs" in hint for hint in crawler_profile.context_priority_rules)
 
 
 def test_parse_adapter_profiles_raises_for_missing_required_field():

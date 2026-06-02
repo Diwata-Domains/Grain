@@ -8,6 +8,7 @@ from grain.tui.app import (
     CandidateTaskSnapshot,
     ContextPreviewSnapshot,
     GrainShellSnapshot,
+    ObservabilityPreviewSnapshot,
     PacketArtifactSnapshot,
     build_shell_snapshot,
     launch_close_flow,
@@ -17,6 +18,7 @@ from grain.tui.app import (
     _render_backlog_panel,
     _render_blocker_detail_panel,
     _render_context_panel,
+    _render_observability_panel,
     _render_packet_panel,
     _render_prompt_panel,
     _render_queue_panel,
@@ -215,6 +217,7 @@ def test_build_shell_snapshot_reads_workflow_state(tmp_path):
     assert snapshot.backlog_tasks[1].task_ref == "P22-T03"
     assert snapshot.packet_artifacts is None
     assert snapshot.context_preview is None
+    assert snapshot.observability_preview is None
 
 
 def test_render_panels_surface_blocked_state():
@@ -304,6 +307,7 @@ def test_render_backlog_and_packet_panels_surface_inspector_content():
         packet_artifacts=PacketArtifactSnapshot(
             packet_dir="tasks/P22-T03-TASK-0148/",
             packet_status="in_progress",
+            results_summary="Added inspector panels.",
             files_present=["task.md", "context.md", "plan.md"],
             files_missing=["results.md", "handoff.md"],
         ),
@@ -313,20 +317,36 @@ def test_render_backlog_and_packet_panels_surface_inspector_content():
             canonical_doc_count=1,
             working_doc_count=0,
             primary_adapter="none",
+            estimated_tokens=320,
+            token_warning=False,
             top_sources=["tasks/P22-T03-TASK-0148/task.md", "docs/canonical/workflow_spec.md"],
+            trim_hints=["docs/canonical/workflow_spec.md (120 tokens)"],
+        ),
+        observability_preview=ObservabilityPreviewSnapshot(
+            executor_identity="codex",
+            model_class="frontier_model",
+            last_stage="execute",
+            last_workflow_action="manual_execute",
+            updated_at="2026-05-06T12:00:00Z",
         ),
     )
 
     backlog = _render_backlog_panel(snapshot)
     packet = _render_packet_panel(snapshot)
     context = _render_context_panel(snapshot)
+    observability = _render_observability_panel(snapshot)
     assert "Phase Backlog" in backlog
     assert "P22-T03 [in_progress]" in backlog
     assert "Packet Inspector" in packet
     assert "packet_dir: tasks/P22-T03-TASK-0148/" in packet
     assert "missing: results.md, handoff.md" in packet
+    assert "results_summary: Added inspector panels." in packet
     assert "Context Preview" in context
     assert "sources: 5" in context
+    assert "estimated_tokens: 320" in context
+    assert "trim_hints:" in context
+    assert "Observability" in observability
+    assert "executor_identity: codex" in observability
 
 
 def test_render_action_panel_surfaces_last_action_summary():

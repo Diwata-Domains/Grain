@@ -1,6 +1,7 @@
 """Tests for `forge workflow run` command."""
 
 import json
+import shutil
 from pathlib import Path
 
 from click.testing import CliRunner
@@ -15,6 +16,10 @@ def _write(path: Path, text: str) -> None:
 
 def _base_repo(repo: Path) -> None:
     _write(repo / "docs" / "runtime" / "PROJECT_RULES.md", "")
+    shutil.copytree(
+        Path(__file__).parent.parent / "templates" / "tasks",
+        repo / "templates" / "tasks",
+    )
     _write(
         repo / "docs" / "working" / "current_focus.md",
         "# Current Focus\n\n## Current Phase\nPhase 8 — Workflow Automation Runner Foundation\n",
@@ -98,6 +103,57 @@ def test_workflow_run_activates_ready_task(tmp_path):
     assert "tasks/P8-T08-TASK-0068/" in current_task
 
 
+def test_workflow_run_records_observability_on_activation(tmp_path):
+    _base_repo(tmp_path)
+    _ready_backlog(tmp_path, "P8-T08")
+    packet_dir = _packet(tmp_path, "P8-T08", "TASK-0068", "ready")
+
+    runner = CliRunner()
+    result = runner.invoke(main, ["--repo", str(tmp_path), "workflow", "run"])
+
+    assert result.exit_code == 0, result.output
+    payload = json.loads((packet_dir / "observability.json").read_text(encoding="utf-8"))
+    assert payload["last_stage"] == "execute"
+    assert payload["last_workflow_action"] == "workflow_run:activate_task"
+
+
+def test_workflow_run_auto_created_packet_is_hydrated(tmp_path):
+    _base_repo(tmp_path)
+    _ready_backlog(tmp_path, "P8-T08")
+
+    runner = CliRunner()
+    result = runner.invoke(main, ["--repo", str(tmp_path), "workflow", "run"])
+
+    assert result.exit_code == 0, result.output
+    packet_dir = tmp_path / "tasks" / "P8-T08-TASK-0001"
+    task_md = (packet_dir / "task.md").read_text(encoding="utf-8")
+    context_md = (packet_dir / "context.md").read_text(encoding="utf-8")
+    plan_md = (packet_dir / "plan.md").read_text(encoding="utf-8")
+    deliverable_md = (packet_dir / "deliverable_spec.md").read_text(encoding="utf-8")
+
+    assert "[Title]" not in task_md
+    assert "[phase name]" not in task_md
+    assert "TASK-####" not in context_md
+    assert "TASK-####" not in plan_md
+    assert "TASK-####" not in deliverable_md
+
+
+def test_workflow_run_activation_syncs_packet_and_backlog_to_in_progress(tmp_path):
+    _base_repo(tmp_path)
+    _ready_backlog(tmp_path, "P8-T08")
+
+    runner = CliRunner()
+    result = runner.invoke(main, ["--repo", str(tmp_path), "workflow", "run"])
+
+    assert result.exit_code == 0, result.output
+    packet_dir = tmp_path / "tasks" / "P8-T08-TASK-0001"
+    task_md = (packet_dir / "task.md").read_text(encoding="utf-8")
+    backlog = (tmp_path / "docs" / "working" / "backlog.md").read_text(encoding="utf-8")
+
+    assert "- **Status:** in_progress" in task_md
+    assert "### P8-T08 — Example task\n- **Status:** in_progress" in backlog
+
+
 def test_workflow_run_gates_on_in_progress_task(tmp_path):
     _base_repo(tmp_path)
     _packet(tmp_path, "P8-T08", "TASK-0068", "in_progress")
@@ -158,7 +214,7 @@ def test_workflow_run_gates_on_review_ready_packet(tmp_path):
 
     assert result.exit_code == 0, result.output
     assert "workflow run: gated" in result.output
-    assert "human_review_required" in result.output
+    assert "review_close_blocked" in result.output
 
 
 def test_workflow_run_gates_on_planning_required(tmp_path):

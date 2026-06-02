@@ -2,7 +2,7 @@
 
 ## Metadata
 - **ID:** TASK-0148
-- **Status:** review
+- **Status:** done
 - **Phase:** Phase 22 — TUI Foundation and Workflow Surfaces
 - **Backlog:** P22-T03 — Backlog, task, and packet inspector views
 - **Packet Path:** tasks/P22-T03-TASK-0148/

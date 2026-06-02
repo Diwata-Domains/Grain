@@ -16,9 +16,14 @@ Supported today:
 - `frontend_adapter`
 - `spreadsheet_adapter`
 - `docs_adapter`
-
-Defined for active Phase 18 work:
+- `obsidian_adapter`
 - `data_adapter`
+
+Defined for active Phase 25 work:
+- `database_adapter`
+
+Defined for active Phase 26 work:
+- `crawler_adapter`
 
 Planned:
 - `pdf extraction under docs_adapter`
@@ -239,6 +244,44 @@ Each profile should follow this section structure:
   - `open_model` for scoped text edits and formatting checks
   - `frontier_model` for structural documentation refactors
 
+### obsidian_adapter
+
+- `adapter_id`: `obsidian_adapter`
+- `domain_type`: `docs`
+- `applies_to`:
+  - Obsidian vaults
+  - wiki-link-driven note systems
+  - frontmatter-heavy markdown note workflows
+- `relevant_file_patterns`:
+  - `**/*.md`
+- `ignore_file_patterns`:
+  - `node_modules/**`
+  - `dist/**`
+  - `build/**`
+  - `.git/**`
+  - `tasks/**`
+  - `templates/**`
+  - `prompts/**`
+  - `docs/canonical/**`
+  - `docs/working/**`
+  - `docs/runtime/**`
+- `build_or_run_hints`:
+  - treat vault notes as file-backed markdown unless a later task adds explicit mutation helpers
+  - preserve frontmatter blocks and wiki-links when editing or summarizing note content
+- `test_or_validation_hints`:
+  - verify wiki-link references and frontmatter presence after note changes
+  - prefer focused vault-note tests over broad repo context
+- `review_focus_hints`:
+  - broken wiki-links or renamed-note references
+  - frontmatter key loss or unintended metadata drift
+  - accidental bleed of vault-specific behavior back into `docs_adapter`
+- `context_priority_rules`:
+  - prioritize note directories and linked notes before unrelated markdown
+  - treat `.obsidian/` config as secondary context unless the task is explicitly about vault settings
+- `default_model_bias`:
+  - `open_model` for scoped note cleanup or metadata checks
+  - `frontier_model` for vault-structure or cross-note reasoning
+
 ### data_adapter
 
 - `adapter_id`: `data_adapter`
@@ -287,6 +330,110 @@ Each profile should follow this section structure:
 - `default_model_bias`:
   - `open_model` for narrow metadata and profile updates
   - `frontier_model` for cross-artifact reasoning or notebook-heavy workflows
+
+### database_adapter
+
+- `adapter_id`: `database_adapter`
+- `domain_type`: `code`
+- `applies_to`:
+  - relational database workflows
+  - schema and migration planning
+  - SQL query surfaces
+  - ORM-backed persistence layers
+- `relevant_file_patterns`:
+  - `**/*.sql`
+  - `alembic/**`
+  - `migrations/**`
+  - `db/**`
+  - `database/**`
+  - `queries/**`
+  - `schema.prisma`
+  - `prisma/schema.prisma`
+  - `prisma/migrations/**`
+  - `models/**`
+  - `src/models/**`
+  - `repositories/**`
+  - `src/**/models/**`
+  - `src/db/**`
+  - `src/repositories/**`
+  - `src/**/repositories/**`
+  - `src/**/db/**`
+- `ignore_file_patterns`:
+  - `node_modules/**`
+  - `dist/**`
+  - `build/**`
+  - `.venv/**`
+- `build_or_run_hints`:
+  - prefer repo-native migration and schema commands over ad hoc database mutations
+  - keep database work file-backed and packet-first unless a later task adds explicit runtime tooling
+- `test_or_validation_hints`:
+  - verify migration ordering and schema consistency before broader code validation
+  - confirm query or ORM changes are exercised through focused persistence tests when available
+- `review_focus_hints`:
+  - destructive or irreversible migration risk
+  - schema drift between SQL, ORM models, and migration history
+  - missing rollback or downgrade expectations for risky changes
+- `context_priority_rules`:
+  - prioritize schema files and migration directories before unrelated application code
+  - treat query files, ORM models, and repository layers as secondary context when the task points at persistence behavior
+- `default_model_bias`:
+  - `open_model` for narrow schema or query-file guidance
+  - `frontier_model` for cross-layer migration and persistence reasoning
+
+### crawler_adapter
+
+- `adapter_id`: `crawler_adapter`
+- `domain_type`: `code`
+- `applies_to`:
+  - crawler and scraping workflows
+  - crawl-config and selector planning
+  - extraction-schema and output-validation work
+  - robots, rate-limit, and retry-sensitive automation
+- `relevant_file_patterns`:
+  - `crawler/**`
+  - `crawlers/**`
+  - `scrapers/**`
+  - `spiders/**`
+  - `selectors/**`
+  - `extractors/**`
+  - `parsers/**`
+  - `normalizers/**`
+  - `queries/**`
+  - `schemas/**`
+  - `fixtures/**`
+  - `outputs/**`
+  - `tests/fixtures/**`
+  - `playwright.config.*`
+  - `scrapy.cfg`
+  - `robots.txt`
+  - `**/*crawl*.yml`
+  - `**/*crawl*.yaml`
+  - `**/*crawl*.json`
+  - `**/*selector*.yml`
+  - `**/*selector*.yaml`
+  - `**/*selector*.json`
+  - `**/*schema*.json`
+- `ignore_file_patterns`:
+  - `node_modules/**`
+  - `dist/**`
+  - `build/**`
+  - `.venv/**`
+- `build_or_run_hints`:
+  - keep crawler work file-backed and packet-first unless a later task adds explicit runtime tooling
+  - prefer deterministic config, selector, and extraction-schema review before broad crawl execution
+- `test_or_validation_hints`:
+  - verify selector coverage and extraction-schema consistency before broader crawl runs
+  - confirm representative fixtures or output samples still match the intended extraction shape
+- `review_focus_hints`:
+  - robots policy or crawl-boundary violations
+  - unsafe rate-limit or retry configuration changes
+  - selector brittleness and extraction-schema drift
+- `context_priority_rules`:
+  - prioritize crawl configs, selectors, and extraction schemas before unrelated application code
+  - treat output fixtures and normalization logic as secondary context when the task is about extraction quality
+- `default_model_bias`:
+  - `open_model` for narrow config or selector updates
+  - `frontier_model` for crawl-boundary, extraction, or cross-surface reasoning
 
 ---
 

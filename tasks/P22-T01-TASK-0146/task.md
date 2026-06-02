@@ -2,7 +2,7 @@
 
 ## Metadata
 - **ID:** TASK-0146
-- **Status:** review
+- **Status:** done
 - **Phase:** Phase 22 — TUI Foundation and Workflow Surfaces
 - **Backlog:** P22-T01 — Scaffold Textual app shell
 - **Packet Path:** tasks/P22-T01-TASK-0146/

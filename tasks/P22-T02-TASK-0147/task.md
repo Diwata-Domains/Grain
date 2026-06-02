@@ -2,7 +2,7 @@
 
 ## Metadata
 - **ID:** TASK-0147
-- **Status:** review
+- **Status:** done
 - **Phase:** Phase 22 — TUI Foundation and Workflow Surfaces
 - **Backlog:** P22-T02 — Workflow dashboard and status summary
 - **Packet Path:** tasks/P22-T02-TASK-0147/

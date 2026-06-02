@@ -7,7 +7,12 @@ import click
 from grain.adapters.filesystem import resolve_repo_root
 from grain.cli.output import print_result
 from grain.domain.errors import GeneralError, InvalidTransitionError, ValidationError
+from grain.domain.packets import find_packet_dir
 from grain.services import task_service
+from grain.services.task_observability_service import (
+    read_task_observability,
+    update_task_observability,
+)
 
 
 @click.group("task")
@@ -164,6 +169,76 @@ def task_show(ctx, task_id):
     for name, present in inventory.items():
         state = "present" if present else "absent"
         click.echo(f"    {name:<24}  {state}")
+
+
+@task_group.command("observe")
+@click.option("--id", "task_id", default=None, metavar="TASK-####", help="Packet ID (defaults to current_task.md).")
+@click.option("--executor", "executor_identity", default=None, help="Executor identity to record, e.g. codex or claude.")
+@click.option("--model-class", "model_class", default=None, help="Model class used for the task, e.g. frontier_model.")
+@click.option(
+    "--stage",
+    type=click.Choice(["execute", "review", "close"]),
+    default=None,
+    help="Task stage to record.",
+)
+@click.option("--action", "workflow_action", default=None, help="Last workflow action to record.")
+@click.pass_context
+def task_observe(ctx, task_id, executor_identity, model_class, stage, workflow_action):
+    """Inspect or update packet-local task observability metadata."""
+    repo = ctx.obj.get("repo") if ctx.obj else None
+    fmt = ctx.obj.get("fmt", "text") if ctx.obj else "text"
+    root = resolve_repo_root(repo)
+
+    resolved_task_id = task_id or _read_active_task_id(root)
+    if not resolved_task_id or resolved_task_id == "none":
+        raise click.UsageError("no active task; pass --id TASK-#### or set docs/working/current_task.md")
+
+    wants_update = any(
+        value is not None
+        for value in (executor_identity, model_class, stage, workflow_action)
+    )
+
+    if wants_update:
+        try:
+            record, observability_path = update_task_observability(
+                root,
+                resolved_task_id,
+                executor_identity=executor_identity,
+                model_class=model_class,
+                stage=stage,
+                workflow_action=workflow_action,
+            )
+        except FileNotFoundError:
+            raise click.UsageError(f"packet '{resolved_task_id}' not found")
+        result = {
+            "task_id": resolved_task_id,
+            "observability_path": str(observability_path.relative_to(root)),
+            "observability": dataclasses.asdict(record),
+        }
+    else:
+        record, observability_path = read_task_observability(root, resolved_task_id)
+        if record is None or observability_path is None:
+            raise click.UsageError(f"packet '{resolved_task_id}' not found")
+        result = {
+            "task_id": resolved_task_id,
+            "observability_path": str(observability_path.relative_to(root)),
+            "observability": dataclasses.asdict(record),
+        }
+
+    if fmt == "json":
+        click.echo(json.dumps(result, indent=2))
+        return
+
+    click.echo("task observe: ok")
+    click.echo(f"  task_id           {resolved_task_id}")
+    click.echo(f"  observability     {result['observability_path']}")
+    payload = result["observability"]
+    click.echo(f"  executor_identity {payload['executor_identity'] or 'unset'}")
+    click.echo(f"  model_class       {payload['model_class'] or 'unset'}")
+    click.echo(f"  last_stage        {payload['last_stage'] or 'unset'}")
+    click.echo(f"  last_workflow_action  {payload['last_workflow_action'] or 'unset'}")
+    click.echo(f"  started_at        {payload['started_at'] or 'unset'}")
+    click.echo(f"  updated_at        {payload['updated_at'] or 'unset'}")
 
 
 @task_group.command("prepare")
@@ -326,11 +401,24 @@ def task_close(ctx, task_id, quick, summary, files_list):
     else:
         result = task_service.close_packet(root, task_id)
 
+    if result.ok:
+        try:
+            _, observability_path = update_task_observability(
+                root,
+                task_id,
+                stage="close",
+                workflow_action="task_close",
+            )
+            result.files_updated.append(str(observability_path.relative_to(root)))
+        except FileNotFoundError:
+            pass
+
     if not result.ok:
         if any("not found" in e for e in result.errors):
             for err in result.errors:
                 click.echo(f"  error     {err}", err=True)
             raise click.UsageError(f"packet '{task_id}' not found")
+        print_result(result, fmt=fmt)
         raise ValidationError(
             "closure validation failed",
             detail=f"{len(result.errors)} error(s)",
@@ -345,3 +433,13 @@ def task_close(ctx, task_id, quick, summary, files_list):
             click.echo(f"  created   {path}")
         for path in result.files_updated or []:
             click.echo(f"  updated   {path}")
+
+
+def _read_active_task_id(root: Path) -> str:
+    current_task_path = root / "docs" / "working" / "current_task.md"
+    if not current_task_path.exists():
+        return ""
+    for line in current_task_path.read_text(encoding="utf-8").splitlines():
+        if line.startswith("Task ID:"):
+            return line.split(":", 1)[1].strip()
+    return ""

@@ -2,7 +2,7 @@
 
 ## Metadata
 - **ID:** TASK-0151
-- **Status:** review
+- **Status:** done
 - **Phase:** Phase 22 — TUI Foundation and Workflow Surfaces
 - **Backlog:** P22-T06 — TUI tests, smoke flow, and docs
 - **Packet Path:** tasks/P22-T06-TASK-0151/

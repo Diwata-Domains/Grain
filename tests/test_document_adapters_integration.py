@@ -93,6 +93,76 @@ def _write_adapter_profiles(root: Path) -> None:
   - prioritize canonical docs first
 - `test_or_validation_hints`:
   - validate key headings
+
+### obsidian_adapter
+- `adapter_id`: `obsidian_adapter`
+- `domain_type`: `docs`
+- `applies_to`:
+  - Obsidian vaults
+  - wiki-link-driven markdown
+- `relevant_file_patterns`:
+  - `**/*.md`
+- `ignore_file_patterns`:
+  - `tasks/**`
+  - `templates/**`
+  - `docs/**`
+- `context_priority_rules`:
+  - prioritize note directories and linked notes before unrelated markdown
+- `test_or_validation_hints`:
+  - verify wiki-link references and frontmatter presence
+
+### database_adapter
+- `adapter_id`: `database_adapter`
+- `domain_type`: `code`
+- `applies_to`:
+  - relational database workflows
+  - schema and migration planning
+- `relevant_file_patterns`:
+  - `**/*.sql`
+  - `migrations/**`
+  - `queries/**`
+  - `models/**`
+  - `src/models/**`
+  - `repositories/**`
+  - `src/**/models/**`
+  - `src/db/**`
+  - `src/repositories/**`
+  - `src/**/db/**`
+- `ignore_file_patterns`:
+  - `tasks/**`
+  - `templates/**`
+  - `docs/**`
+- `context_priority_rules`:
+  - prioritize schema files and migration directories before unrelated application code
+  - treat query files, ORM models, and repository layers as secondary context when the task points at persistence behavior
+- `test_or_validation_hints`:
+  - verify migration ordering and schema consistency
+
+### crawler_adapter
+- `adapter_id`: `crawler_adapter`
+- `domain_type`: `code`
+- `applies_to`:
+  - crawler workflows
+  - selector and extraction planning
+- `relevant_file_patterns`:
+  - `crawler/**`
+  - `selectors/**`
+  - `schemas/**`
+  - `fixtures/**`
+  - `outputs/**`
+  - `normalizers/**`
+  - `**/*crawl*.yml`
+  - `**/*selector*.yml`
+  - `**/*schema*.json`
+- `ignore_file_patterns`:
+  - `tasks/**`
+  - `templates/**`
+  - `docs/**`
+- `context_priority_rules`:
+  - prioritize crawl configs, selectors, and extraction schemas before unrelated application code
+  - treat output fixtures and normalization logic as secondary context when the task is about extraction quality
+- `test_or_validation_hints`:
+  - verify selector coverage and extraction-schema consistency
 """,
     )
 
@@ -103,6 +173,17 @@ def _set_primary_adapter(root: Path, packet_dir_name: str, adapter_id: str) -> N
         task_md.read_text(encoding="utf-8").replace(
             "- **Primary Adapter:** none",
             f"- **Primary Adapter:** {adapter_id}",
+        ),
+        encoding="utf-8",
+    )
+
+
+def _set_objective(root: Path, packet_dir_name: str, objective: str) -> None:
+    task_md = root / "tasks" / packet_dir_name / "task.md"
+    task_md.write_text(
+        task_md.read_text(encoding="utf-8").replace(
+            "[What must be built or done. One clear paragraph.]",
+            objective,
         ),
         encoding="utf-8",
     )
@@ -404,3 +485,193 @@ def test_context_export_all_three_document_types_in_one_bundle(packet_repo: Path
     assert "Source: `docs/notes.md`" in export
     assert "Source: `docs/brief.docx`" in export
     assert "Source: `docs/spec.pdf`" in export
+
+
+def test_context_build_obsidian_adapter_selects_vault_markdown(packet_repo: Path):
+    _write_manifest(packet_repo)
+    _write_adapter_profiles(packet_repo)
+    _write(
+        packet_repo / "vault" / "Projects" / "Launch Plan.md",
+        "---\ntags: [launch]\n---\n# Launch Plan\nSee [[Daily Note]].\n",
+    )
+    _write(packet_repo / "vault" / "Daily" / "Daily Note.md", "# Daily Note\nShip checklist.\n")
+    _write(packet_repo / "vault" / "Archive" / "Archive Note.md", "# Archive Note\nOld note.\n")
+    _setup_packet(packet_repo, phase=14, task_num=4, primary_adapter="obsidian_adapter")
+    _set_objective(packet_repo, "P14-T04-TASK-0001", "Update the Launch Plan note for the vault.")
+
+    result = _run(packet_repo, "--format", "json", "context", "build", "--id", "TASK-0001")
+    payload = json.loads(result.output)
+    sources = payload["bundle"]["export_metadata"]["sources"]
+    per_file = payload["context_stats"]["per_file"]
+
+    assert result.exit_code == 0, result.output
+    assert "vault/Projects/Launch Plan.md" in sources
+    assert "vault/Daily/Daily Note.md" in sources
+    assert sources.index("vault/Projects/Launch Plan.md") < sources.index("vault/Daily/Daily Note.md")
+    assert sources.index("vault/Daily/Daily Note.md") < sources.index("vault/Archive/Archive Note.md")
+    linked_entry = next(item for item in per_file if item["path"] == "vault/Daily/Daily Note.md")
+    assert linked_entry["selection_method"] == "wiki_linked"
+
+
+def test_context_export_obsidian_adapter_renders_frontmatter_and_wikilinks(packet_repo: Path):
+    _write_manifest(packet_repo)
+    _write_adapter_profiles(packet_repo)
+    _write(
+        packet_repo / "vault" / "Projects" / "Launch Plan.md",
+        "---\ntags: [launch]\nowner: team-a\n---\n# Launch Plan\nSee [[Daily Note]].\n",
+    )
+    _setup_packet(packet_repo, phase=14, task_num=4, primary_adapter="obsidian_adapter")
+
+    result = _run(packet_repo, "context", "export", "--id", "TASK-0001")
+    assert result.exit_code == 0, result.output
+    export = (packet_repo / "tasks" / "P14-T04-TASK-0001" / "context_export.md").read_text(
+        encoding="utf-8"
+    )
+    assert "Source: `vault/Projects/Launch Plan.md`" in export
+    assert "tags: [launch]" in export
+    assert "[[Daily Note]]" in export
+
+
+def test_context_build_database_adapter_prioritizes_schema_migrations_and_models(packet_repo: Path):
+    _write_manifest(packet_repo)
+    _write_adapter_profiles(packet_repo)
+    _write(packet_repo / "database" / "schema.sql", "create table users(id integer primary key);\n")
+    _write(packet_repo / "migrations" / "001_create_users.sql", "-- create users table\n")
+    _write(packet_repo / "src" / "models" / "user.py", "class User:\n    pass\n")
+    _write(packet_repo / "src" / "main.py", "print('app')\n")
+    _setup_packet(packet_repo, phase=14, task_num=4, primary_adapter="database_adapter")
+    _set_objective(packet_repo, "P14-T04-TASK-0001", "Plan the schema migration for the users table.")
+
+    result = _run(packet_repo, "--format", "json", "context", "build", "--id", "TASK-0001")
+    payload = json.loads(result.output)
+    sources = payload["bundle"]["export_metadata"]["sources"]
+    per_file = payload["context_stats"]["per_file"]
+
+    assert result.exit_code == 0, result.output
+    assert "database/schema.sql" in sources
+    assert "migrations/001_create_users.sql" in sources
+    assert "src/models/user.py" in sources
+    assert "src/main.py" not in sources
+    assert sources.index("database/schema.sql") < sources.index("src/models/user.py")
+    assert sources.index("migrations/001_create_users.sql") < sources.index("src/models/user.py")
+    model_entry = next(item for item in per_file if item["path"] == "src/models/user.py")
+    assert model_entry["selection_method"] == "glob_only"
+
+
+def test_context_build_database_adapter_includes_query_and_repository_surfaces_for_persistence_objective(packet_repo: Path):
+    _write_manifest(packet_repo)
+    _write_adapter_profiles(packet_repo)
+    _write(packet_repo / "database" / "schema.sql", "create table users(id integer primary key);\n")
+    _write(packet_repo / "queries" / "list_users.sql", "select * from users;\n")
+    _write(packet_repo / "src" / "repositories" / "user_repo.py", "def list_users():\n    return []\n")
+    _write(packet_repo / "src" / "models" / "user.py", "class User:\n    pass\n")
+    _write(packet_repo / "src" / "main.py", "print('app')\n")
+    _setup_packet(packet_repo, phase=14, task_num=4, primary_adapter="database_adapter")
+    _set_objective(packet_repo, "P14-T04-TASK-0001", "Review the query and repository persistence flow for listing users.")
+
+    result = _run(packet_repo, "--format", "json", "context", "build", "--id", "TASK-0001")
+    payload = json.loads(result.output)
+    sources = payload["bundle"]["export_metadata"]["sources"]
+
+    assert result.exit_code == 0, result.output
+    assert "queries/list_users.sql" in sources
+    assert "src/repositories/user_repo.py" in sources
+    assert "src/main.py" not in sources
+    assert sources.index("queries/list_users.sql") < sources.index("src/models/user.py")
+    assert sources.index("src/repositories/user_repo.py") < sources.index("src/models/user.py")
+
+
+def test_context_export_database_adapter_smoke_flow(packet_repo: Path):
+    _write_manifest(packet_repo)
+    _write_adapter_profiles(packet_repo)
+    _write(packet_repo / "database" / "schema.sql", "create table users(id integer primary key);\n")
+    _write(packet_repo / "migrations" / "001_create_users.sql", "-- create users table\n")
+    _write(packet_repo / "queries" / "list_users.sql", "select * from users;\n")
+    _write(packet_repo / "src" / "repositories" / "user_repo.py", "def list_users():\n    return []\n")
+    _setup_packet(packet_repo, phase=14, task_num=4, primary_adapter="database_adapter")
+    _set_objective(packet_repo, "P14-T04-TASK-0001", "Review the query and migration flow for listing users.")
+
+    result = _run(packet_repo, "context", "export", "--id", "TASK-0001")
+
+    assert result.exit_code == 0, result.output
+    export = (packet_repo / "tasks" / "P14-T04-TASK-0001" / "context_export.md").read_text(
+        encoding="utf-8"
+    )
+    assert "Source: `database/schema.sql`" in export
+    assert "Source: `migrations/001_create_users.sql`" in export
+    assert "Source: `queries/list_users.sql`" in export
+    assert "Source: `src/repositories/user_repo.py`" in export
+
+
+def test_context_build_crawler_adapter_prioritizes_configs_selectors_and_schemas(packet_repo: Path):
+    _write_manifest(packet_repo)
+    _write_adapter_profiles(packet_repo)
+    _write(packet_repo / "crawler" / "crawl_plan.yml", "start_urls:\n  - https://example.com\n")
+    _write(packet_repo / "selectors" / "article_selector.yml", "title: h1\n")
+    _write(packet_repo / "schemas" / "article.schema.json", "{\"title\": \"string\"}\n")
+    _write(packet_repo / "src" / "main.py", "print('app')\n")
+    _setup_packet(packet_repo, phase=14, task_num=4, primary_adapter="crawler_adapter")
+    _set_objective(packet_repo, "P14-T04-TASK-0001", "Review the crawl config and selector plan for the article extractor.")
+
+    result = _run(packet_repo, "--format", "json", "context", "build", "--id", "TASK-0001")
+    payload = json.loads(result.output)
+    sources = payload["bundle"]["export_metadata"]["sources"]
+    per_file = payload["context_stats"]["per_file"]
+
+    assert result.exit_code == 0, result.output
+    assert "crawler/crawl_plan.yml" in sources
+    assert "selectors/article_selector.yml" in sources
+    assert "schemas/article.schema.json" in sources
+    assert "src/main.py" not in sources
+    assert sources.index("crawler/crawl_plan.yml") < sources.index("schemas/article.schema.json")
+    assert sources.index("selectors/article_selector.yml") < sources.index("schemas/article.schema.json")
+    schema_entry = next(item for item in per_file if item["path"] == "schemas/article.schema.json")
+    assert schema_entry["selection_method"] == "glob_only"
+
+
+def test_context_build_crawler_adapter_includes_output_validation_and_normalization_for_quality_objective(packet_repo: Path):
+    _write_manifest(packet_repo)
+    _write_adapter_profiles(packet_repo)
+    _write(packet_repo / "crawler" / "crawl_plan.yml", "start_urls:\n  - https://example.com\n")
+    _write(packet_repo / "selectors" / "article_selector.yml", "title: h1\n")
+    _write(packet_repo / "schemas" / "article.schema.json", "{\"title\": \"string\"}\n")
+    _write(packet_repo / "outputs" / "article_fixture.json", "{\"title\": \"Example\"}\n")
+    _write(packet_repo / "normalizers" / "article_normalizer.py", "def normalize(item):\n    return item\n")
+    _write(packet_repo / "src" / "main.py", "print('app')\n")
+    _setup_packet(packet_repo, phase=14, task_num=4, primary_adapter="crawler_adapter")
+    _set_objective(packet_repo, "P14-T04-TASK-0001", "Validate extraction quality and normalize the article output schema.")
+
+    result = _run(packet_repo, "--format", "json", "context", "build", "--id", "TASK-0001")
+    payload = json.loads(result.output)
+    sources = payload["bundle"]["export_metadata"]["sources"]
+
+    assert result.exit_code == 0, result.output
+    assert "outputs/article_fixture.json" in sources
+    assert "normalizers/article_normalizer.py" in sources
+    assert "src/main.py" not in sources
+    assert sources.index("outputs/article_fixture.json") < sources.index("schemas/article.schema.json")
+    assert sources.index("normalizers/article_normalizer.py") < sources.index("schemas/article.schema.json")
+
+
+def test_context_export_crawler_adapter_smoke_flow(packet_repo: Path):
+    _write_manifest(packet_repo)
+    _write_adapter_profiles(packet_repo)
+    _write(packet_repo / "crawler" / "crawl_plan.yml", "start_urls:\n  - https://example.com\n")
+    _write(packet_repo / "selectors" / "article_selector.yml", "title: h1\n")
+    _write(packet_repo / "schemas" / "article.schema.json", "{\"title\": \"string\"}\n")
+    _write(packet_repo / "outputs" / "article_fixture.json", "{\"title\": \"Example\"}\n")
+    _write(packet_repo / "normalizers" / "article_normalizer.py", "def normalize(item):\n    return item\n")
+    _setup_packet(packet_repo, phase=14, task_num=4, primary_adapter="crawler_adapter")
+    _set_objective(packet_repo, "P14-T04-TASK-0001", "Validate extraction quality and review the crawl plan for article outputs.")
+
+    result = _run(packet_repo, "context", "export", "--id", "TASK-0001")
+
+    assert result.exit_code == 0, result.output
+    export = (packet_repo / "tasks" / "P14-T04-TASK-0001" / "context_export.md").read_text(
+        encoding="utf-8"
+    )
+    assert "Source: `crawler/crawl_plan.yml`" in export
+    assert "Source: `selectors/article_selector.yml`" in export
+    assert "Source: `schemas/article.schema.json`" in export
+    assert "Source: `outputs/article_fixture.json`" in export
+    assert "Source: `normalizers/article_normalizer.py`" in export

@@ -53,6 +53,7 @@ If a lower-authority file conflicts with a higher-authority file, follow the hig
 6. Keep context narrow and relevant.
 7. Record meaningful blockers and outcomes.
 8. Keep the system model-agnostic.
+9. If the active packet, review gate, or verification step becomes unclear mid-session, stop and return to `grain workflow next` instead of improvising from memory.
 
 ---
 
@@ -116,6 +117,49 @@ For each task:
 6. Record results and blockers
 7. Update working docs if required
 8. Prepare handoff or review state
+
+If you lose the thread mid-conversation:
+- re-run `grain workflow next --format json`
+- if Grain stops, run `grain workflow explain` before improvising
+- if the explanation points to backlog/packet drift, run `grain workflow reconcile --dry-run`
+- re-read `docs/working/current_task.md`
+- re-open the active packet on disk
+- do not continue from chat memory alone
+
+If Assay verification is part of the loop:
+- do not skip `grain verify submit` or `grain verify ingest` just because the task feels "done"
+- do not attempt closeout while verification is still `pending`
+- if verification fails, stop and surface the finding through the packet instead of overriding it conversationally
+
+### Desktop Invocation Guidance
+
+When this repository is used from external agent environments:
+
+- Codex or any tool-execution environment that can run local commands should call `grain` directly
+- prefer `grain workflow next --format json` and `grain prompt show --format json` when the caller wants structured state
+- Claude/Desktop-style environments may use the local MCP wrapper instead of direct CLI execution
+- `grain mcp manifest` is the local config surface for MCP clients
+- `grain mcp serve` is the stdio transport surface
+
+The CLI remains canonical even when the MCP wrapper is used.
+
+For Obsidian vault work:
+
+- prefer the dedicated `obsidian_adapter` instead of treating vault notes as generic docs by default
+- preserve frontmatter blocks and wiki-links when summarizing or editing note content
+- expect Grain context selection to prioritize the target note and nearby wiki-linked notes before unrelated vault markdown
+
+For database work:
+
+- prefer `database_adapter` when the task is about schema, migrations, queries, repositories, or persistence layers
+- review destructive migration risk, downgrade expectations, and schema/query drift before marking database work review-ready
+- keep database work file-backed and packet-first; do not improvise live mutation steps or hidden runtime state
+
+For crawler work:
+
+- prefer `crawler_adapter` when the task is about crawl configs, selectors, extraction schemas, fixtures, or output validation
+- review robots constraints, rate limits, retry policy risk, selector brittleness, and extraction drift before marking crawler work review-ready
+- keep crawler work file-backed and packet-first; do not improvise live crawl execution or hidden runtime state
 
 ---
 

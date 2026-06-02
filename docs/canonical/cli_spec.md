@@ -526,15 +526,15 @@ Invoke the orchestration service to produce structured planning proposals for mu
 
 #### Purpose
 
-Bridge command surface for Sentinel verification integration. Allows operators and agents to submit task artifacts for external verification, poll for verification status, and ingest completed Sentinel results into Grain workflow state. The verification gate in the workflow runner stops execution until a pending verification is resolved.
+Bridge command surface for packet-local Assay verification integration. Allows operators and agents to submit task artifacts for external verification, inspect the packet-local verification request state, and ingest completed Assay results into Grain workflow state. The verification gate in the workflow runner stops closure while verification is pending and forces an explicit operator decision when verification fails.
 
-#### v2/deferred Commands
+#### Commands
 
-**`grain verify submit`** — submit a set of task artifacts to Sentinel for verification; returns a `verification_id` for subsequent status checks.
+**`grain verify submit`** — submit a set of task artifacts for Assay verification; returns a packet-local `verification_id` for subsequent status checks.
 
 **`grain verify status`** — check the status of a pending verification by `verification_id`; returns current state (`pending`, `complete`, `failed`) and any available outcome fields.
 
-**`grain verify ingest`** — ingest a completed Sentinel result payload into Grain workflow state; triggers resolution of the verification gate stop condition in the runner.
+**`grain verify ingest`** — ingest a completed Assay result payload into Grain workflow state; updates packet-local verification artifacts and the review bundle.
 
 #### Responsibilities
 
@@ -546,22 +546,22 @@ Bridge command surface for Sentinel verification integration. Allows operators a
 
 #### Must not
 
-- implement Sentinel internals or verification logic
+- implement Assay internals or verification logic
 - auto-close, auto-approve, or auto-create work based on verification outcomes
 - bypass the Review/Gate Layer when surfacing verification findings
-- treat a Sentinel result payload as a canonical-level mutation without operator action
+- treat an Assay result payload as a canonical-level mutation without operator action
 - silently succeed when a `verification_id` is unknown or a result is malformed
 
 #### Recommended options
 
 - `--id <task-id>` — task packet to submit for verification (for `submit`)
 - `--verification-id <id>` — reference to a pending verification (for `status` and `ingest`)
-- `--payload <path>` — path to a Sentinel result payload JSON file (for `ingest`)
+- `--payload <path>` — path to an Assay result payload JSON file (for `ingest`)
 - `--format text|json`
 
-#### Deferral note
+#### Current scope note
 
-`grain verify` commands are defined here as the stable CLI surface for Sentinel integration. Implementation is deferred until the Sentinel Integration Layer (FR-006) is built. The command group should be registered as deferred stubs per §5.1 — returning a not-implemented error with a non-zero exit code — so it appears in `grain --help` and fails explicitly before implementation.
+The current implementation is intentionally packet-local and file-backed. Grain writes and reads `verification_request.json`, `verification_result.json`, and the `Verification Review` section in `results.md`; it does not manage remote verifier execution, polling, or background synchronization.
 
 ---
 
@@ -736,7 +736,7 @@ grain verify ingest
 
 `grain orchestrate` commands are defined but deferred. They must be registered with a not-implemented message until the orchestration service is implemented.
 
-`grain verify` commands are defined but deferred. They must be registered with a not-implemented message until the Sentinel Integration Layer (FR-006) is implemented.
+`grain verify` commands are live. They operate on packet-local verification artifacts and do not require background services.
 
 Additional commands may be added later, but the surface should remain disciplined.
 

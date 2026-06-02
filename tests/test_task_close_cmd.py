@@ -165,6 +165,36 @@ def test_task_close_missing_results_md_exits_three(tmp_path):
     assert result.returncode == 3
 
 
+def test_task_close_pending_verification_exits_three(packet_repo):
+    _make_closure_ready(packet_repo)
+    packet_dir = packet_repo / "tasks" / "P3-T12-TASK-0001"
+    (packet_dir / "results.md").write_text(
+        _APPROVED_RESULTS.replace("- **State:** not_run", "- **State:** pending"),
+        encoding="utf-8",
+    )
+    runner = CliRunner()
+    result = runner.invoke(
+        main, ["--repo", str(packet_repo), "task", "close", "--id", "TASK-0001"]
+    )
+    assert result.exit_code != 0
+    assert "verification state is 'pending'" in result.output
+
+
+def test_task_close_failed_verification_exits_three(packet_repo):
+    _make_closure_ready(packet_repo)
+    packet_dir = packet_repo / "tasks" / "P3-T12-TASK-0001"
+    (packet_dir / "results.md").write_text(
+        _APPROVED_RESULTS.replace("- **State:** not_run", "- **State:** failed"),
+        encoding="utf-8",
+    )
+    runner = CliRunner()
+    result = runner.invoke(
+        main, ["--repo", str(packet_repo), "task", "close", "--id", "TASK-0001"]
+    )
+    assert result.exit_code != 0
+    assert "verification state is 'failed'" in result.output
+
+
 def test_task_close_quick_exits_zero(packet_repo):
     runner = CliRunner()
     runner.invoke(

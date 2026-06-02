@@ -109,6 +109,14 @@ def validate_closure(packet_dir: Path, policy: CompletionPolicy | None = None) -
                 errors.append(
                     "verification state must be 'passed' or 'waived' before closing to 'done'"
                 )
+        elif bundle.verification_state == "pending":
+            errors.append(
+                "verification state is 'pending' — wait for verification to complete before closing to 'done'"
+            )
+        elif bundle.verification_state == "failed":
+            errors.append(
+                "verification state is 'failed' — resolve findings or explicitly waive verification before closing to 'done'"
+            )
         elif not policy.allow_close_when_verification_not_run and bundle.verification_state == "not_run":
             errors.append(
                 "verification state is 'not_run' — completion policy requires verification before closure"

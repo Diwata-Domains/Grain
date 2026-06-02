@@ -9,6 +9,7 @@ from grain.services import task_service
 from grain.services.context_service import build_context_bundle, build_source_metadata
 from grain.services.handoff_service import materialize_handoff_artifact
 from grain.services.prompt_service import show_prompt
+from grain.services.task_observability_service import read_task_observability
 from grain.services.workflow_service import evaluate_workflow_state
 from grain.services.workflow_run_service import run_workflow_step
 
@@ -35,6 +36,7 @@ class BacklogTaskSnapshot:
 class PacketArtifactSnapshot:
     packet_dir: str
     packet_status: str
+    results_summary: str = ""
     files_present: list[str] = field(default_factory=list)
     files_missing: list[str] = field(default_factory=list)
 
@@ -55,7 +57,19 @@ class ContextPreviewSnapshot:
     canonical_doc_count: int
     working_doc_count: int
     primary_adapter: str
+    estimated_tokens: int = 0
+    token_warning: bool = False
     top_sources: list[str] = field(default_factory=list)
+    trim_hints: list[str] = field(default_factory=list)
+
+
+@dataclass(frozen=True)
+class ObservabilityPreviewSnapshot:
+    executor_identity: str
+    model_class: str
+    last_stage: str
+    last_workflow_action: str
+    updated_at: str
 
 
 @dataclass(frozen=True)
@@ -79,6 +93,7 @@ class GrainShellSnapshot:
     backlog_tasks: list[BacklogTaskSnapshot] = field(default_factory=list)
     packet_artifacts: PacketArtifactSnapshot | None = None
     context_preview: ContextPreviewSnapshot | None = None
+    observability_preview: ObservabilityPreviewSnapshot | None = None
     last_action_summary: str = ""
 
 
@@ -160,9 +175,11 @@ def _inspect_packet(root: Path, task_path: str) -> PacketArtifactSnapshot | None
     files_present = [name for name in expected if (packet_dir / name).exists()]
     files_missing = [name for name in expected if not (packet_dir / name).exists()]
     status = parse_task_metadata(packet_dir / "task.md").get("status", "") if (packet_dir / "task.md").exists() else "missing"
+    results_summary = _read_results_summary(packet_dir / "results.md")
     return PacketArtifactSnapshot(
         packet_dir=task_path,
         packet_status=status or "unknown",
+        results_summary=results_summary,
         files_present=files_present,
         files_missing=files_missing,
     )
@@ -197,13 +214,45 @@ def _build_context_preview(root: Path, task_id: str) -> ContextPreviewSnapshot |
     source_metadata = build_source_metadata(root, bundle)
     stats = bundle.export_metadata.get("context_stats", {})
     adapter_context = bundle.export_metadata.get("adapter_context", {})
+    budget = bundle.export_metadata.get("context_budget", {})
     return ContextPreviewSnapshot(
         source_count=len(source_metadata),
         packet_source_count=int(stats.get("packet_sources", 0)),
         canonical_doc_count=int(stats.get("canonical_sources", 0)),
         working_doc_count=int(stats.get("working_sources", 0)),
         primary_adapter=str(adapter_context.get("primary_adapter", "none")),
+        estimated_tokens=int(budget.get("estimated_tokens", 0)),
+        token_warning=bool(budget.get("warning_active", False)),
         top_sources=[entry["path"] for entry in source_metadata[:5]],
+        trim_hints=[
+            f"{item['path']} ({item['estimated_tokens']} tokens)"
+            for item in budget.get("trim_hints", [])[:3]
+        ],
+    )
+
+
+def _build_observability_preview(root: Path, task_id: str) -> ObservabilityPreviewSnapshot | None:
+    if not task_id or task_id == "none":
+        return None
+    record, _ = read_task_observability(root, task_id)
+    if record is None:
+        return None
+    if not any(
+        (
+            record.executor_identity,
+            record.model_class,
+            record.last_stage,
+            record.last_workflow_action,
+            record.updated_at,
+        )
+    ):
+        return None
+    return ObservabilityPreviewSnapshot(
+        executor_identity=record.executor_identity,
+        model_class=record.model_class,
+        last_stage=record.last_stage,
+        last_workflow_action=record.last_workflow_action,
+        updated_at=record.updated_at,
     )
 
 
@@ -231,6 +280,7 @@ def build_shell_snapshot(root: Path) -> GrainShellSnapshot:
             blocking_reasons=list(result.errors),
             affected_artifacts=[],
             context_preview=_build_context_preview(root, task_id),
+            observability_preview=_build_observability_preview(root, task_id),
         )
 
     active_phase = evaluation.active_phase or "unknown"
@@ -258,6 +308,7 @@ def build_shell_snapshot(root: Path) -> GrainShellSnapshot:
         backlog_tasks=_read_phase_backlog_tasks(root, active_phase),
         packet_artifacts=_inspect_packet(root, task_path),
         context_preview=_build_context_preview(root, evaluation.active_task_id or task_id),
+        observability_preview=_build_observability_preview(root, evaluation.active_task_id or task_id),
     )
 
 
@@ -454,6 +505,8 @@ def _render_packet_panel(snapshot: GrainShellSnapshot) -> str:
         lines.append("present: " + ", ".join(packet.files_present))
     if packet.files_missing:
         lines.append("missing: " + ", ".join(packet.files_missing))
+    if packet.results_summary:
+        lines.append(f"results_summary: {packet.results_summary}")
     return "\n".join(lines)
 
 
@@ -486,11 +539,38 @@ def _render_context_panel(snapshot: GrainShellSnapshot) -> str:
         f"packet_sources: {context.packet_source_count}",
         f"canonical_docs: {context.canonical_doc_count}",
         f"working_docs: {context.working_doc_count}",
+        f"estimated_tokens: {context.estimated_tokens}",
+        f"token_warning: {'yes' if context.token_warning else 'no'}",
     ]
     if context.top_sources:
         lines.append("top_sources:")
         lines.extend(f"- {path}" for path in context.top_sources[:3])
+    if context.trim_hints:
+        lines.append("trim_hints:")
+        lines.extend(f"- {item}" for item in context.trim_hints[:3])
     return "\n".join(lines)
+
+
+def _render_observability_panel(snapshot: GrainShellSnapshot) -> str:
+    observability = snapshot.observability_preview
+    if observability is None:
+        return "\n".join(
+            [
+                "Observability",
+                "- no active task metadata recorded",
+            ]
+        )
+
+    return "\n".join(
+        [
+            "Observability",
+            f"executor_identity: {observability.executor_identity or 'unset'}",
+            f"model_class: {observability.model_class or 'unset'}",
+            f"last_stage: {observability.last_stage or 'unset'}",
+            f"last_action: {observability.last_workflow_action or 'unset'}",
+            f"updated_at: {observability.updated_at or 'unset'}",
+        ]
+    )
 
 
 def _render_blocker_detail_panel(snapshot: GrainShellSnapshot) -> str:
@@ -590,6 +670,7 @@ def create_app(root: Path):
                         yield Static(_render_prompt_panel(snapshot), classes="panel", id="prompt")
                     with Container(id="right-column", classes="stack"):
                         yield Static(_render_queue_panel(snapshot), classes="panel", id="queue")
+                        yield Static(_render_observability_panel(snapshot), classes="panel", id="observability")
                         yield Static(_render_blocker_detail_panel(snapshot), classes="panel", id="blockers")
                         yield Static(_render_action_panel(snapshot), classes="panel", id="actions")
             yield Footer()
@@ -611,6 +692,7 @@ def create_app(root: Path):
             self.query_one("#packet", Static).update(_render_packet_panel(snapshot))
             self.query_one("#prompt", Static).update(_render_prompt_panel(snapshot))
             self.query_one("#queue", Static).update(_render_queue_panel(snapshot))
+            self.query_one("#observability", Static).update(_render_observability_panel(snapshot))
             self.query_one("#blockers", Static).update(_render_blocker_detail_panel(snapshot))
             self.query_one("#actions", Static).update(_render_action_panel(snapshot))
 
@@ -629,3 +711,20 @@ def create_app(root: Path):
 def launch_tui(root: Path) -> None:
     app = create_app(root)
     app.run()
+
+
+def _read_results_summary(results_path: Path) -> str:
+    if not results_path.exists():
+        return ""
+    in_summary = False
+    for line in results_path.read_text(encoding="utf-8").splitlines():
+        stripped = line.strip()
+        if stripped == "## Summary":
+            in_summary = True
+            continue
+        if in_summary:
+            if stripped.startswith("## "):
+                break
+            if stripped:
+                return stripped
+    return ""

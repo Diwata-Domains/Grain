@@ -1,0 +1,15 @@
+{
+  "task_id": "TASK-0189",
+  "packet_dir": "tasks/P29-T05-TASK-0189",
+  "executor_identity": "",
+  "model_class": "",
+  "last_stage": "close",
+  "last_stage_at": "2026-05-07T22:38:46Z",
+  "last_workflow_action": "task_close",
+  "last_workflow_action_at": "2026-05-07T22:38:46Z",
+  "started_at": "2026-05-07T22:38:46Z",
+  "updated_at": "2026-05-07T22:38:46Z",
+  "stage_timestamps": {
+    "close_at": "2026-05-07T22:38:46Z"
+  }
+}

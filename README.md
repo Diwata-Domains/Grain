@@ -198,6 +198,87 @@ In practice, the agent should use Grain as the workflow layer for the repository
 The CLI is the delivery surface.
 The product value is the workflow structure it gives the agent.
 
+### Codex and CLI-first usage
+
+For Codex or any environment that can invoke local commands directly, the canonical integration path is still the Grain CLI.
+
+Preferred operating pattern:
+
+```bash
+grain workflow next --format json
+grain prompt show --format json
+```
+
+Use JSON output when the calling environment wants structured state.
+Use text output when a human operator is driving the loop directly.
+
+For Codex-style usage:
+- call `grain` commands directly
+- prefer `grain workflow next` to decide the next legal state transition
+- use `grain prompt show` to surface the stable prompt entrypoint
+- keep task execution packet-first and file-backed
+- treat `grain mcp` as optional, not required
+
+### Claude Desktop and MCP-style usage
+
+For desktop clients that prefer MCP tools over direct CLI execution, use the local MCP wrapper:
+
+```bash
+grain mcp manifest --format json
+grain mcp serve
+```
+
+Current intent:
+- Codex/tool-execution path: direct CLI
+- Claude/Desktop-style path: local stdio MCP wrapper over the same Grain services
+- both paths preserve the same workflow rules and packet-first boundaries
+
+### Assay verification loop
+
+Phase 28 adds the first packet-local verification bridge for Assay-backed review.
+
+Current commands:
+
+```bash
+grain verify submit --id TASK-0001
+grain verify status --verification-id VERIFY-0001-001
+grain verify ingest --verification-id VERIFY-0001-001 --payload payload.json
+```
+
+Operator rules for this slice:
+- submit verification only after the packet has `results.md` and is in `review` or `done`
+- treat `verification_request.json` and `verification_result.json` as packet-local workflow artifacts
+- do not close a task while verification is `pending`
+- if verification is `failed`, resolve the findings or explicitly waive verification before closure
+- keep the loop file-backed: Assay can produce the payload elsewhere, but Grain only reads and records the packet-local artifacts
+
+### Obsidian vault usage
+
+For Obsidian vault work, keep the CLI and packet workflow canonical:
+
+- declare `obsidian_adapter` on the active packet when the task is about vault notes
+- let `grain context build` and the normal workflow loop assemble context from the target note and nearby wiki-linked notes
+- treat `.obsidian/` config as secondary context unless the task is explicitly about vault settings
+- use the local MCP wrapper only as a desktop invocation surface; it does not replace the Grain workflow rules
+
+### Database workflow usage
+
+For database work, keep the same packet-first and local-first posture:
+
+- declare `database_adapter` on the active packet when the task is about schema, migrations, queries, or persistence layers
+- let `grain context build` assemble focused schema, migration, query, and repository context instead of loading broad app code by default
+- review destructive migration risk, rollback expectations, and schema/query drift before closing the task
+- treat database execution or live mutation tooling as separate future work; the current `v0.3.0` slice is about context, review, and validation guidance
+
+### Crawler workflow usage
+
+For crawler work, keep the same packet-first and local-first posture:
+
+- declare `crawler_adapter` on the active packet when the task is about crawl configs, selectors, extraction schemas, or output validation
+- let `grain context build` assemble focused crawl, selector, extraction, and validation context instead of loading broad app code by default
+- review robots constraints, rate limits, retry policy risk, selector brittleness, and extraction drift before closing the task
+- treat broad crawl execution or live scraping automation as separate future work; the current `v0.3.0` slice is about context, review, and validation guidance
+
 Example instruction for an agent:
 
 ```text
@@ -220,6 +301,8 @@ Your role is to execute work through Grain's state-driven workflow.
 
 Rules:
 - Run `grain workflow next` before deciding what to do.
+- If Grain stops or the repo state looks inconsistent, run `grain workflow explain` before improvising.
+- If the explanation points to drift, run `grain workflow reconcile --dry-run` before making manual repairs.
 - Run `grain prompt show` before executing the next step.
 - Follow the recommended prompt exactly.
 - Work on only one active task packet at a time.
@@ -256,11 +339,19 @@ Typical commands:
 
 ```bash
 grain workflow next
+grain workflow explain
+grain workflow reconcile --dry-run
 grain prompt show
 grain review check --id TASK-0001
 grain task close --id TASK-0001
 grain tui
 ```
+
+When Grain stops:
+
+- use `grain workflow explain` to translate the current gate into concrete operator actions
+- use `grain workflow reconcile --dry-run` when the explanation points to packet/backlog drift
+- return to `grain workflow next` only after the file-backed issue is repaired
 
 If you want Grain to execute one legal state transition and stop at gates:
 
@@ -305,6 +396,31 @@ Current deferrals:
 - embedded agent terminals
 - multi-project views
 - broad GUI beyond the terminal shell
+
+## Writable office artifacts
+
+Phase 23 adds the first packet-first office mutation workflow for `.docx` and spreadsheets.
+
+Current commands:
+
+```bash
+grain office docx propose --source docs/brief.docx --replace "old=new"
+grain office docx export --source docs/brief.docx --replace "old=new"
+grain office spreadsheet propose --source data/report.xlsx --set "Sheet1!B2=14"
+grain office spreadsheet export --source data/report.xlsx --set "Sheet1!B2=14"
+grain office review show --task-id TASK-0001
+```
+
+Operator rules for this slice:
+- run office commands inside an active task packet, or pass `--task-id` explicitly
+- `.docx` and spreadsheet writes currently support `propose` and `export-as-new-file`
+- every office command persists `office_review.json` into the packet for review inspection
+- review the artifact summary and validator results before closing the packet
+
+What this does not do yet:
+- in-place `apply` for `.docx` or spreadsheets
+- TUI-native office editors
+- desktop/MCP office invocation layers
 
 ## Onboarding flow
 

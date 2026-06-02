@@ -2,7 +2,7 @@
 
 ## Metadata
 - **ID:** TASK-0149
-- **Status:** review
+- **Status:** done
 - **Phase:** Phase 22 — TUI Foundation and Workflow Surfaces
 - **Backlog:** P22-T04 — Action launcher wiring for execute/review/close flows
 - **Packet Path:** tasks/P22-T04-TASK-0149/

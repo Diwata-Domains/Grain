@@ -2,7 +2,7 @@
 
 ## Metadata
 - **ID:** TASK-0150
-- **Status:** review
+- **Status:** done
 - **Phase:** Phase 22 — TUI Foundation and Workflow Surfaces
 - **Backlog:** P22-T05 — Prompt preview, context inspection, and blocker detail
 - **Packet Path:** tasks/P22-T05-TASK-0150/

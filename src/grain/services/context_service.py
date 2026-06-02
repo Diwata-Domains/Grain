@@ -3,6 +3,7 @@
 from dataclasses import asdict
 from datetime import datetime, timezone
 import fnmatch
+from math import ceil
 from pathlib import Path
 import re
 
@@ -30,11 +31,14 @@ from grain.services.ranking_service import RankingCandidateInput, rank_candidate
 
 _NO_ADAPTER_VALUES: frozenset[str] = frozenset({"", "none", "null", "n/a"})
 _ADAPTER_SOURCE_LIMIT = 20
+_TOKEN_WARN_THRESHOLD = 8000
+_TRIM_HINT_LIMIT = 3
 _OBJECTIVE_SECTION = re.compile(
     r"^## Objective\s*\n(.*?)(?=^## |\Z)",
     re.MULTILINE | re.DOTALL,
 )
 _PLACEHOLDER_LINE = re.compile(r"^\[.*\]$")
+_OBSIDIAN_WIKILINK = re.compile(r"\[\[([^\]|#]+)(?:#[^\]|]+)?(?:\|[^\]]+)?\]\]")
 
 
 def discover_packet_sources(
@@ -218,6 +222,26 @@ def build_context_bundle(
         adapter_candidates,
         require_graph_trace=_requires_graph_trace(adapter_profile),
     )
+    if adapter_profile is not None and adapter_profile.adapter_id == "obsidian_adapter":
+        objective = _read_task_objective(source_set.packet_dir / "task.md")
+        adapter_sources, selection_trace = _apply_obsidian_link_priority(
+            root,
+            adapter_sources,
+            selection_trace,
+            objective=objective,
+        )
+    if adapter_profile is not None and adapter_profile.adapter_id == "database_adapter":
+        objective = _read_task_objective(source_set.packet_dir / "task.md")
+        adapter_sources = _apply_database_source_priority(
+            adapter_sources,
+            objective=objective,
+        )
+    if adapter_profile is not None and adapter_profile.adapter_id == "crawler_adapter":
+        objective = _read_task_objective(source_set.packet_dir / "task.md")
+        adapter_sources = _apply_crawler_source_priority(
+            adapter_sources,
+            objective=objective,
+        )
     semantic_resolution: ResolvedEmbeddingProvider | None = None
     semantic_scores: list[dict[str, object]] = []
     ranked_scores: list[dict[str, object]] = []
@@ -233,6 +257,26 @@ def build_context_bundle(
             adapter_sources=adapter_sources,
             selection_trace=selection_trace,
             embedding_resolver=embedding_resolver,
+        )
+    if adapter_profile is not None and adapter_profile.adapter_id == "obsidian_adapter":
+        objective = _read_task_objective(source_set.packet_dir / "task.md")
+        adapter_sources, selection_trace = _apply_obsidian_link_priority(
+            root,
+            adapter_sources,
+            selection_trace,
+            objective=objective,
+        )
+    if adapter_profile is not None and adapter_profile.adapter_id == "database_adapter":
+        objective = _read_task_objective(source_set.packet_dir / "task.md")
+        adapter_sources = _apply_database_source_priority(
+            adapter_sources,
+            objective=objective,
+        )
+    if adapter_profile is not None and adapter_profile.adapter_id == "crawler_adapter":
+        objective = _read_task_objective(source_set.packet_dir / "task.md")
+        adapter_sources = _apply_crawler_source_priority(
+            adapter_sources,
+            objective=objective,
         )
 
     sources = list(packet_source_paths)
@@ -298,12 +342,15 @@ def build_context_bundle(
                     {
                         "path": s.path,
                         "lines": s.lines,
+                        "bytes": _count_file_bytes(root, s.path),
+                        "estimated_tokens": _estimate_tokens_from_size(_count_file_bytes(root, s.path)),
                         "selection_method": s.selection_method,
                         "graph_depth": s.graph_depth,
                     }
                     for s in stats.per_file
                 ],
             },
+            "context_budget": _build_context_budget(root, stats),
         },
     )
 
@@ -498,6 +545,178 @@ def _rerank_adapter_sources(
     )
 
 
+def _apply_obsidian_link_priority(
+    root: Path,
+    adapter_sources: list[str],
+    selection_trace: dict[str, list[str]],
+    *,
+    objective: str,
+) -> tuple[list[str], dict[str, list[str]]]:
+    if not adapter_sources or not objective.strip():
+        return adapter_sources, selection_trace
+
+    objective_lower = objective.lower()
+    stem_to_paths: dict[str, list[str]] = {}
+    for path in adapter_sources:
+        stem_to_paths.setdefault(Path(path).stem.lower(), []).append(path)
+
+    anchor_paths = [
+        path
+        for path in adapter_sources
+        if Path(path).stem.lower() in objective_lower
+    ]
+    if not anchor_paths:
+        anchor_paths = [
+            path
+            for path in adapter_sources
+            if _extract_obsidian_wikilinks(root, path)
+        ]
+    if not anchor_paths:
+        return adapter_sources, selection_trace
+
+    linked_paths: list[str] = []
+    updated_trace = dict(selection_trace)
+    for anchor in anchor_paths:
+        for linked_stem in _extract_obsidian_wikilinks(root, anchor):
+            for candidate in stem_to_paths.get(linked_stem.lower(), []):
+                if candidate == anchor or candidate in linked_paths:
+                    continue
+                linked_paths.append(candidate)
+                updated_trace[candidate] = ["obsidian_link", anchor, candidate]
+
+    prioritized = anchor_paths + linked_paths + [
+        path for path in adapter_sources if path not in anchor_paths and path not in linked_paths
+    ]
+    return _dedupe_preserve_order(prioritized), updated_trace
+
+
+def _extract_obsidian_wikilinks(root: Path, relative_path: str) -> list[str]:
+    path = root / relative_path
+    try:
+        text = path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return []
+    return _dedupe_preserve_order([match.group(1).strip() for match in _OBSIDIAN_WIKILINK.finditer(text) if match.group(1).strip()])
+
+
+def _apply_database_source_priority(
+    adapter_sources: list[str],
+    *,
+    objective: str,
+) -> list[str]:
+    if not adapter_sources:
+        return adapter_sources
+
+    objective_lower = objective.lower()
+    prefers_persistence = any(
+        token in objective_lower
+        for token in (
+            "query",
+            "sql",
+            "orm",
+            "repository",
+            "persistence",
+            "persist",
+            "database access",
+        )
+    )
+
+    def _database_priority(path: str) -> tuple[int, int, str]:
+        lowered = path.lower()
+        is_migration = any(token in lowered for token in ("migrations/", "alembic/"))
+        is_schema = lowered.endswith(".sql") or lowered.endswith("schema.prisma") or "/schema." in lowered
+        is_model = "/models/" in lowered or lowered.startswith("models/")
+        is_repository = "/repositories/" in lowered or lowered.startswith("repositories/")
+        is_db_layer = "/db/" in lowered or lowered.startswith("db/")
+        is_query = (
+            "/queries/" in lowered
+            or lowered.startswith("queries/")
+            or (lowered.endswith(".sql") and not is_schema and not is_migration)
+        )
+
+        objective_boost = 0
+        if ("migration" in objective_lower and is_migration) or ("schema" in objective_lower and is_schema):
+            objective_boost = -1
+
+        if is_schema or is_migration:
+            bucket = 0
+        elif prefers_persistence and (is_query or is_repository or is_db_layer):
+            bucket = 1
+        elif is_model or is_query or is_repository or is_db_layer:
+            bucket = 2
+        else:
+            bucket = 3
+        return (bucket, objective_boost, path)
+
+    return sorted(adapter_sources, key=_database_priority)
+
+
+def _apply_crawler_source_priority(
+    adapter_sources: list[str],
+    *,
+    objective: str,
+) -> list[str]:
+    if not adapter_sources:
+        return adapter_sources
+
+    objective_lower = objective.lower()
+    prefers_extraction = any(
+        token in objective_lower
+        for token in (
+            "extract",
+            "extraction",
+            "output",
+            "normalize",
+            "normalization",
+            "validation",
+            "quality",
+            "schema",
+        )
+    )
+    prefers_quality = any(
+        token in objective_lower
+        for token in (
+            "output",
+            "normalize",
+            "normalization",
+            "validation",
+            "quality",
+        )
+    )
+
+    def _crawler_priority(path: str) -> tuple[int, int, str]:
+        lowered = path.lower()
+        is_config = any(token in lowered for token in ("crawl", "scrapy.cfg", "playwright.config", "robots.txt"))
+        is_selector = "selector" in lowered or "/selectors/" in lowered or lowered.startswith("selectors/")
+        is_schema = "/schemas/" in lowered or lowered.startswith("schemas/") or "schema" in lowered
+        is_extractor = any(token in lowered for token in ("/extractors/", "/parsers/")) or lowered.startswith(("extractors/", "parsers/"))
+        is_fixture = any(token in lowered for token in ("/fixtures/", "/outputs/")) or lowered.startswith(("fixtures/", "outputs/"))
+        is_normalizer = (
+            "/normalizers/" in lowered
+            or lowered.startswith("normalizers/")
+            or "normalizer" in lowered
+            or "normalize" in lowered
+        )
+
+        objective_boost = 0
+        if ("selector" in objective_lower and is_selector) or ("crawl" in objective_lower and is_config):
+            objective_boost = -1
+
+        if is_config or is_selector:
+            bucket = 0
+        elif prefers_quality and (is_fixture or is_normalizer):
+            bucket = 1
+        elif prefers_extraction and (is_schema or is_extractor or is_fixture or is_normalizer):
+            bucket = 2
+        elif is_schema or is_extractor or is_fixture or is_normalizer:
+            bucket = 3
+        else:
+            bucket = 4
+        return (bucket, objective_boost, path)
+
+    return sorted(adapter_sources, key=_crawler_priority)
+
+
 def _semantic_ranking_metadata(
     resolved: ResolvedEmbeddingProvider | None,
     semantic_scores: list[dict[str, object]],
@@ -621,7 +840,14 @@ def _requires_graph_trace(profile: AdapterProfile | None) -> bool:
     """Return whether adapter source selection should require graph connectivity."""
     if profile is None:
         return True
-    return profile.adapter_id not in {"spreadsheet_adapter", "docs_adapter", "data_adapter"}
+    return profile.adapter_id not in {
+        "spreadsheet_adapter",
+        "docs_adapter",
+        "obsidian_adapter",
+        "data_adapter",
+        "database_adapter",
+        "crawler_adapter",
+    }
 
 
 def _is_ignored_by_adapter(path: str, ignore_patterns: list[str]) -> bool:
@@ -711,6 +937,91 @@ def _count_file_lines(root: Path, path: str) -> int:
         return 0
 
 
+def _count_file_bytes(root: Path, path: str) -> int:
+    try:
+        return (root / path).stat().st_size
+    except OSError:
+        return 0
+
+
+def _estimate_tokens_from_size(byte_count: int) -> int:
+    if byte_count <= 0:
+        return 0
+    return ceil(byte_count / 4)
+
+
+def _build_context_budget(root: Path, stats: ContextStats) -> dict[str, object]:
+    per_file_budget: list[dict[str, object]] = []
+    total_bytes = 0
+    total_estimated_tokens = 0
+
+    for item in stats.per_file:
+        byte_count = _count_file_bytes(root, item.path)
+        estimated_tokens = _estimate_tokens_from_size(byte_count)
+        total_bytes += byte_count
+        total_estimated_tokens += estimated_tokens
+        per_file_budget.append(
+            {
+                "path": item.path,
+                "selection_method": item.selection_method,
+                "lines": item.lines,
+                "bytes": byte_count,
+                "estimated_tokens": estimated_tokens,
+            }
+        )
+
+    trim_candidates = sorted(
+        (
+            item for item in per_file_budget
+            if item["selection_method"] != "packet"
+        ),
+        key=lambda item: (
+            _trim_priority(str(item["selection_method"])),
+            -int(item["estimated_tokens"]),
+            str(item["path"]),
+        ),
+    )
+    trim_hints = [
+        {
+            "path": item["path"],
+            "estimated_tokens": item["estimated_tokens"],
+            "reason": _trim_reason(str(item["selection_method"])),
+        }
+        for item in trim_candidates[:_TRIM_HINT_LIMIT]
+    ]
+
+    return {
+        "source_count": stats.total_sources,
+        "total_bytes": total_bytes,
+        "estimated_tokens": total_estimated_tokens,
+        "warning_threshold_tokens": _TOKEN_WARN_THRESHOLD,
+        "warning_active": total_estimated_tokens >= _TOKEN_WARN_THRESHOLD,
+        "trim_hints": trim_hints,
+    }
+
+
+def _trim_priority(selection_method: str) -> int:
+    order = {
+        "working": 0,
+        "canonical": 1,
+        "glob_only": 2,
+        "graph_traced": 3,
+        "wiki_linked": 4,
+    }
+    return order.get(selection_method, 5)
+
+
+def _trim_reason(selection_method: str) -> str:
+    reasons = {
+        "working": "working doc can usually be dropped first",
+        "canonical": "canonical doc is often broader than packet-local sources",
+        "glob_only": "glob-only source has weaker structural justification",
+        "graph_traced": "graph-traced source is a secondary dependency candidate",
+        "wiki_linked": "wiki-linked note may be optional if the objective is narrow",
+    }
+    return reasons.get(selection_method, "non-packet source is the safest first trim candidate")
+
+
 def _compute_context_stats(
     root: Path,
     packet_paths: list[str],
@@ -735,8 +1046,13 @@ def _compute_context_stats(
 
     for path in adapter_sources:
         if path in traced_set:
-            depth = max(0, len(selection_trace[path]) - 1)
-            method = "graph_traced"
+            trace = selection_trace[path]
+            if trace and trace[0] == "obsidian_link":
+                depth = 1
+                method = "wiki_linked"
+            else:
+                depth = max(0, len(trace) - 1)
+                method = "graph_traced"
         else:
             depth = -1
             method = "glob_only"

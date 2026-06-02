@@ -53,6 +53,9 @@ Confirm that:
 * the deliverable_spec is satisfied
 * no blocker remains
 * no unresolved follow-up prevents closure
+* if packet-local verification artifacts exist, verification is not left at `pending`
+* if verification is `failed`, the packet has an explicit operator resolution before closure
+* if the session drifted, you re-read the active packet and current workflow files instead of closing from chat memory
 * any `open_questions_to_log` and `proposal_candidates_to_log` are explicit enough to apply safely
 * if follow-ups, open questions, proposal candidates, or reviewer notes exist, `handoff.md` is present
 
@@ -129,6 +132,8 @@ Check that the closed task now has:
 * do not modify canonical docs directly
 * do not modify prompts or runtime workflow docs unless the active task explicitly targets workflow infrastructure
 * do not close if review is incomplete
+* do not close while verification is pending
+* do not close from conversational summary alone when packet or verification state on disk is unclear
 
 ---
 

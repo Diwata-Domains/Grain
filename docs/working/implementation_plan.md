@@ -335,6 +335,40 @@ Seeded Phase 22 task sequence:
 - P22-T05 — prompt preview, context inspection, and blocker detail
 - P22-T06 — TUI tests, smoke flow, and docs
 
+Seeded Phase 23 task sequence:
+- P23-T01 — shared office write contracts and safety modes
+- P23-T02 — `.docx` propose and export workflow
+- P23-T03 — spreadsheet propose and export workflow
+- P23-T04 — review bundle and validator pipeline for office artifacts
+- P23-T05 — CLI entrypoints and workflow-safe mutation commands
+- P23-T06 — office artifact tests, smoke flow, and docs
+
+Seeded Phase 24 task sequence:
+- P24-T01 — local MCP wrapper scaffold for desktop invocation
+- P24-T02 — Codex and CLI integration guidance/helpers
+- P24-T03 — `obsidian_adapter` domain profile and vault contract scaffold
+- P24-T04 — Obsidian vault context and wiki-link handling
+- P24-T05 — desktop and Obsidian smoke tests, docs, and closeout
+
+Seeded Phase 25 task sequence:
+- P25-T01 — `database_adapter` profile and contract scaffold
+- P25-T02 — schema and migration context selection
+- P25-T03 — query and ORM surface hints
+- P25-T04 — database review and validation guidance
+- P25-T05 — database smoke tests, docs, and closeout
+
+Seeded Phase 26 task sequence:
+- P26-T01 — `crawler_adapter` profile and contract scaffold
+- P26-T02 — crawl config and selector context selection
+- P26-T03 — output-validation and extraction-surface hints
+- P26-T04 — crawler review and safety guidance
+- P26-T05 — crawler smoke tests, docs, and closeout
+
+Seeded Phase 27 task sequence:
+- P27-T01 — task-level observability metadata and CLI surfaces
+- P27-T02 — token-efficiency and context-budget reporting
+- P27-T03 — TUI observability and context-cost panels
+
 ---
 
 ## 9. Phase Completion Standard
@@ -749,7 +783,56 @@ v0.2.0 planning is active. See Phase 16 above and `docs/working/current_focus.md
 
 ---
 
-## 11. Phase Retrospective Rule
+## 11. Phase 29 — Workflow Compliance Hardening
+
+### Objective
+Harden the live operator loop so long agent sessions stay inside Grain and Assay more reliably, with less manual redirection and less stale workflow state.
+
+### Major Deliverables
+- stronger runtime and prompt guardrails for Grain/Assay discipline
+- earlier detection of off-rails workflow states
+- reduced runner packet/template drift on activation
+- a lightweight diagnostic surface for blocked workflow states
+- focused hardening smoke coverage for long-session behavior
+
+### Output Focus
+This phase should make it easier to:
+- keep agents packet-first and verification-aware during long sessions
+- detect stale or invalid workflow state before it spreads
+- explain why the workflow is blocked without adding hidden state
+
+### Dependencies
+- requires the Phase 28 verification bridge to be complete and closed
+
+---
+
+## 12. Phase 30 — v0.4.0 Planning and Toolkit Boundary Definition
+
+### Objective
+Define the next milestone after the v0.3.0 operator-surface buildout. v0.4.0 should turn Grain into a cleaner toolkit component with explicit recipe execution, explicit sibling-app contracts, safer real mutation boundaries, and less active-development runtime drift.
+
+### Major Deliverables
+- locked `v0.4.0` milestone contract
+- recipe execution model and CLI boundary
+- Grain/toolkit contract boundary for sibling apps such as Assay
+- graduation criteria for safe real `apply` workflows on office and vault artifacts
+- development/runtime alignment plan for source-tree vs installed CLI execution
+- seeded execution phases for the next implementation cycle
+
+### Output Focus
+This phase should make it possible to:
+- treat Grain as a reusable workflow kernel for the broader toolkit
+- promote the recipe layer from planning language into executable product scope
+- decide where real in-place mutation is safe enough to ship next
+- remove ambiguity about how active development sessions should invoke the right Grain code
+
+### Dependencies
+- requires Phases 22 through 29 to be closed
+- assumes the v0.3.0 implementation scope is complete even if release bookkeeping remains separate
+
+---
+
+## 12. Phase Retrospective Rule
 
 Use phase review and close to improve the system deliberately, not continuously at random.
 

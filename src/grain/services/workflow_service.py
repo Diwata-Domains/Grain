@@ -9,15 +9,18 @@ from typing import Any
 
 from grain.domain.packets import find_packet_dir, parse_task_metadata
 from grain.domain.workflow import WorkflowEvaluation, WorkflowTaskState
-from grain.validators.packet_validator import validate_packet
+from grain.adapters.manifest import load_completion_policy
+from grain.validators.packet_validator import validate_closure, validate_packet
 
 _CURRENT_TASK_REQUIRED = ("Task ID:", "Task Path:", "Status:")
 _TASK_HEADING = re.compile(r"^###\s+(P(\d+)-T(\d+))\s+—\s+(.+)$")
 _PHASE_HEADING = re.compile(r"^##\s+\d+\.\s+Phase\s+(\d+)\s+—")
+_SECTION_HEADING = re.compile(r"^##\s+")
 _BACKLOG_STATUS = re.compile(r"^- \*\*Status:\*\*\s*(\S+)")
 _CURRENT_PHASE_LINE = re.compile(r"^Phase\s+(\d+)\s+—")
 _CURRENT_PHASE_COMPLETE_LINE = re.compile(r"^(Phase:\s*)?(complete|done)\s*$", re.IGNORECASE)
 _PHASE_CLOSED_MARKER_RE = re.compile(r"^Phase\s+(\d+)\s+closed:")
+_PACKET_TASK_REF_RE = re.compile(r"^(P\d+-T\d+)-TASK-\d+$")
 _DEFAULT_PHASE_DOC = "docs/working/current_focus.md"
 _DEFAULT_BACKLOG_DOC = "docs/working/backlog.md"
 _DEFAULT_CURRENT_TASK_DOC = "docs/working/current_task.md"
@@ -152,6 +155,9 @@ def evaluate_workflow_state(
 
     active_task_id = current_task["task_id"]
     active_task_status = current_task["status"]
+    backlog_tasks = _read_phase_backlog_tasks(root / _DEFAULT_BACKLOG_DOC, current_phase)
+
+    active_packet_task_ref = ""
 
     if active_task_id != "none":
         packet_dir = _resolve_packet_dir(root, active_task_id, current_task["task_path"])
@@ -179,11 +185,44 @@ def evaluate_workflow_state(
             return _result_with_evaluation(root, evaluation)
 
         packet_status = parse_task_metadata(packet_dir / "task.md").get("status", "")
+        active_packet_task_ref = _task_ref_from_packet_dir(packet_dir)
         if packet_status == "done":
             active_task_id = "none"
             active_task_status = "idle"
         else:
             active_task_status = packet_status or active_task_status
+
+        if active_task_id != "none" and active_packet_task_ref:
+            backlog_status_for_active = next(
+                (task.status for task in backlog_tasks if task.task_ref == active_packet_task_ref),
+                "",
+            )
+            if not backlog_status_for_active:
+                evaluation = WorkflowEvaluation(
+                    ok=False,
+                    stop_reason="workflow_state_drift",
+                    blocking_reasons=[
+                        f"active packet {active_packet_task_ref} is not represented in backlog for phase {current_phase}"
+                    ],
+                    affected_artifacts=[_DEFAULT_BACKLOG_DOC, str(packet_dir.relative_to(root))],
+                    active_phase=current_phase,
+                    active_task_id=active_task_id,
+                    recommended_prompt="prompts/task.execute.md",
+                )
+                return _result_with_evaluation(root, evaluation)
+            if backlog_status_for_active not in _allowed_backlog_statuses(active_task_status):
+                evaluation = WorkflowEvaluation(
+                    ok=False,
+                    stop_reason="workflow_state_drift",
+                    blocking_reasons=[
+                        f"active packet status '{active_task_status}' does not match backlog status '{backlog_status_for_active}' for {active_packet_task_ref}"
+                    ],
+                    affected_artifacts=[_DEFAULT_BACKLOG_DOC, _DEFAULT_CURRENT_TASK_DOC, str(packet_dir.relative_to(root) / "task.md")],
+                    active_phase=current_phase,
+                    active_task_id=active_task_id,
+                    recommended_prompt="prompts/task.execute.md",
+                )
+                return _result_with_evaluation(root, evaluation)
 
     if active_task_id != "none":
         if active_task_status == "blocked":
@@ -228,6 +267,21 @@ def evaluate_workflow_state(
                     active_phase=current_phase,
                     active_task_id=active_task_id,
                     recommended_prompt="prompts/task.execute.md",
+                )
+                return _result_with_evaluation(root, evaluation)
+            closure_errors = validate_closure(packet_dir, policy=load_completion_policy(root))
+            if closure_errors:
+                evaluation = WorkflowEvaluation(
+                    ok=False,
+                    stop_reason="review_close_blocked",
+                    blocking_reasons=closure_errors,
+                    affected_artifacts=[
+                        str(packet_dir.relative_to(root)),
+                        str((packet_dir / "results.md").relative_to(root)),
+                    ],
+                    active_phase=current_phase,
+                    active_task_id=active_task_id,
+                    recommended_prompt="prompts/task.review.md",
                 )
                 return _result_with_evaluation(root, evaluation)
             evaluation = WorkflowEvaluation(
@@ -275,7 +329,25 @@ def evaluate_workflow_state(
         )
         return _result_with_evaluation(root, evaluation)
 
-    backlog_tasks = _read_phase_backlog_tasks(root / _DEFAULT_BACKLOG_DOC, current_phase)
+    if active_task_id == "none":
+        drift_tasks = [
+            task for task in backlog_tasks if task.status in {"in_progress", "review", "blocked", "needs_fix"}
+        ]
+        if drift_tasks:
+            evaluation = WorkflowEvaluation(
+                ok=False,
+                stop_reason="workflow_state_drift",
+                blocking_reasons=[
+                    "backlog shows active work but docs/working/current_task.md is unset",
+                    *[f"backlog active task without current_task pointer: {task.task_ref} ({task.status})" for task in drift_tasks],
+                ],
+                affected_artifacts=[_DEFAULT_BACKLOG_DOC, _DEFAULT_CURRENT_TASK_DOC],
+                active_phase=current_phase,
+                candidate_tasks=drift_tasks,
+                recommended_prompt="prompts/task.execute.md",
+            )
+            return _result_with_evaluation(root, evaluation)
+
     ready_tasks = [task for task in backlog_tasks if task.status == "ready"]
     draft_tasks = [task for task in backlog_tasks if task.status == "draft"]
     open_tasks = [task for task in backlog_tasks if task.status not in {"done"}]
@@ -449,6 +521,23 @@ def _read_phase_backlog_tasks(backlog_path: Path, phase_number: str) -> list[Wor
             current_phase = phase_match.group(1)
             continue
 
+        if _SECTION_HEADING.match(line):
+            if current_phase == phase_number and current_task_ref and current_status:
+                tasks.append(
+                    WorkflowTaskState(
+                        task_ref=current_task_ref,
+                        status=current_status,
+                        source="backlog",
+                    )
+                )
+            if current_phase == phase_number:
+                current_task_ref = ""
+                current_status = ""
+                break
+            current_task_ref = ""
+            current_status = ""
+            continue
+
         heading_match = _TASK_HEADING.match(line)
         if heading_match:
             if current_phase == phase_number and current_task_ref and current_status:
@@ -481,6 +570,23 @@ def _read_phase_backlog_tasks(backlog_path: Path, phase_number: str) -> list[Wor
         )
 
     return tasks
+
+
+def _task_ref_from_packet_dir(packet_dir: Path) -> str:
+    match = _PACKET_TASK_REF_RE.match(packet_dir.name)
+    if not match:
+        return ""
+    return match.group(1)
+
+
+def _allowed_backlog_statuses(packet_status: str) -> set[str]:
+    allowed: dict[str, set[str]] = {
+        "in_progress": {"in_progress"},
+        "blocked": {"in_progress", "blocked"},
+        "needs_fix": {"in_progress", "needs_fix"},
+        "review": {"in_progress", "review"},
+    }
+    return allowed.get(packet_status, {packet_status})
 
 
 def evaluation_to_dict(evaluation: WorkflowEvaluation) -> dict:

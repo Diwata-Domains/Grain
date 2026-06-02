@@ -26,6 +26,7 @@ At the start of a session, read in this order:
 
 Do not begin implementation before identifying the active task boundary.
 If there is no active task packet on disk yet, stop and create or activate one before making code changes.
+If the session drifts and the active packet or workflow stage becomes ambiguous, stop and re-run the Grain workflow commands before continuing.
 
 ---
 
@@ -129,6 +130,32 @@ Read:
 - relevant working docs only if needed
 
 If `current_task.md` is idle or the packet does not exist on disk, do not improvise from chat context. Create/select the packet first, then implement.
+If the packet exists but the conversation no longer matches it, stop and return to `grain workflow next --format json` plus the packet files on disk before proceeding.
+
+For office-artifact work:
+- prefer `grain office ...` commands over ad hoc binary-file edits
+- keep `.docx` and spreadsheet mutations inside the active packet
+- inspect the persisted `office_review.json` artifact before treating the write as review-ready
+
+For Obsidian vault work:
+- prefer `obsidian_adapter` when the task is about vault notes or wiki-link-driven note systems
+- preserve frontmatter and wiki-links as part of the note contract
+- keep the task packet and normal context-building flow authoritative; the local MCP wrapper is only a desktop invocation surface
+
+For database work:
+- prefer `database_adapter` when the task is about schema, migrations, queries, repositories, or persistence behavior
+- keep schema, migration, query, and repository context narrow; avoid broad app-code loading unless the packet objective requires it
+- treat destructive migrations, missing rollback paths, and schema/query drift as explicit review concerns before closure
+
+For crawler work:
+- prefer `crawler_adapter` when the task is about crawl configs, selectors, extraction schemas, fixtures, or output validation
+- keep crawl, selector, extraction, and validation context narrow; avoid broad app-code loading unless the packet objective requires it
+- treat robots constraints, rate limits, retry policy risk, selector brittleness, and extraction drift as explicit review concerns before closure
+
+For Assay-backed verification work:
+- keep the loop explicit: `grain verify submit`, external verification, then `grain verify ingest`
+- do not mark the task effectively closed while verification is still `pending`
+- if verification fails, stop and route the finding through the packet review bundle instead of conversationally overriding the gate
 
 ### For review
 Read:

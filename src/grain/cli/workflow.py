@@ -6,6 +6,11 @@ import click
 from grain.adapters.filesystem import resolve_repo_root
 from grain.domain.errors import UsageError
 from grain.services.reconcile_service import reconcile
+from grain.services.task_observability_service import read_task_observability
+from grain.services.workflow_diagnostics_service import (
+    diagnostic_to_dict,
+    explain_workflow_state,
+)
 from grain.services.workflow_loop_service import run_workflow_loop
 from grain.services.workflow_service import evaluate_workflow_state, evaluation_to_dict
 from grain.services.workflow_run_service import run_workflow_step
@@ -40,6 +45,7 @@ def workflow_next(ctx):
     if fmt == "json":
         data = dataclasses.asdict(result)
         data["evaluation"] = evaluation_to_dict(evaluation)
+        data["observability"] = _workflow_observability_payload(root, evaluation.active_task_id)
         click.echo(json.dumps(data, indent=2))
         return
 
@@ -63,6 +69,13 @@ def workflow_next(ctx):
         click.echo("  candidate_tasks")
         for task in evaluation.candidate_tasks:
             click.echo(f"    - {task.task_ref} ({task.status})")
+    observability = _workflow_observability_payload(root, evaluation.active_task_id)
+    if observability:
+        click.echo("  observability")
+        click.echo(f"    executor_identity  {observability['executor_identity'] or 'unset'}")
+        click.echo(f"    model_class        {observability['model_class'] or 'unset'}")
+        click.echo(f"    last_stage         {observability['last_stage'] or 'unset'}")
+        click.echo(f"    last_action        {observability['last_workflow_action'] or 'unset'}")
 
     no_active_task = not evaluation.active_task_id
     if no_active_task and evaluation.next_action == "task_execute" and evaluation.candidate_tasks:
@@ -133,6 +146,54 @@ def workflow_run(ctx, simple):
         click.echo(f"  blocking_reasons  {len(payload.get('blocking_reasons', []))}")
         for reason in payload.get("blocking_reasons", []):
             click.echo(f"    - {reason}")
+
+
+@workflow_group.command("explain")
+@click.pass_context
+def workflow_explain(ctx):
+    """Explain why the workflow is blocked or what the next operator move should be."""
+    repo = ctx.obj.get("repo") if ctx.obj else None
+    fmt = ctx.obj.get("fmt", "text") if ctx.obj else "text"
+    root = resolve_repo_root(repo)
+
+    result, evaluation, diagnostic = explain_workflow_state(root)
+
+    if evaluation is None or diagnostic is None:
+        if fmt == "json":
+            click.echo(json.dumps(dataclasses.asdict(result), indent=2))
+        else:
+            click.echo("workflow explain: failed")
+            for err in result.errors:
+                click.echo(f"  error     {err}", err=True)
+        raise click.ClickException("workflow explanation failed")
+
+    if fmt == "json":
+        data = dataclasses.asdict(result)
+        data["evaluation"] = evaluation_to_dict(evaluation)
+        data["diagnostic"] = diagnostic_to_dict(diagnostic)
+        click.echo(json.dumps(data, indent=2))
+        return
+
+    click.echo(f"workflow explain: {diagnostic.status}")
+    click.echo(f"  summary           {diagnostic.summary}")
+    click.echo(f"  likely_cause      {diagnostic.likely_cause}")
+    click.echo(f"  active_phase      {diagnostic.active_phase or '(unknown)'}")
+    click.echo(f"  active_task_id    {diagnostic.active_task_id or 'none'}")
+    if diagnostic.stop_reason:
+        click.echo(f"  stop_reason       {diagnostic.stop_reason}")
+    if diagnostic.next_action:
+        click.echo(f"  next_action       {diagnostic.next_action}")
+    if diagnostic.recommended_prompt:
+        click.echo(f"  recommended_prompt  {diagnostic.recommended_prompt}")
+    click.echo(f"  affected_artifacts  {len(diagnostic.affected_artifacts)}")
+    for artifact in diagnostic.affected_artifacts:
+        click.echo(f"    - {artifact}")
+    click.echo(f"  recommended_actions  {len(diagnostic.recommended_actions)}")
+    for action in diagnostic.recommended_actions:
+        click.echo(f"    - {action}")
+    click.echo(f"  suggested_commands  {len(diagnostic.suggested_commands)}")
+    for command in diagnostic.suggested_commands:
+        click.echo(f"    - {command}")
 
 
 @workflow_group.command("reconcile")
@@ -206,6 +267,28 @@ def workflow_reconcile(ctx, fix, dry_run):
         click.echo("  nothing to fix")
     if not result.ok:
         raise SystemExit(1)
+
+
+def _workflow_observability_payload(root, task_id: str):
+    if not task_id:
+        return None
+    record, _ = read_task_observability(root, task_id)
+    if record is None:
+        return None
+    payload = dataclasses.asdict(record)
+    if not any(
+        payload.get(key)
+        for key in (
+            "executor_identity",
+            "model_class",
+            "last_stage",
+            "last_workflow_action",
+            "started_at",
+            "updated_at",
+        )
+    ):
+        return None
+    return payload
 
 
 @workflow_group.command("loop")

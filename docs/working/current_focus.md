@@ -1,9 +1,10 @@
 # Current Focus
 
 ## Current Phase
-Phase 22 — TUI Foundation and Workflow Surfaces
+Phase 30 — Planning Not Started
 
 v0.2.0 COMPLETE
+v0.3.0 IMPLEMENTATION COMPLETE
 
 ## Phase 15 Status
 CLOSED. All 6 tasks done (T01-T06). 775/775 tests passing. Delivered: `grain phase close` (hard lifecycle gate), `grain workflow run` auto-packet bootstrap, `grain workflow reconcile` (drift detection + --fix), Phase 15 integration tests, `AGENTS.md` generation (`grain init` / `grain onboard`), `grain phase archive`. Phase closed 2026-04-17.
@@ -69,12 +70,27 @@ COMPLETE — Phases 15 through 19 are closed on `dev`. v0.2.0 implementation sco
 ## Phase 20 Status
 CLOSED. All 6 tasks done (P20-T01 through P20-T06). Delivered: review routing after execution artifacts exist, archived-packet-aware task IDs, done-task stale-pointer handling, terminal project-complete workflow state, safer upgrade behavior for customized repos, and packet-first guardrails across prompts and agent instructions. Phase closed 2026-04-23.
 
+## Phase 21 Status
+CLOSED. Planning scope locked for v0.3.0. Delivered: milestone contract, TUI stack decision (Python + Textual), writable office workflow model, desktop integration strategy, dedicated Obsidian adapter decision, non-code review model, recipe layer direction, and seeded execution phases for Phases 22 through 27. Phase closed 2026-05-04.
+
+## Phase 23 Status
+CLOSED. All 6 tasks done (P23-T01 through P23-T06). Delivered: shared office write contracts and safety modes, `.docx` propose/export workflow, spreadsheet propose/export workflow, shared office review-bundle and validator pipeline, packet-first office CLI commands, and integrated smoke/docs coverage for the first writable office-artifact slice. Phase closed 2026-05-05.
+
+## Phase 28 Status
+CLOSED. All 5 tasks done (P28-T01 through P28-T05). Delivered: `grain verify submit`, `grain verify status`, `grain verify ingest`, verification-aware review/close gating, and Assay verification operator/docs coverage for the packet-local bridge. Phase closed 2026-05-07.
+
+## Phase 29 Status
+CLOSED. All 5 tasks done (P29-T01 through P29-T05). Delivered: stronger Grain/Assay loop guidance in prompts and runtime docs, earlier workflow misuse blockers, runner packet/template hydration and activation state sync, `grain workflow explain`, and closeout smoke/docs coverage for the hardened operator loop. Phase closed 2026-05-07.
+
+## Phase 30 Status
+PLANNED. `v0.4.0` planning phase focused on turning Grain from a strong operator surface into a stronger toolkit component: reusable recipe execution, explicit inter-app contracts, safer real mutation flows, and a cleaner developer/runtime execution boundary.
+
 ## Immediate Goals
-1. Scaffold the Textual app shell and TUI structure
-2. Build workflow dashboard, backlog, and packet inspection views
-3. Wire safe execute/review/close action launches without creating alternate workflow state
-4. Keep the TUI thin over existing Grain services and CLI contracts
-5. Leave database, crawler, and recipe work for their own later phases
+1. Lock the `v0.4.0` milestone contract before starting new breadth work
+2. Promote reusable recipe execution from planned direction into explicit scope
+3. Define the Grain ↔ Assay ↔ toolkit contract boundary clearly enough that sibling tools can interoperate without chat-only glue
+4. Decide which non-code surfaces graduate from `propose/export` into safer real `apply` workflows
+5. Eliminate active-development friction where installed CLI binaries lag the current repo code
 
 ## v0.3.0 Contract
 - Theme: `Operator Surface for Structured Knowledge Work`
@@ -90,9 +106,29 @@ CLOSED. All 6 tasks done (P20-T01 through P20-T06). Delivered: review routing af
   - reusable workflow recipes
   - richer TUI inspection surfaces
   - contract-freshness warnings
+  - task-level observability and token-budget reporting
 - Non-goals:
   - broad GUI beyond the first TUI slice
   - cloud/backend collaboration features
+
+## v0.4.0 Direction
+- Theme: `Composable Workflow Toolkit and Safe Real Mutation`
+- Core:
+  - first-class recipe execution surfaces, not just recipe planning
+  - explicit shared contracts between Grain and sibling toolkit apps
+  - safer in-place mutation paths for office and vault artifacts where validation is strong enough
+  - dev/runtime alignment so the active repo code and invoked CLI surface stop drifting apart
+  - richer operator/debugging ergonomics built on the already-landed TUI and workflow diagnostics
+- Candidate deliverables:
+  - `grain recipe ...` command group and recipe packet scaffolds
+  - toolkit contract artifacts and transport-neutral exchange model
+  - `.docx` / spreadsheet / Obsidian `apply` graduation criteria and first safe apply slices
+  - source-tree or version-alignment diagnostics for active development
+  - cross-tool handoff examples that do not rely on chat memory
+- Non-goals:
+  - hosted services or background daemons
+  - broad new adapter families beyond what v0.3.0 already introduced
+  - replacing the CLI as the canonical surface
   - Sentinel work
   - broad new adapter expansion beyond office/document and Obsidian surfaces
 
@@ -175,6 +211,19 @@ CLOSED. All 6 tasks done (P20-T01 through P20-T06). Delivered: review routing af
   - broad canonical editing UI
   - separate JS/TS or Electron-style TUI stack
 
+## Observability and Token-Efficiency Additions
+- file-backed only; no background services or hidden state
+- target surfaces:
+  - executor identity per task
+  - model class used per task or stage
+  - stage timestamps and last workflow action
+  - context-size or token-budget proxies
+  - ranked source-trimming hints for aggressive workflows
+- TUI role:
+  - inspect execution and context cost
+  - explain why a task selected its current context
+  - show recent packet-result changes without duplicating workflow logic
+
 ## After Phase 8 — Using the Runner with Agent CLIs
 
 Phase 8 delivers a complete workflow automation runner. The intended operating pattern with an agent CLI (Claude Code, Codex, etc.) is:
@@ -254,12 +303,7 @@ All five phases must ship for v0.2.0 to close.
 - **Phase 11-T05 (deferred indefinitely)** — Homebrew formula remains out of scope unless distribution priorities change
 
 ## Upcoming Phase Sequence
-1. **Phase 22** — TUI foundation and workflow surfaces ← active now
-2. **Phase 23** — writable office artifacts (`.docx`, spreadsheets)
-3. **Phase 24** — desktop integrations and Obsidian support
-4. **Phase 25** — database adapter
-5. **Phase 26** — crawler adapter
-6. **Phase 27** — recipe layer and operator ergonomics
+1. **Phase 30** — `v0.4.0` planning and toolkit boundary definition ← active now
 
 ## Active Constraints
 - use local filesystem only
@@ -282,6 +326,12 @@ All five phases must ship for v0.2.0 to close.
 - autonomous multi-step execution without explicit operator gate
 - broad GUI work beyond the first required TUI slice
 
+## Immediate Goals
+1. Seed the first executable hardening task for Phase 29
+2. Keep verification submission and ingestion packet-local and file-backed
+3. Reuse Grain workflow gates instead of inventing a second verification lifecycle
+4. Reduce live-session agent redirection before reopening broader feature work
+
 Phase 15 closed: 2026-04-17 — 6 tasks done (grain-verified)
 
 Phase 16 closed: 2026-04-21 — 8 tasks done (grain-verified)
@@ -293,3 +343,23 @@ Phase 18 closed: 2026-04-21 — 6 tasks done (grain-verified)
 Phase 19 closed: 2026-04-22 — 6 tasks done (grain-verified)
 
 Phase 20 closed: 2026-04-23 — 6 tasks done (grain-verified)
+
+Phase 21 closed: 2026-05-04 — 5 tasks done (grain-verified)
+
+Phase 22 closed: 2026-05-04 — 6 tasks done (grain-verified)
+
+Phase 23 closed: 2026-05-05 — 6 tasks done (grain-verified)
+
+Phase 23 closed: 2026-05-05 — 6 tasks done (grain-verified)
+
+Phase 24 closed: 2026-05-06 — 5 tasks done (grain-verified)
+
+Phase 25 closed: 2026-05-06 — 5 tasks done (grain-verified)
+
+Phase 26 closed: 2026-05-06 — 5 tasks done (grain-verified)
+
+Phase 27 closed: 2026-05-06 — 3 tasks done (grain-verified)
+
+Phase 28 closed: 2026-05-07 — 5 tasks done (grain-verified)
+
+Phase 29 closed: 2026-05-07 — 5 tasks done (grain-verified)

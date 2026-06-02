@@ -12,6 +12,7 @@ GROUPS = [
     "context",
     "model",
     "review",
+    "verify",
     "phase",
     "prompt",
     "workflow",
@@ -25,9 +26,10 @@ SUBCOMMANDS = {
     "context": ["build", "show", "export"],
     "model": ["show", "select", "escalate"],
     "review": ["check", "handoff", "summary"],
+    "verify": ["submit", "status", "ingest"],
     "phase": ["next"],
     "prompt": ["show"],
-    "workflow": ["next", "run", "loop"],
+    "workflow": ["next", "run", "explain", "loop"],
 }
 
 

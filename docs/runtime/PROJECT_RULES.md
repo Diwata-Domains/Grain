@@ -140,6 +140,7 @@ Confirm:
 - Update results with meaningful progress
 - Record blockers explicitly
 - Do not expand scope without documenting it
+- If the session drifts away from the active packet, stop and re-run `grain workflow next` plus the packet read path before continuing.
 
 ### After execution
 - Verify deliverable completion
@@ -149,6 +150,15 @@ Confirm:
 - Persist review and closeout intake into task artifacts before final closure
 - Record token-efficiency data in task artifacts when the runtime exposes it, and record proxy efficiency data when exact token counts are unavailable
 - Route task generation or backlog splitting back into the planning layer rather than doing it implicitly during review or closeout
+- If external verification is in play, keep the verification loop packet-local:
+  - `grain verify submit --id TASK-####`
+  - `grain verify status --verification-id VERIFY-####-NNN`
+  - `grain verify ingest --verification-id VERIFY-####-NNN --payload <path>`
+- Do not close a task while verification is `pending`.
+- If verification is `failed`, resolve the findings or explicitly waive verification before closure.
+- Do not “mentally complete” the verification step in chat. If the packet has not recorded the verification artifact or state change on disk yet, the workflow has not advanced.
+- If the workflow stops or the packet/backlog state looks inconsistent, run `grain workflow explain` before guessing.
+- If `grain workflow explain` points to drift, run `grain workflow reconcile --dry-run` before making manual repairs.
 
 ---
 
