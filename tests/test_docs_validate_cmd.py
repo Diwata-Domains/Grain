@@ -4,7 +4,6 @@ import subprocess
 import sys
 from pathlib import Path
 
-import yaml
 from click.testing import CliRunner
 
 from grain.cli import main

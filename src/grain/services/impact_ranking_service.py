@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import asdict
 from pathlib import Path
 
-from grain.domain.embedding import ResolvedEmbeddingProvider, ScoredCandidate
+from grain.domain.embedding import ScoredCandidate
 from grain.domain.ranking import RankedCandidate
 from grain.services.embedding_resolver import EmbeddingProviderResolver
 from grain.services.ranking_service import RankingCandidateInput, rank_candidates

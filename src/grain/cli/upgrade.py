@@ -7,7 +7,7 @@ from pathlib import Path
 
 import click
 
-from grain.services.upgrade_service import upgrade_repo
+from grain.services.upgrade_service import UpgradeResult, upgrade_repo
 
 
 @click.command("upgrade")
@@ -160,7 +160,6 @@ def _print_diff(diff_text: str) -> None:
 
 def _run_interactive(root: Path, preview: "UpgradeResult") -> None:
     """Walk stale files, show each diff, and ask the user to accept or skip."""
-    from grain.services.upgrade_service import upgrade_repo as _upgrade_one
 
     if not preview.updated and not preview.added:
         click.echo("upgrade: nothing to do — all Grain-managed files are current.")

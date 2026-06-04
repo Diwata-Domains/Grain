@@ -81,7 +81,7 @@ def reconcile(root: Path, fix: bool = False, dry_run: bool = False) -> Reconcile
     current_task_info = _read_current_task(current_task_path)
     active_task_id = current_task_info.get("task_id", "none")
     active_task_path = current_task_info.get("task_path", "none")
-    active_task_status = current_task_info.get("status", "idle")
+    current_task_info.get("status", "idle")
 
     # ── Check 1: backlog vs packet status sync ───────────────────────────────
     backlog_tasks = _read_all_backlog_tasks(backlog_path)

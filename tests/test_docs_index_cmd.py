@@ -1,7 +1,6 @@
 """Tests for `forge docs index` command."""
 
 import json
-from pathlib import Path
 
 from click.testing import CliRunner
 

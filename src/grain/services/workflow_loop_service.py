@@ -116,7 +116,7 @@ def run_workflow_loop(
             if invocation["exit_code"] != 0:
                 return (
                     CommandResult(ok=False, command="workflow loop", repo=str(root),
-                                  errors=[f"stage invocation failed for executor"]),
+                                  errors=["stage invocation failed for executor"]),
                     _payload(
                         supervision_level=config.supervision_level,
                         steps_requested=steps_requested,

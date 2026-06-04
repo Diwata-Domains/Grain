@@ -81,7 +81,7 @@ def test_all_dirs_present_means_all_skipped(tmp_path):
 
 
 def test_gitkeep_created_in_new_dirs(tmp_path):
-    result = init_repo(tmp_path)
+    init_repo(tmp_path)
     for rel in EXPECTED_DIRS:
         assert (tmp_path / rel / ".gitkeep").exists()
 

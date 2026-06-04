@@ -1,6 +1,5 @@
 """Tests for the document existence validator."""
 
-from pathlib import Path
 
 from grain.domain.documents import build_registry
 from grain.validators.doc_existence_validator import validate_doc_existence

@@ -1,5 +1,4 @@
 import pytest
-from pathlib import Path
 from grain.adapters.filesystem import find_repo_root, resolve_repo_root
 
 

@@ -1,6 +1,5 @@
 """Tests for impacted-file ranking helpers."""
 
-from grain.adapters.manifest import GrainConfig
 from grain.domain.embedding import EmbeddingProviderStatus
 from grain.services.impact_ranking_service import rank_impacted_files
 

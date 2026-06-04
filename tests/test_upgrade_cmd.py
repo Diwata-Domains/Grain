@@ -7,7 +7,7 @@ from pathlib import Path
 from click.testing import CliRunner
 
 from grain.cli import main
-from grain.services.upgrade_service import upgrade_repo, _UPGRADE_TARGETS, _ADDITIVE_TARGETS, _PROTECTED, _unified_diff
+from grain.services.upgrade_service import upgrade_repo, _PROTECTED, _unified_diff
 
 
 def _run(tmp_path: Path, *args: str):

@@ -3,7 +3,6 @@ from click.testing import CliRunner
 from grain.cli import main
 from grain.domain.packets import parse_task_metadata
 from grain.tui.app import (
-    ActionLaunchResult,
     BacklogTaskSnapshot,
     CandidateTaskSnapshot,
     ContextPreviewSnapshot,

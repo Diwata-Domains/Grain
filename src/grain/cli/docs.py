@@ -80,7 +80,7 @@ def docs_show(ctx, doc_id):
         }
         click.echo(json.dumps(data, indent=2))
     else:
-        click.echo(f"docs show: ok")
+        click.echo("docs show: ok")
         click.echo(f"  id                  {record.id}")
         click.echo(f"  path                {record.path}")
         click.echo(f"  layer               {record.layer}")

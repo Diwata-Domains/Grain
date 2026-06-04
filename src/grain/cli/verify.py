@@ -8,7 +8,7 @@ import click
 
 from grain.adapters.filesystem import resolve_repo_root
 from grain.cli.output import print_result
-from grain.domain.errors import GeneralError, ValidationError
+from grain.domain.errors import ValidationError
 from grain.services.verification_service import (
     ingest_verification_result,
     get_verification_request_status,

@@ -51,7 +51,7 @@ def _seed_repo(
     for ref in (packet_refs or [f"P{phase}-T01", f"P{phase}-T02"]):
         packet_dir = tmp_path / "tasks" / f"{ref}-TASK-0001"
         packet_dir.mkdir()
-        (packet_dir / "task.md").write_text(f"# Task\n- **ID:** TASK-0001\n- **Status:** done\n", encoding="utf-8")
+        (packet_dir / "task.md").write_text("# Task\n- **ID:** TASK-0001\n- **Status:** done\n", encoding="utf-8")
 
 
 # ---------------------------------------------------------------------------

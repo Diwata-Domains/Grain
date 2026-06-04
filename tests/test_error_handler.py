@@ -1,9 +1,6 @@
 import pytest
-from click.testing import CliRunner
-from grain.cli import main
 from grain.cli.error_handler import EXIT_CODES, handle_error
 from grain.domain.errors import (
-    ForgeError,
     GeneralError,
     UsageError,
     ValidationError,

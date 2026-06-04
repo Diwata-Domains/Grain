@@ -7,7 +7,6 @@ import click
 from grain.adapters.filesystem import resolve_repo_root
 from grain.cli.output import print_result
 from grain.domain.errors import GeneralError, InvalidTransitionError, ValidationError
-from grain.domain.packets import find_packet_dir
 from grain.services import task_service
 from grain.services.task_observability_service import (
     read_task_observability,
@@ -160,12 +159,12 @@ def task_show(ctx, task_id):
         click.echo(json.dumps(data, indent=2))
         return
 
-    click.echo(f"task show: ok")
+    click.echo("task show: ok")
     click.echo(f"  id      {record.id}")
     click.echo(f"  status  {record.status}")
     click.echo(f"  phase   {record.phase}")
     click.echo(f"  path    {record.path.name}")
-    click.echo(f"  files")
+    click.echo("  files")
     for name, present in inventory.items():
         state = "present" if present else "absent"
         click.echo(f"    {name:<24}  {state}")
@@ -311,7 +310,7 @@ def task_status(ctx, task_id, new_status):
     if fmt == "json":
         print_result(result, fmt=fmt)
     else:
-        click.echo(f"task status: ok")
+        click.echo("task status: ok")
         click.echo(f"  {task_id}  ->  {new_status}")
         for path in result.files_updated:
             click.echo(f"  updated   {path}")
@@ -427,7 +426,7 @@ def task_close(ctx, task_id, quick, summary, files_list):
     if fmt == "json":
         print_result(result, fmt=fmt)
     else:
-        click.echo(f"task close: ok")
+        click.echo("task close: ok")
         click.echo(f"  {task_id}  ->  done")
         for path in result.files_created or []:
             click.echo(f"  created   {path}")

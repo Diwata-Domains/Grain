@@ -1,6 +1,5 @@
 """Tests for the manifest file loader (adapters/manifest.py)."""
 
-from pathlib import Path
 
 import pytest
 

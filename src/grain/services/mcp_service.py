@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import dataclasses
-import io
 import json
 import sys
 from dataclasses import dataclass

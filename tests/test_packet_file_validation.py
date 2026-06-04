@@ -1,6 +1,5 @@
 from pathlib import Path
 
-import pytest
 
 from grain.validators.packet_validator import (
     validate_packet,

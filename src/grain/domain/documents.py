@@ -5,7 +5,7 @@ representing and querying the manifest's document entries in memory.
 No filesystem access — operates on an already-parsed manifest dict.
 """
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 
 @dataclass

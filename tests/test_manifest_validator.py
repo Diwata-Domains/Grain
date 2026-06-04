@@ -1,6 +1,5 @@
 """Tests for the manifest schema validator (validators/manifest_validator.py)."""
 
-import copy
 
 import pytest
 

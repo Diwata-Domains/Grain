@@ -1,8 +1,7 @@
 """Tests for the document registry model (domain/documents.py)."""
 
-import pytest
 
-from grain.domain.documents import DocumentRecord, DocumentRegistry, build_registry
+from grain.domain.documents import DocumentRegistry, build_registry
 
 
 def _manifest_with_entries() -> dict:

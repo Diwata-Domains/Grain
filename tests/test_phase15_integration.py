@@ -272,7 +272,7 @@ def test_workflow_run_json_contract_on_auto_bootstrap(tmp_path: Path):
 
 def test_reconcile_dry_run_previews_without_writing(tmp_path: Path):
     """--dry-run shows what would be fixed but leaves files unchanged."""
-    packet_dir = _seed_packet(tmp_path, "P15-T01", "TASK-0103", "done")
+    _seed_packet(tmp_path, "P15-T01", "TASK-0103", "done")
     _seed_repo(tmp_path, backlog_tasks={"P15-T01": "ready"})
 
     result = _run(tmp_path, "workflow", "reconcile", "--dry-run")
