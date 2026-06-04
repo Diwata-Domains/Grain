@@ -167,8 +167,15 @@ def test_prompt_show_task_review_state_recommends_close_prompt(tmp_path):
         "# Task\n\n## Metadata\n- **ID:** TASK-0001\n- **Status:** review\n- **Phase:** Phase 8\n",
         encoding="utf-8",
     )
-    for name in ("context.md", "plan.md", "deliverable_spec.md", "results.md", "handoff.md"):
+    for name in ("context.md", "plan.md", "deliverable_spec.md", "handoff.md"):
         (packet_dir / name).write_text(f"# {name}\ncontent", encoding="utf-8")
+    # results.md must have user_review_state=approved for close to be recommended
+    (packet_dir / "results.md").write_text(
+        "# Results: TASK-0001\n\n## Summary\nWork completed.\n\n"
+        "## User Review\n- **State:** approved\n- **Summary:** Ready to close.\n"
+        "- **Resolution Mode:** close_task\n",
+        encoding="utf-8",
+    )
 
     _base_repo(tmp_path, task_status="review", task_id="TASK-0001", task_path="tasks/P8-T07-TASK-0001")
     _write(tmp_path / "docs" / "working" / "backlog.md", "")

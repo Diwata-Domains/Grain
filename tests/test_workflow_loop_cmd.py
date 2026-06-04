@@ -8,6 +8,13 @@ from click.testing import CliRunner
 from grain.cli import main
 
 
+_APPROVED_RESULTS = (
+    "# Results\n\n## Summary\nWork completed.\n\n"
+    "## User Review\n- **State:** approved\n- **Summary:** Ready to close.\n"
+    "- **Resolution Mode:** close_task\n"
+)
+
+
 def _write(path: Path, text: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(text, encoding="utf-8")
@@ -66,7 +73,7 @@ def _packet(
     _write(packet_dir / "plan.md", "# Plan\n")
     _write(packet_dir / "deliverable_spec.md", "# Deliverable\n")
     if with_results:
-        _write(packet_dir / "results.md", "# Results\nComplete.\n")
+        _write(packet_dir / "results.md", _APPROVED_RESULTS)
     if with_handoff:
         _write(packet_dir / "handoff.md", "# Handoff\nReady.\n")
     return packet_dir
