@@ -178,7 +178,14 @@ def test_prompt_show_task_review_state_recommends_close_prompt(tmp_path):
     )
 
     _base_repo(tmp_path, task_status="review", task_id="TASK-0001", task_path="tasks/P8-T07-TASK-0001")
-    _write(tmp_path / "docs" / "working" / "backlog.md", "")
+    _write(
+        tmp_path / "docs" / "working" / "backlog.md",
+        (
+            "## 10. Phase 8 — Workflow Automation Runner Foundation\n\n"
+            "### P8-T07 — Add forge prompt show\n"
+            "- **Status:** review\n"
+        ),
+    )
 
     runner = CliRunner()
     result = runner.invoke(
