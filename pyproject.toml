@@ -43,6 +43,10 @@ dependencies = [
 grain = "grain.cli:cli"
 
 [project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.4",
+]
 release = [
     "build>=1.4.3",
     "twine>=5.1",
