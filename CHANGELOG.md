@@ -7,6 +7,35 @@ Versioning: [Semantic Versioning](https://semver.org/)
 
 ---
 
+## [0.3.0] — 2026-06-11
+
+### Added
+- **TUI foundation** (`grain tui`) — Textual-based terminal operator shell with workflow dashboard, current task/phase view, backlog-by-phase list, packet artifact inspector, prompt preview, and context bundle inspector
+- **Writable office workflows** — `.docx` and spreadsheet `propose`/`export`/`apply` write modes with review bundles, structural validators, and safety modes; every write is packet-scoped and requires a review surface before close
+- **Verification bridge** — `grain verify submit`, `grain verify status`, `grain verify ingest`; verification-aware review/close gating so the workflow runner stops at a verification gate when a result is pending
+- **`grain workflow explain`** — surfaces the current workflow state and reasoning in human-readable form; useful for onboarding and debugging stuck workflows
+- **Writable office adapters** — shared `.docx` and spreadsheet write contracts, validators, and review-bundle pipeline; `office_adapter` and `spreadsheet_adapter` extended with propose/export write surfaces
+- **Non-code review model** — every non-code artifact write emits a structured review bundle (touched paths, operation mode, change summary, validator results, residual risk notes) before the task can close
+
+### Changed
+- Grain/Assay operator loop guidance hardened in prompts and runtime docs — earlier misuse blockers, clearer packet-local verification flow
+- Runner packet/template hydration and activation state sync improved — reduces live-session agent redirection
+- Workflow engine more resilient to drift: stale `current_task.md` pointers to done-task packets no longer block or confuse the runner
+- `grain workflow reconcile --fix` extended to cover office-artifact state drift
+- Packet-first guardrails tightened across execution prompts and agent instructions
+
+### Fixed
+- Archived-packet-aware task ID allocation — `TASK-XXXX` counter stays globally monotonic even after packets are archived
+- Terminal project-complete workflow state now routes cleanly without blocking future workflow queries
+- Safer upgrade behaviour for repos with customised managed files — skips with warning instead of overwriting
+
+### Notes
+- `Development Status :: 3 - Alpha` retained — TUI is first slice; no embedded agent terminals, multi-project views, or live collaboration yet
+- Homebrew remains deferred; `pip install grain-kit` and `uv tool install grain-kit` are the supported install paths
+- v0.4.0 direction: composable recipe execution, explicit Grain ↔ toolkit contracts, safer in-place mutation paths
+
+---
+
 ## [0.2.0] — 2026-04-23
 
 ### Added
