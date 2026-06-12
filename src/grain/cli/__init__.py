@@ -1,7 +1,9 @@
+import os
 import sys
 import tomllib
 import click
 from importlib.metadata import version, PackageNotFoundError
+from pathlib import Path
 
 try:
     _VERSION = version("grain-kit")
@@ -110,6 +112,118 @@ def _maybe_warn_if_grain_outdated(repo: str | None, invoked_subcommand: str | No
     )
 
 
+_VERSION_GATE_BYPASS = frozenset({"upgrade", "doctor", "config"})
+
+
+def _enforce_version_gate(root_str: str | None, invoked_subcommand: str | None, fmt: str) -> None:
+    """Check upgrade_policy in docs_manifest.yaml; warn or block if version is behind."""
+    from datetime import date
+
+    if not invoked_subcommand or _VERSION == "unknown":
+        return
+    if invoked_subcommand in _VERSION_GATE_BYPASS:
+        return
+
+    try:
+        root = resolve_repo_root(root_str)
+    except FileNotFoundError:
+        return
+
+    from grain.adapters.manifest import load_upgrade_policy
+    try:
+        policy = load_upgrade_policy(root)
+    except Exception:
+        return
+
+    if not policy.min_version.strip():
+        return
+
+    current = _parse_semver(_VERSION)
+    required = _parse_semver(policy.min_version)
+    if current is None or required is None:
+        return
+    if current >= required:
+        return
+
+    if os.environ.get("GRAIN_SKIP_VERSION_CHECK") == "1":
+        _log_version_skip(root, invoked_subcommand, policy.min_version)
+        return
+
+    in_enforce = False
+    if policy.enforce:
+        if policy.enforce_after_days <= 0:
+            in_enforce = True
+        elif policy.min_version_set_at:
+            try:
+                set_at = date.fromisoformat(policy.min_version_set_at)
+                days_since = (date.today() - set_at).days
+                if days_since >= policy.enforce_after_days:
+                    in_enforce = True
+            except ValueError:
+                pass
+
+    if in_enforce:
+        if fmt == "json":
+            import json as _json
+            click.echo(
+                _json.dumps({
+                    "error": "upgrade_required",
+                    "installed_version": _VERSION,
+                    "required_version": policy.min_version,
+                    "message": "All commands blocked. Run: grain upgrade",
+                    "upgrade_command": "grain upgrade",
+                })
+            )
+        msg = (
+            f"\n✗ Grain upgrade required\n\n"
+            f"  This workspace requires Grain ≥{policy.min_version}\n"
+            f"  You have {_VERSION} installed.\n\n"
+            f"  All workflow commands are blocked until you upgrade.\n\n"
+            f"  Run:   grain upgrade\n"
+            f"  Or:    pip install --upgrade grain-kit\n"
+            f"         uv tool upgrade grain-kit\n\n"
+            f"  To preview changes: grain upgrade --diff\n"
+        )
+        if policy.message:
+            msg += f"\n  {policy.message}\n"
+        click.echo(msg, err=True)
+        sys.exit(2)
+    else:
+        if fmt != "json":
+            click.echo(
+                f"⚠ Grain {_VERSION} installed; this workspace requires ≥{policy.min_version}. "
+                "Run: grain upgrade",
+                err=True,
+            )
+
+
+def _log_version_skip(root: Path, command: str, required: str) -> None:
+    """Write a row to tooling_notes.md recording GRAIN_SKIP_VERSION_CHECK=1 use."""
+    from datetime import date
+
+    notes_path = root / "docs" / "working" / "tooling_notes.md"
+    today = date.today().isoformat()
+    row = (
+        f"| {today} | friction | medium | grain {command} | "
+        f"GRAIN_SKIP_VERSION_CHECK=1 used; installed {_VERSION}, required {required} "
+        f"| open |\n"
+    )
+    _HEADER = (
+        "# Tooling Notes\n\n"
+        "| Date | Type | Severity | Command | Message | Status |\n"
+        "|------|------|----------|---------|---------|--------|\n"
+    )
+    try:
+        if not notes_path.exists():
+            notes_path.parent.mkdir(parents=True, exist_ok=True)
+            notes_path.write_text(_HEADER + row, encoding="utf-8")
+        else:
+            text = notes_path.read_text(encoding="utf-8")
+            notes_path.write_text(text + row, encoding="utf-8")
+    except Exception:
+        pass
+
+
 def _maybe_warn_if_upgrade_needed(root_path, invoked_subcommand: str | None) -> None:
     """If grain.upgrade_check = warn in docs_manifest.yaml, surface a hint when stale files exist."""
     if invoked_subcommand in {"upgrade", "onboard"}:
@@ -170,6 +284,7 @@ def main(ctx, repo, fmt):
 
     ctx.obj["fmt"] = fmt
     _maybe_warn_if_grain_outdated(repo, ctx.invoked_subcommand)
+    _enforce_version_gate(repo, ctx.invoked_subcommand, fmt)
 
     # Upgrade staleness hint (only when upgrade_check = warn in grain config)
     try:

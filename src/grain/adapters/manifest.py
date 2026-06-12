@@ -98,6 +98,56 @@ def load_grain_config(root: Path) -> GrainConfig:
     )
 
 
+@dataclass
+class UpgradePolicy:
+    """upgrade_policy block from docs_manifest.yaml."""
+
+    min_version: str = ""
+    min_version_set_at: str = ""
+    enforce: bool = False
+    enforce_after_days: int = 0
+    message: str = ""
+
+
+def load_upgrade_policy(root: Path) -> UpgradePolicy:
+    """Read the optional ``upgrade_policy:`` block from docs_manifest.yaml.
+
+    Returns an :class:`UpgradePolicy` with defaults for any field not present.
+    Never raises.
+    """
+    try:
+        manifest = load_manifest(root)
+    except Exception:
+        return UpgradePolicy()
+
+    raw = manifest.get("upgrade_policy")
+    if not isinstance(raw, dict):
+        return UpgradePolicy()
+
+    def _str(key: str) -> str:
+        val = raw.get(key, "")
+        return str(val).strip() if val is not None else ""
+
+    def _bool_val(key: str) -> bool:
+        val = raw.get(key, False)
+        return val if isinstance(val, bool) else False
+
+    def _int_val(key: str) -> int:
+        val = raw.get(key, 0)
+        try:
+            return int(val)
+        except (TypeError, ValueError):
+            return 0
+
+    return UpgradePolicy(
+        min_version=_str("min_version"),
+        min_version_set_at=_str("min_version_set_at"),
+        enforce=_bool_val("enforce"),
+        enforce_after_days=_int_val("enforce_after_days"),
+        message=_str("message"),
+    )
+
+
 def load_completion_policy(root: Path) -> CompletionPolicy:
     try:
         manifest = load_manifest(root)

@@ -168,6 +168,80 @@ def upgrade_repo(
     return result
 
 
+def write_upgrade_policy_min_version(root: Path, new_version: str) -> bool:
+    """Ratchet upgrade_policy.min_version and min_version_set_at in docs_manifest.yaml.
+
+    Uses surgical line-based replacement to preserve comments and formatting.
+    Appends an upgrade_policy block with defaults if the block is absent.
+    Returns True if the manifest was written.
+    """
+    from datetime import date
+
+    manifest_path = root / "docs" / "runtime" / "docs_manifest.yaml"
+    if not manifest_path.exists():
+        return False
+
+    today = date.today().isoformat()
+    text = manifest_path.read_text(encoding="utf-8")
+    lines = text.splitlines(keepends=True)
+
+    in_block = False
+    updated: list[str] = []
+    set_version = False
+    set_date = False
+
+    for line in lines:
+        stripped = line.strip()
+        if stripped.startswith("upgrade_policy:"):
+            in_block = True
+            updated.append(line)
+            continue
+
+        if in_block:
+            if line and not line[0].isspace() and stripped and not stripped.startswith("#"):
+                in_block = False
+                updated.append(line)
+                continue
+
+            # min_version_set_at must be checked before min_version (it's a superstring)
+            if not set_date and "min_version_set_at:" in line:
+                indent = " " * (len(line) - len(line.lstrip()))
+                # preserve inline comment if present
+                comment_part = ""
+                if "#" in line:
+                    comment_part = "  " + line[line.index("#"):]
+                updated.append(f'{indent}min_version_set_at: "{today}"{comment_part.rstrip()}\n')
+                set_date = True
+                continue
+
+            if not set_version and "min_version:" in line and "min_version_set_at" not in line:
+                indent = " " * (len(line) - len(line.lstrip()))
+                comment_part = ""
+                if "#" in line:
+                    comment_part = "  " + line[line.index("#"):]
+                updated.append(f'{indent}min_version: "{new_version}"{comment_part.rstrip()}\n')
+                set_version = True
+                continue
+
+        updated.append(line)
+
+    if set_version or set_date:
+        manifest_path.write_text("".join(updated), encoding="utf-8")
+        return True
+
+    # upgrade_policy block not found — append with defaults
+    block = (
+        "\nupgrade_policy:\n"
+        f'  min_version: "{new_version}"\n'
+        f'  min_version_set_at: "{today}"\n'
+        "  enforce: false\n"
+        "  enforce_after_days: 0\n"
+        '  message: ""\n'
+    )
+    manifest_path.write_text(text.rstrip() + block, encoding="utf-8")
+    return True
+
+
 def _scan_absent_seeded_files(
     root: Path,
     result: UpgradeResult,

@@ -54,6 +54,26 @@ def upgrade_cmd(ctx, dry_run: bool, show_diff: bool, interactive: bool, add_miss
 
     # Always compute diffs so we can detect user-customized files even in plain mode.
     result = upgrade_repo(root, dry_run=effective_dry_run, include_diffs=True, add_missing=add_missing)
+
+    # Ratchet upgrade_policy.min_version to the current installed version on real runs.
+    if not effective_dry_run:
+        try:
+            from grain.services.upgrade_service import write_upgrade_policy_min_version
+            from importlib.metadata import version as _pkg_version, PackageNotFoundError
+            try:
+                _v = _pkg_version("grain-kit")
+            except PackageNotFoundError:
+                import tomllib as _toml
+                _pyproject = root.parent / "pyproject.toml"
+                if not _pyproject.exists():
+                    import pathlib
+                    _pyproject = pathlib.Path(__file__).resolve().parents[4] / "pyproject.toml"
+                with _pyproject.open("rb") as _f:
+                    _v = _toml.load(_f)["project"]["version"]
+            write_upgrade_policy_min_version(root, _v)
+        except Exception:
+            pass
+
     if not need_diffs:
         # Only expose diffs in output when explicitly requested.
         result.diffs = {}

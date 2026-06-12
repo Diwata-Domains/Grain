@@ -19,6 +19,13 @@ grain:
   local_embedding_model: sentence-transformers/all-MiniLM-L6-v2
   openai_embedding_model: text-embedding-3-small
 
+upgrade_policy:
+  min_version: ""              # set by grain upgrade after successful install
+  min_version_set_at: ""       # set by grain upgrade; drives grace period calculation
+  enforce: false               # false = warn-only; true = block commands
+  enforce_after_days: 0        # days from min_version_set_at before enforcement activates
+  message: ""                  # optional custom message shown when blocked or warned
+
 canonical:
   - id: product_scope
     path: docs/canonical/product_scope.md

@@ -1683,7 +1683,7 @@ Default status for new backlog items in this file: `draft`
 - **Dependencies:** P31-T04, P31-T05
 
 ### P31-T07 — Implement upgrade enforcement: `upgrade_policy` manifest block and startup gate
-- **Status:** ready
+- **Status:** done
 - **TASK-ID:** TASK-0210
 - **Description:** Implement upgrade enforcement from `docs/working/upgrade_enforcement_spec.md`. (1) Add `upgrade_policy` block parsing to config service; (2) add startup version check in `cli/__init__.py`; (3) implement warn-only banner (stderr, no JSON pollution) and enforce mode (exit code 2, JSON error response); (4) update `grain upgrade` to write `min_version` and `min_version_set_at` on success; (5) add `GRAIN_SKIP_VERSION_CHECK=1` detection with automatic tooling_notes entry; (6) update `grain init` to seed empty `upgrade_policy:` block.
 - **Files:** `src/grain/services/config_service.py`, `src/grain/cli/__init__.py`, `src/grain/services/upgrade_service.py`, `src/grain/services/init_service.py`, tests
