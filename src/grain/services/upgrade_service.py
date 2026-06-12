@@ -71,6 +71,7 @@ class UpgradeResult:
     diffs: dict[str, str] = field(default_factory=dict)  # rel_path -> unified diff string
     customized: list[str] = field(default_factory=list)  # stale files with user-added content
     skipped_customized: list[str] = field(default_factory=list)  # customized files skipped in non-interactive mode
+    absent: list[str] = field(default_factory=list)  # seeded files not present in workspace
 
 
 def _unified_diff(rel: str, current: str, bundled: str) -> str:
@@ -103,6 +104,7 @@ def upgrade_repo(
     dry_run: bool = False,
     include_diffs: bool = False,
     allow_customized_updates: bool = False,
+    add_missing: bool = False,
 ) -> UpgradeResult:
     """Update Grain-managed files to the current bundled versions.
 
@@ -114,6 +116,7 @@ def upgrade_repo(
     Args:
         dry_run: Preview changes without writing.
         include_diffs: Populate ``result.diffs`` with unified diff strings for stale files.
+        add_missing: Seed absent seeded files; never overwrites existing files.
     """
     result = UpgradeResult()
 
@@ -158,5 +161,36 @@ def upgrade_repo(
                 target.parent.mkdir(parents=True, exist_ok=True)
                 target.write_text(source.read_text(encoding="utf-8"), encoding="utf-8")
 
+    # Absent-file detection: check which seeded files are missing from the workspace.
+    _scan_absent_seeded_files(root, result, dry_run=dry_run, seed=add_missing)
+
     result.protected = sorted(_PROTECTED)
     return result
+
+
+def _scan_absent_seeded_files(
+    root: Path,
+    result: UpgradeResult,
+    *,
+    dry_run: bool,
+    seed: bool,
+) -> None:
+    """Populate result.absent with seeded files not present in the workspace.
+
+    When seed=True, writes absent files (never overwrites existing ones).
+    """
+    from grain.services.init_service import _SEED_FILE_SOURCES, _SOURCE_REPO_ROOT
+
+    already_handled = set(result.updated + result.added + result.unchanged + result.skipped_customized)
+
+    for rel, source_rel in _SEED_FILE_SOURCES.items():
+        if rel in already_handled or rel in _PROTECTED:
+            continue
+        target = root / rel
+        if not target.exists():
+            result.absent.append(rel)
+            if seed and not dry_run:
+                source = _SOURCE_REPO_ROOT / source_rel
+                if source.exists():
+                    target.parent.mkdir(parents=True, exist_ok=True)
+                    target.write_text(source.read_text(encoding="utf-8"), encoding="utf-8")

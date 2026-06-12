@@ -259,3 +259,64 @@ def test_agent_profiles_does_not_say_for_grain(tmp_path: Path):
     content = (tmp_path / "docs" / "runtime" / "agent_profiles.md").read_text(encoding="utf-8")
     assert "for Grain" not in content
     assert "for this project" in content
+
+
+# --- absent-file detection and --add-missing tests ---
+
+def test_upgrade_reports_absent_seeded_files(tmp_path: Path):
+    """upgrade_repo reports seeded files missing from workspace in result.absent."""
+    result = upgrade_repo(tmp_path)
+
+    # backlog.md is seeded but not in _UPGRADE_TARGETS or _ADDITIVE_TARGETS
+    assert "docs/working/backlog.md" in result.absent
+    assert "docs/canonical/decisions.md" in result.absent
+    assert "CHANGELOG.md" in result.absent
+
+
+def test_upgrade_add_missing_seeds_absent_files(tmp_path: Path):
+    """--add-missing writes absent seeded files without touching existing ones."""
+    # Write a file that should not be overwritten
+    existing = tmp_path / "docs" / "working" / "backlog.md"
+    existing.parent.mkdir(parents=True, exist_ok=True)
+    existing.write_text("# My custom backlog\n", encoding="utf-8")
+
+    result = upgrade_repo(tmp_path, add_missing=True)
+
+    # backlog.md exists — should not appear in absent or be overwritten
+    assert "docs/working/backlog.md" not in result.absent
+    assert existing.read_text(encoding="utf-8") == "# My custom backlog\n"
+
+    # Absent files should now exist
+    assert (tmp_path / "CHANGELOG.md").exists()
+    assert (tmp_path / "docs" / "canonical" / "decisions.md").exists()
+
+
+def test_upgrade_add_missing_dry_run_does_not_write(tmp_path: Path):
+    result = upgrade_repo(tmp_path, dry_run=True, add_missing=True)
+
+    assert result.absent  # files are absent
+    assert not (tmp_path / "CHANGELOG.md").exists()
+
+
+def test_upgrade_cmd_shows_absent_files_in_text_output(tmp_path: Path):
+    result = _run(tmp_path, "upgrade")
+    assert result.exit_code == 0
+    assert "seeded file(s) absent from workspace" in result.output
+    assert "grain upgrade --add-missing" in result.output
+
+
+def test_upgrade_cmd_add_missing_flag_seeds_files(tmp_path: Path):
+    result = _run(tmp_path, "upgrade", "--add-missing")
+    assert result.exit_code == 0
+    assert (tmp_path / "CHANGELOG.md").exists()
+    assert (tmp_path / "docs" / "canonical" / "decisions.md").exists()
+
+
+def test_upgrade_cmd_json_output_includes_absent_key(tmp_path: Path):
+    import json
+    result = _run(tmp_path, "upgrade", "--format", "json")
+    assert result.exit_code == 0
+    data = json.loads(result.output)
+    assert "absent" in data
+    assert "add_missing" in data
+    assert isinstance(data["absent"], list)

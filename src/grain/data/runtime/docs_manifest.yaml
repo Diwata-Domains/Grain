@@ -42,6 +42,26 @@ canonical:
       - validating_implementation
       - resolving_design_conflicts
 
+  - id: decisions
+    path: docs/canonical/decisions.md
+    purpose: ADR-style log of architecture decisions and their rationale
+    authority: highest
+    editable_by_agents: false
+    read_when:
+      - designing_features
+      - resolving_design_conflicts
+      - creating_tasks
+
+  - id: landscape
+    path: docs/canonical/landscape.md
+    purpose: Competitive landscape analysis and external references
+    authority: highest
+    editable_by_agents: false
+    read_when:
+      - starting_project
+      - evaluating_scope
+      - planning_phases
+
 working:
   - id: implementation_plan
     path: docs/working/implementation_plan.md
@@ -98,13 +118,50 @@ working:
       - closing_phase
       - reviewing_workflow_health
 
+  - id: current_task
+    path: docs/working/current_task.md
+    purpose: Active task pointer — task ID, packet path, and execution status
+    authority: secondary
+    editable_by_agents: true
+    read_when:
+      - session_start
+      - workflow_check
+
+  - id: roadmap
+    path: docs/working/roadmap.md
+    purpose: Directional planning — strong candidates, under consideration, explicitly deferred
+    authority: informational
+    editable_by_agents: true
+    read_when:
+      - planning_phases
+      - selecting_next_work
+
+  - id: landscape_working
+    path: docs/working/landscape.md
+    purpose: Working analysis notes on the competitive and technical landscape
+    authority: informational
+    editable_by_agents: true
+    read_when:
+      - starting_project
+      - evaluating_scope
+
+  - id: proposals
+    path: docs/working/proposals/
+    purpose: Operator-approved change proposal documents
+    authority: advisory
+    editable_by_agents: false
+    read_when:
+      - canonical_conflict_detected
+      - proposing_scope_or_architecture_changes
+
   - id: tooling_notes
     path: docs/working/tooling_notes.md
     purpose: Structured inbox for workflow friction, tool bugs, and mid-session observations (Type/Status/Severity columns)
     authority: informational
     editable_by_agents: true
     read_when:
-      - never
+      - encountering_blockers
+      - logging_friction
 
 runtime:
   - id: project_rules

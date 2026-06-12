@@ -1651,7 +1651,7 @@ Default status for new backlog items in this file: `draft`
 - **Dependencies:** P31-T01
 
 ### P31-T03 — Implement scaffold seeding fixes and `grain upgrade --add-missing`
-- **Status:** ready
+- **Status:** done
 - **TASK-ID:** TASK-0206
 - **Description:** Implement all 14 gaps from `docs/working/scaffold_audit.md`. Write template files for all missing canonical and working docs, add to `_SEED_FILE_SOURCES`, add `docs/working/proposals/` to `_REQUIRED_DIRS`, add `--name`/`--type` flags to `grain init`, fix `tooling_notes read_when: never` in manifest, add `grain upgrade --add-missing` absent-file detection.
 - **Files:** `src/grain/data/runtime/` (14 new templates), `src/grain/services/init_service.py`, `src/grain/cli/init.py`, `src/grain/services/upgrade_service.py`, `src/grain/data/runtime/docs_manifest.yaml`

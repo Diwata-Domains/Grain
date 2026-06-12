@@ -12,8 +12,10 @@ from grain.cli.output import CommandResult, print_result
 @click.option("--secondary-adapter", multiple=True, help="Secondary adapter ID (repeatable).")
 @click.option("--bootstrap", is_flag=True, default=False, show_default=True, help="Create a starter task packet and initialize current_task.md after scaffolding.")
 @click.option("--update-agents", "update_agents", is_flag=True, default=False, show_default=True, help="Only regenerate the grain block in AGENTS.md; skip full init.")
+@click.option("--name", "project_name", default="", show_default=False, help="Project name — substitutes '[Your Project Name]' in all seeded files.")
+@click.option("--type", "project_type", default="", show_default=False, help="Project type — substitutes placeholder in docs_manifest.yaml (e.g. cli_tool, web_app, service).")
 @click.pass_context
-def init_cmd(ctx, force, dry_run, primary_adapter, secondary_adapter, bootstrap, update_agents):
+def init_cmd(ctx, force, dry_run, primary_adapter, secondary_adapter, bootstrap, update_agents, project_name, project_type):
     """Initialize repository structure and baseline toolkit artifacts."""
     repo = ctx.obj.get("repo") if ctx.obj else None
     fmt = ctx.obj.get("fmt", "text") if ctx.obj else "text"
@@ -29,9 +31,15 @@ def init_cmd(ctx, force, dry_run, primary_adapter, secondary_adapter, bootstrap,
             primary_adapter=primary_adapter,
             secondary_adapters=list(secondary_adapter),
             bootstrap=bootstrap,
+            project_name=project_name,
+            project_type=project_type,
         )
 
     base_warnings = ["dry-run: no files written"] if dry_run else []
+    if not update_agents and not project_name:
+        base_warnings.append(
+            "project name not set — run `grain init --name <name>` or edit '[Your Project Name]' in seeded files"
+        )
     agents_note = _agents_md_note(svc_result.agents_md_action, svc_result.claude_md_exists)
 
     result = CommandResult(

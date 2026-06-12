@@ -14,6 +14,7 @@ from grain.services.upgrade_service import UpgradeResult, upgrade_repo
 @click.option("--dry-run", is_flag=True, default=False, help="Preview changes without writing.")
 @click.option("--diff", "show_diff", is_flag=True, default=False, help="Show unified diffs for stale files without writing.")
 @click.option("--interactive", "-i", is_flag=True, default=False, help="Review each stale file's diff and choose accept/skip.")
+@click.option("--add-missing", "add_missing", is_flag=True, default=False, help="Seed absent seeded files into the workspace; never overwrites existing files.")
 @click.option(
     "--format",
     "local_fmt",
@@ -22,7 +23,7 @@ from grain.services.upgrade_service import UpgradeResult, upgrade_repo
     help="Output format override for this command.",
 )
 @click.pass_context
-def upgrade_cmd(ctx, dry_run: bool, show_diff: bool, interactive: bool, local_fmt: str | None) -> None:
+def upgrade_cmd(ctx, dry_run: bool, show_diff: bool, interactive: bool, add_missing: bool, local_fmt: str | None) -> None:
     """Update Grain-managed prompts and templates to the current installed version.
 
     Updates: prompts, task templates, safe runtime docs.
@@ -32,10 +33,11 @@ def upgrade_cmd(ctx, dry_run: bool, show_diff: bool, interactive: bool, local_fm
 
     \b
     Modes:
-      grain upgrade                  Apply all changes
+      grain upgrade                  Apply all changes; report absent seeded files
       grain upgrade --dry-run        List what would change
       grain upgrade --diff           Show unified diffs without writing
       grain upgrade --interactive    Review each file's diff, accept or skip
+      grain upgrade --add-missing    Seed absent files only; never overwrites
     """
     repo = ctx.obj.get("repo") if ctx.obj else None
     fmt = local_fmt or (ctx.obj.get("fmt", "text") if ctx.obj else "text")
@@ -51,7 +53,7 @@ def upgrade_cmd(ctx, dry_run: bool, show_diff: bool, interactive: bool, local_fm
     need_diffs = show_diff or interactive
 
     # Always compute diffs so we can detect user-customized files even in plain mode.
-    result = upgrade_repo(root, dry_run=effective_dry_run, include_diffs=True)
+    result = upgrade_repo(root, dry_run=effective_dry_run, include_diffs=True, add_missing=add_missing)
     if not need_diffs:
         # Only expose diffs in output when explicitly requested.
         result.diffs = {}
@@ -69,10 +71,12 @@ def upgrade_cmd(ctx, dry_run: bool, show_diff: bool, interactive: bool, local_fm
                     "updated": result.updated,
                     "added": result.added,
                     "unchanged": result.unchanged,
+                    "absent": result.absent,
                     "protected": result.protected,
                     "customized": result.customized,
                     "skipped_customized": result.skipped_customized,
                     "dry_run": dry_run or show_diff,
+                    "add_missing": add_missing,
                     "diffs": result.diffs,
                 },
                 indent=2,
@@ -142,6 +146,13 @@ def upgrade_cmd(ctx, dry_run: bool, show_diff: bool, interactive: bool, local_fm
     click.echo("Protected (not touched):")
     for rel in result.protected:
         click.echo(f"- {rel}")
+
+    if result.absent:
+        click.echo(f"\n{len(result.absent)} seeded file(s) absent from workspace:")
+        for rel in result.absent:
+            click.echo(f"  +  {rel}  (not present)")
+        if not add_missing:
+            click.echo("  Run `grain upgrade --add-missing` to seed them.")
 
 
 def _print_diff(diff_text: str) -> None:

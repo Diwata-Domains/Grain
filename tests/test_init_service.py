@@ -5,6 +5,7 @@ from grain.services.init_service import init_repo
 EXPECTED_DIRS = {
     "docs/canonical",
     "docs/working",
+    "docs/working/proposals",
     "docs/runtime",
     "tasks",
     "templates/docs",
@@ -41,7 +42,23 @@ EXPECTED_SEED_FILES = {
     "prompts/phase.review.md",
     "prompts/phase.review_and_close.md",
     "prompts/tasks.plan.next.md",
+    # working docs
     "docs/working/implementation_plan.md",
+    "docs/working/backlog.md",
+    "docs/working/current_focus.md",
+    "docs/working/open_questions.md",
+    "docs/working/change_proposals.md",
+    "docs/working/roadmap.md",
+    "docs/working/current_task.md",
+    "docs/working/landscape.md",
+    "docs/working/workflow_metrics.md",
+    # canonical docs
+    "docs/canonical/product_scope.md",
+    "docs/canonical/architecture.md",
+    "docs/canonical/decisions.md",
+    "docs/canonical/landscape.md",
+    # root files
+    "CHANGELOG.md",
 }
 
 
@@ -219,7 +236,7 @@ def test_init_seeds_project_shaped_manifest_without_forcing_cli_docs(tmp_path):
     manifest = yaml.safe_load(manifest_path.read_text(encoding="utf-8"))
     canonical_ids = {entry["id"] for entry in manifest["canonical"]}
 
-    assert canonical_ids == {"product_scope", "architecture"}
+    assert canonical_ids == {"product_scope", "architecture", "decisions", "landscape"}
     assert "cli_spec" not in canonical_ids
     assert "workflow_spec" not in canonical_ids
     assert "data_contracts" not in canonical_ids
@@ -232,3 +249,56 @@ def test_init_stamps_minimum_grain_version_into_manifest(tmp_path):
     manifest = yaml.safe_load(manifest_path.read_text(encoding="utf-8"))
 
     assert manifest["project"]["minimum_grain_version"] != "__GRAIN_VERSION__"
+
+
+def test_init_name_substitutes_project_name_placeholder(tmp_path):
+    init_repo(tmp_path, project_name="Acme CLI")
+
+    backlog = (tmp_path / "docs" / "working" / "backlog.md").read_text(encoding="utf-8")
+    assert "Acme CLI" in backlog
+    assert "[Your Project Name]" not in backlog
+
+    manifest = yaml.safe_load(
+        (tmp_path / "docs" / "runtime" / "docs_manifest.yaml").read_text(encoding="utf-8")
+    )
+    assert manifest["project"]["name"] == "Acme CLI"
+
+
+def test_init_type_substitutes_project_type_placeholder(tmp_path):
+    init_repo(tmp_path, project_type="cli_tool")
+
+    manifest = yaml.safe_load(
+        (tmp_path / "docs" / "runtime" / "docs_manifest.yaml").read_text(encoding="utf-8")
+    )
+    assert manifest["project"]["type"] == "cli_tool"
+
+
+def test_init_without_name_leaves_placeholder(tmp_path):
+    init_repo(tmp_path)
+
+    manifest = yaml.safe_load(
+        (tmp_path / "docs" / "runtime" / "docs_manifest.yaml").read_text(encoding="utf-8")
+    )
+    assert manifest["project"]["name"] == "[Your Project Name]"
+
+
+def test_init_changelog_skipped_if_present(tmp_path):
+    # Pre-populate CHANGELOG.md with custom content
+    (tmp_path / "CHANGELOG.md").write_text("# My Custom Changelog\n", encoding="utf-8")
+    init_repo(tmp_path)
+
+    content = (tmp_path / "CHANGELOG.md").read_text(encoding="utf-8")
+    assert content == "# My Custom Changelog\n"
+
+
+def test_init_current_task_template_written_on_fresh_init(tmp_path):
+    init_repo(tmp_path)
+
+    current_task = (tmp_path / "docs" / "working" / "current_task.md").read_text(encoding="utf-8")
+    assert "Task ID: none" in current_task
+    assert "grain workflow next" in current_task
+
+
+def test_init_proposals_dir_created(tmp_path):
+    init_repo(tmp_path)
+    assert (tmp_path / "docs" / "working" / "proposals").is_dir()

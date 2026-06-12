@@ -9,6 +9,7 @@ from importlib.metadata import PackageNotFoundError, version
 _REQUIRED_DIRS = [
     "docs/canonical",
     "docs/working",
+    "docs/working/proposals",
     "docs/runtime",
     "tasks",
     "templates/docs",
@@ -60,10 +61,28 @@ _SEED_FILE_SOURCES = {
     "prompts/phase.review.md": "prompts/phase.review.md",
     "prompts/phase.review_and_close.md": "prompts/phase.review_and_close.md",
     "prompts/tasks.plan.next.md": "prompts/tasks.plan.next.md",
+    # working docs
     "docs/working/implementation_plan.md": "runtime/implementation_plan.md",
+    "docs/working/backlog.md": "runtime/backlog.md",
+    "docs/working/current_focus.md": "runtime/current_focus.md",
+    "docs/working/open_questions.md": "runtime/open_questions.md",
+    "docs/working/change_proposals.md": "runtime/change_proposals.md",
+    "docs/working/roadmap.md": "runtime/roadmap.md",
+    "docs/working/current_task.md": "runtime/current_task_template.md",
+    "docs/working/landscape.md": "runtime/landscape_working.md",
+    "docs/working/workflow_metrics.md": "runtime/workflow_metrics.md",
+    # canonical docs
+    "docs/canonical/product_scope.md": "runtime/product_scope.md",
+    "docs/canonical/architecture.md": "runtime/architecture.md",
+    "docs/canonical/decisions.md": "runtime/decisions.md",
+    "docs/canonical/landscape.md": "runtime/landscape_canonical.md",
+    # root files
+    "CHANGELOG.md": "runtime/CHANGELOG.md",
 }
 
 _GRAIN_VERSION_PLACEHOLDER = "__GRAIN_VERSION__"
+_PROJECT_NAME_PLACEHOLDER = "[Your Project Name]"
+_PROJECT_TYPE_PLACEHOLDER = "[project type — e.g. web_app, cli_tool, service, data_pipeline]"
 
 
 @dataclass
@@ -88,6 +107,8 @@ def init_repo(
     secondary_adapters: list[str] | None = None,
     bootstrap: bool = False,
     update_agents: bool = False,
+    project_name: str = "",
+    project_type: str = "",
 ) -> InitResult:
     """Scaffold the required repository structure under `root`.
 
@@ -121,6 +142,10 @@ def init_repo(
         text = source.read_text(encoding="utf-8")
         if rel == "docs/runtime/docs_manifest.yaml":
             text = text.replace(_GRAIN_VERSION_PLACEHOLDER, _current_grain_version())
+            if project_type:
+                text = text.replace(_PROJECT_TYPE_PLACEHOLDER, project_type)
+        if project_name:
+            text = text.replace(_PROJECT_NAME_PLACEHOLDER, project_name)
 
         if target.exists():
             if force and not rel.startswith(_CANONICAL_PREFIX):
