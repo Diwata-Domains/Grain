@@ -256,7 +256,7 @@ def test_prune_archived_proposals_removes_old_files(tmp_path):
     old_file = proposals_dir / "SUG-old.md"
     _write(old_file, "content")
     # Set mtime to 100 days ago
-    import os, time
+    import os
     old_time = (datetime.now(tz=timezone.utc) - timedelta(days=100)).timestamp()
     os.utime(old_file, (old_time, old_time))
 

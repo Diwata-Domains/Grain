@@ -328,7 +328,6 @@ def _check_branch_policy(root: Path, current_task: dict) -> GuardFinding:
     phase = ""
     try:
         from grain.services.workflow_service import _read_current_phase
-        from pathlib import Path as _Path
         cf = root / "docs" / "working" / "current_focus.md"
         if cf.exists():
             phase = _read_current_phase(cf)
