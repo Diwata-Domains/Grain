@@ -1498,7 +1498,7 @@ Default status for new backlog items in this file: `draft`
   - fix `grain init` scaffold seeding gaps so it is immediately useful out of the box
 
 ### P30-T01 — Lock the `v0.4.0` milestone contract
-- **Status:** draft
+- **Status:** done
 - **TASK-ID:** TASK-0190
 - **Description:** Formalize the v0.4.0 milestone contract. Locks `grain suggest` as core, maps tooling_notes DX items to execution phase order, resolves four open design questions (recipe unit, transport format, apply threshold, suggest signal quality bar).
 - **Files:** `docs/working/v0.4.0_contract.md` (new), `docs/working/current_focus.md`
