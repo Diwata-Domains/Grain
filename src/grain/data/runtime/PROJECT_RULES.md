@@ -6,7 +6,29 @@ These rules govern all agent and tool behavior in this repository.
 
 ---
 
-## 2. Core Operating Rules
+## 2. Hard Rules — These Are Not Suggestions
+
+1. **No implementation files may be created or modified outside of an open task packet.**
+   "Open" means: a packet directory exists under `tasks/`, `docs/working/current_task.md`
+   points to it, and the packet's `task.md` has `Status: in_progress`.
+
+2. **Session start checklist — run before any other action:**
+   (a) Run: `grain --format json workflow next`
+   (b) Verify: `current_task.md` points to an in_progress packet
+   (c) If no open packet: run `grain task create --id <TASK-ID>` before proceeding
+   See `prompts/workflow.resume.md` for the full session resume protocol.
+
+3. **No commit may contain implementation files without an open packet at commit time.**
+   The pre-commit hook enforces this. `GRAIN_SKIP_GUARD=1` is an emergency bypass
+   that logs to `docs/working/tooling_notes.md` and must be justified.
+
+4. **Log tooling friction immediately.**
+   If a `grain` command fails unexpectedly or produces unexpected output, add a row to
+   `docs/working/tooling_notes.md` before continuing. Do not work around silently.
+
+---
+
+## 3. Core Operating Rules (original)
 
 1. Respect separation of concerns.
 2. Do not merge canonical, working, runtime, and task responsibilities.

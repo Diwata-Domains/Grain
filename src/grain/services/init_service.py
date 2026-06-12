@@ -48,6 +48,7 @@ _SEED_FILE_SOURCES = {
     "templates/tasks/results.md": "templates/tasks/results.md",
     "templates/tasks/handoff.md": "templates/tasks/handoff.md",
     "templates/tasks/task_packet.md": "templates/tasks/task_packet.md",
+    "prompts/workflow.resume.md": "prompts/workflow.resume.md",
     "prompts/workflow.onboard.new.md": "prompts/workflow.onboard.new.md",
     "prompts/workflow.onboard.existing.md": "prompts/workflow.onboard.existing.md",
     "prompts/workflow.init.md": "prompts/workflow.init.md",

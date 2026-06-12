@@ -92,7 +92,10 @@ def task_next(ctx):
         raise click.ClickException("task selection failed")
 
     next_task = ""
-    if evaluation.next_action == "task_execute" and evaluation.candidate_tasks:
+    if (
+        evaluation.next_action == "task_execute"
+        or evaluation.stop_reason == "packet_required"
+    ) and evaluation.candidate_tasks:
         next_task = evaluation.candidate_tasks[0].task_ref
 
     planning_required = (
@@ -117,7 +120,10 @@ def task_next(ctx):
     if next_task:
         click.echo("task next: ok")
         click.echo(f"  next_task         {next_task}")
-        click.echo(f"  next_action       {evaluation.next_action}")
+        if evaluation.next_action:
+            click.echo(f"  next_action       {evaluation.next_action}")
+        if evaluation.stop_reason:
+            click.echo(f"  stop_reason       {evaluation.stop_reason}")
     elif planning_required:
         click.echo("task next: planning_required")
         click.echo("  reason            no ready task candidate; planning required first")

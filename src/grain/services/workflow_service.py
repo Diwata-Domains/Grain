@@ -309,8 +309,7 @@ def evaluate_workflow_state(
             )
             return _result_with_evaluation(root, evaluation)
 
-        # Gate: if results.md is absent, the task hasn't been formally completed yet.
-        # Surface this before letting the agent jump to the next task.
+        # Gate: if results.md is absent, the task is still in execution.
         if not (packet_dir / "results.md").exists():
             evaluation = WorkflowEvaluation(
                 ok=False,
@@ -324,6 +323,8 @@ def evaluate_workflow_state(
                 ],
                 active_phase=current_phase,
                 active_task_id=active_task_id,
+                task_packet_path=str(packet_dir.relative_to(root)),
+                warnings=["no_execution_artifacts"],
                 recommended_prompt="prompts/task.execute.md",
             )
             return _result_with_evaluation(root, evaluation)
@@ -381,9 +382,15 @@ def evaluate_workflow_state(
 
     if len(ready_tasks) == 1:
         task = ready_tasks[0]
+        create_cmd = f"grain task create --id {task.task_id}" if task.task_id else "grain task create"
         evaluation = WorkflowEvaluation(
             ok=True,
-            next_action="task_execute",
+            stop_reason="packet_required",
+            blocking_reasons=[
+                "no in-progress task packet — create one before executing",
+                f"ready task: {task.task_ref}" + (f" ({task.task_id})" if task.task_id else ""),
+                f"create packet: {create_cmd}",
+            ],
             recommended_prompt="prompts/task.execute.md",
             affected_artifacts=[_DEFAULT_BACKLOG_DOC, _DEFAULT_CURRENT_TASK_DOC],
             active_phase=current_phase,
@@ -510,58 +517,54 @@ def _missing_review_artifacts(packet_dir: Path) -> list[str]:
     return missing
 
 
+_BACKLOG_TASK_ID = re.compile(r"^- \*\*TASK-ID:\*\*\s*(TASK-\d+)")
+
+
 def _read_phase_backlog_tasks(backlog_path: Path, phase_number: str) -> list[WorkflowTaskState]:
     lines = backlog_path.read_text(encoding="utf-8").splitlines()
     current_phase = ""
     tasks: list[WorkflowTaskState] = []
     current_task_ref = ""
     current_status = ""
+    current_task_id = ""
+
+    def _flush() -> None:
+        if current_phase == phase_number and current_task_ref and current_status:
+            tasks.append(WorkflowTaskState(
+                task_ref=current_task_ref,
+                status=current_status,
+                source="backlog",
+                task_id=current_task_id,
+            ))
 
     for line in lines:
         phase_match = _PHASE_HEADING.match(line)
         if phase_match:
-            if current_phase == phase_number and current_task_ref and current_status:
-                tasks.append(
-                    WorkflowTaskState(
-                        task_ref=current_task_ref,
-                        status=current_status,
-                        source="backlog",
-                    )
-                )
+            _flush()
             current_task_ref = ""
             current_status = ""
+            current_task_id = ""
             current_phase = phase_match.group(1)
             continue
 
         if _SECTION_HEADING.match(line):
-            if current_phase == phase_number and current_task_ref and current_status:
-                tasks.append(
-                    WorkflowTaskState(
-                        task_ref=current_task_ref,
-                        status=current_status,
-                        source="backlog",
-                    )
-                )
+            _flush()
             if current_phase == phase_number:
                 current_task_ref = ""
                 current_status = ""
+                current_task_id = ""
                 break
             current_task_ref = ""
             current_status = ""
+            current_task_id = ""
             continue
 
         heading_match = _TASK_HEADING.match(line)
         if heading_match:
-            if current_phase == phase_number and current_task_ref and current_status:
-                tasks.append(
-                    WorkflowTaskState(
-                        task_ref=current_task_ref,
-                        status=current_status,
-                        source="backlog",
-                    )
-                )
+            _flush()
             current_task_ref = heading_match.group(1)
             current_status = ""
+            current_task_id = ""
             continue
 
         if not current_task_ref:
@@ -572,15 +575,12 @@ def _read_phase_backlog_tasks(backlog_path: Path, phase_number: str) -> list[Wor
             current_status = status_match.group(1)
             continue
 
-    if current_phase == phase_number and current_task_ref and current_status:
-        tasks.append(
-            WorkflowTaskState(
-                task_ref=current_task_ref,
-                status=current_status,
-                source="backlog",
-            )
-        )
+        tid_match = _BACKLOG_TASK_ID.match(line)
+        if tid_match:
+            current_task_id = tid_match.group(1)
+            continue
 
+    _flush()
     return tasks
 
 

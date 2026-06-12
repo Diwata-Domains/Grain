@@ -41,7 +41,7 @@ def test_task_next_reports_ready_candidate(tmp_path):
     assert result.exit_code == 0, result.output
     assert "task next: ok" in result.output
     assert "next_task         P8-T04" in result.output
-    assert "next_action       task_execute" in result.output
+    assert "stop_reason       packet_required" in result.output
 
 
 def test_task_next_reports_planning_required_when_no_ready_task(tmp_path):

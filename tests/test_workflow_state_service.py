@@ -234,7 +234,7 @@ def test_evaluate_workflow_state_ignores_non_phase_sections_after_active_phase(t
 
     assert result.ok is True
     assert evaluation is not None
-    assert evaluation.next_action == "task_execute"
+    assert evaluation.stop_reason == "packet_required"
     assert evaluation.candidate_tasks[0].task_ref == "P8-T09"
 
 
@@ -304,7 +304,7 @@ def test_evaluate_workflow_state_recommends_execute_for_single_ready_task(tmp_pa
 
     assert result.ok is True
     assert evaluation is not None
-    assert evaluation.next_action == "task_execute"
+    assert evaluation.stop_reason == "packet_required"
     assert [task.task_ref for task in evaluation.candidate_tasks] == ["P8-T02"]
 
 

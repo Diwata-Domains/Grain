@@ -2,7 +2,7 @@
 
 ## Metadata
 - **ID:** TASK-0205
-- **Status:** ready
+- **Status:** done
 - **Phase:** Phase 31 — DX Hardening and v0.4.0 Foundation
 - **Backlog:** P31-T02
 - **Packet Path:** tasks/P31-T02-TASK-0205/

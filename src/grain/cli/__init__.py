@@ -27,6 +27,7 @@ from .orchestrate import orchestrate_group
 from .review import review_group
 from .office import office_group
 from .tui import tui_cmd
+from .hooks import hooks_group
 from .workflow import workflow_group
 from .onboard import onboard_cmd
 from .upgrade import upgrade_cmd
@@ -203,6 +204,7 @@ main.add_command(orchestrate_group)
 main.add_command(review_group)
 main.add_command(office_group)
 main.add_command(tui_cmd)
+main.add_command(hooks_group)
 main.add_command(workflow_group)
 main.add_command(onboard_cmd)
 main.add_command(upgrade_cmd)

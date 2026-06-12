@@ -5,6 +5,7 @@ import click
 
 from grain.adapters.filesystem import resolve_repo_root
 from grain.domain.errors import UsageError
+from grain.services.guard_service import GuardFinding, GuardResult, run_guard
 from grain.services.reconcile_service import reconcile
 from grain.services.task_observability_service import read_task_observability
 from grain.services.workflow_diagnostics_service import (
@@ -88,6 +89,69 @@ def workflow_next(ctx):
             "  tip               completed ad-hoc work outside the workflow? "
             "`grain task create --simple` creates a lightweight audit record — say no to skip"
         )
+
+
+@workflow_group.command("guard")
+@click.option("--strict", is_flag=True, default=False, help="Treat warnings as violations.")
+@click.option("--check-docs", is_flag=True, default=False, help="Include docs audit findings.")
+@click.option("--check-dev-alignment", is_flag=True, default=False, help="Check dev/install alignment.")
+@click.pass_context
+def workflow_guard(ctx, strict, check_docs, check_dev_alignment):
+    """Run enforcement checks against the current workspace state.
+
+    Checks: packet_open, results_not_stub, phase_alignment,
+    implementation_ahead_of_packet. Returns exit code 1 on violation.
+    """
+    repo = ctx.obj.get("repo") if ctx.obj else None
+    fmt = ctx.obj.get("fmt", "text") if ctx.obj else "text"
+    root = resolve_repo_root(repo)
+
+    guard = run_guard(root, strict=strict, check_docs=check_docs, check_dev_alignment=check_dev_alignment)
+
+    if fmt == "json":
+        click.echo(json.dumps({
+            "status": guard.status,
+            "ok": guard.ok,
+            "checks": [
+                {
+                    "id": f.id,
+                    "result": f.result,
+                    "severity": f.severity,
+                    "message": f.message,
+                    "remediation": f.remediation,
+                }
+                for f in guard.checks
+            ],
+            "errors": guard.errors,
+        }, indent=2))
+        if not guard.ok:
+            raise SystemExit(1)
+        return
+
+    if guard.errors:
+        for err in guard.errors:
+            click.echo(f"  error  {err}", err=True)
+        raise SystemExit(1)
+
+    _RESULT_SYMBOL = {"pass": "✓", "warn": "⚠", "fail": "✗"}
+    for finding in guard.checks:
+        sym = _RESULT_SYMBOL.get(finding.result, "?")
+        click.echo(f"  {sym} {finding.id:<38} {finding.message}")
+        if finding.remediation and finding.result != "pass":
+            click.echo(f"    → {finding.remediation}")
+
+    violations = sum(1 for f in guard.checks if f.result == "fail")
+    warnings = sum(1 for f in guard.checks if f.result == "warn")
+
+    click.echo("")
+    if violations:
+        click.echo(f"Guard: {violations} violation{'s' if violations != 1 else ''}" +
+                   (f", {warnings} warning{'s' if warnings != 1 else ''}" if warnings else ""))
+        raise SystemExit(1)
+    elif warnings:
+        click.echo(f"Guard: {warnings} warning{'s' if warnings != 1 else ''}")
+    else:
+        click.echo("Guard: OK")
 
 
 @workflow_group.command("run")

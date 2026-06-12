@@ -29,6 +29,7 @@ EXPECTED_SEED_FILES = {
     "templates/tasks/results.md",
     "templates/tasks/handoff.md",
     "templates/tasks/task_packet.md",
+    "prompts/workflow.resume.md",
     "prompts/workflow.onboard.new.md",
     "prompts/workflow.onboard.existing.md",
     "prompts/workflow.init.md",

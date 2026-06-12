@@ -221,7 +221,10 @@ def run_workflow_loop(
 
         next_action = evaluation.next_action
         if dry_run:
-            if next_action == "task_execute" and not evaluation.active_task_id:
+            if (
+                (next_action == "task_execute" or evaluation.stop_reason == "packet_required")
+                and not evaluation.active_task_id
+            ):
                 progress.append(
                     {
                         "index": len(progress) + 1,
@@ -317,9 +320,9 @@ def run_workflow_loop(
                 ),
             )
 
-        # If workflow reports task_execute with no active task, activate one
-        # first and continue the loop.
-        if next_action == "task_execute" and not evaluation.active_task_id:
+        # If workflow reports task_execute or packet_required with no active task,
+        # activate / create the packet and continue the loop.
+        if (next_action == "task_execute" or evaluation.stop_reason == "packet_required") and not evaluation.active_task_id:
             activate_result, activate_payload = run_workflow_step(root)
             step_record: dict[str, Any] = {
                 "index": len(progress) + 1,

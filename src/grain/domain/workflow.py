@@ -10,6 +10,7 @@ class WorkflowTaskState:
     task_ref: str
     status: str
     source: str
+    task_id: str = ""    # TASK-XXXX from backlog TASK-ID field; empty if not parsed
 
 
 @dataclass
@@ -25,3 +26,8 @@ class WorkflowEvaluation:
     active_phase: str = ""
     active_task_id: str = ""
     candidate_tasks: list[WorkflowTaskState] = field(default_factory=list)
+    # Populated when next_action == "task_execute" — gives agents a direct packet reference.
+    task_packet_path: str = ""
+    task_title: str = ""
+    # Non-blocking advisories attached to any routing decision.
+    warnings: list[str] = field(default_factory=list)

@@ -72,7 +72,7 @@ def test_show_prompt_returns_payload_for_ready_task(tmp_path):
     assert payload["recommended_prompt"] == "prompts/task.execute.md"
     assert payload["prompt_exists"] is True
     assert payload["model_class"] == "open_model"
-    assert payload["next_action"] == "task_execute"
+    assert payload["stop_reason"] == "packet_required"
 
 
 def test_show_prompt_prompt_missing_from_disk_still_returns_payload(tmp_path):
@@ -111,7 +111,7 @@ def test_prompt_show_text_output_includes_next_action(tmp_path):
     _ready_backlog(tmp_path)
     runner = CliRunner()
     result = runner.invoke(main, ["--repo", str(tmp_path), "prompt", "show"])
-    assert "task_execute" in result.output
+    assert "packet_required" in result.output
 
 
 def test_prompt_show_json_output_has_prompt_key(tmp_path):
@@ -125,7 +125,7 @@ def test_prompt_show_json_output_has_prompt_key(tmp_path):
     data = json.loads(result.output)
     assert "prompt" in data
     assert data["prompt"]["recommended_prompt"] == "prompts/task.execute.md"
-    assert data["prompt"]["next_action"] == "task_execute"
+    assert data["prompt"]["stop_reason"] == "packet_required"
 
 
 def test_prompt_show_json_includes_model_class_when_prompt_exists(tmp_path):

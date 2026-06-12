@@ -65,8 +65,8 @@ def run_workflow_step(root: Path, simple: bool = False) -> tuple[CommandResult, 
         )
         return result, payload
 
-    # ── next_action == "task_execute" ─────────────────────────────────────
-    if evaluation.next_action == "task_execute":
+    # ── next_action == "task_execute" or stop_reason == "packet_required" ────
+    if evaluation.next_action == "task_execute" or evaluation.stop_reason == "packet_required":
         # Task is already in_progress — execution requires an agent/human.
         if evaluation.active_task_id:
             payload = _gate_payload(

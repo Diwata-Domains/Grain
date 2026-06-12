@@ -40,7 +40,7 @@ def test_workflow_next_reports_next_action_for_single_ready_task(tmp_path):
 
     assert result.exit_code == 0, result.output
     assert "workflow next: ok" in result.output
-    assert "next_action       task_execute" in result.output
+    assert "stop_reason       packet_required" in result.output
     assert "candidate_tasks" in result.output
     assert "P8-T03 (ready)" in result.output
 

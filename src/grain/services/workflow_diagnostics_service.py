@@ -47,7 +47,7 @@ def _build_diagnostic(evaluation: WorkflowEvaluation) -> WorkflowDiagnostic:
     suggested_commands: list[str] = []
 
     if evaluation.ok:
-        if evaluation.next_action == "task_execute":
+        if evaluation.next_action == "task_execute" or evaluation.stop_reason == "packet_required":
             summary = "A task is ready to execute."
             likely_cause = "The current phase has exactly one actionable backlog item and no active packet is blocking progress."
             if evaluation.candidate_tasks:

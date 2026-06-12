@@ -106,7 +106,7 @@ def test_mcp_workflow_next_tool_returns_structured_content(tmp_path: Path) -> No
     assert response is not None
     result = response["result"]
     assert result["isError"] is False
-    assert result["structuredContent"]["evaluation"]["next_action"] == "task_execute"
+    assert result["structuredContent"]["evaluation"]["stop_reason"] == "packet_required"
     assert result["structuredContent"]["evaluation"]["candidate_tasks"][0]["task_ref"] == "P24-T01"
 
 
@@ -170,4 +170,4 @@ def test_mcp_serve_stdio_handles_initialize_and_tool_call(tmp_path: Path) -> Non
     lines = [json.loads(line) for line in output_stream.getvalue().splitlines()]
     assert len(lines) == 2
     assert lines[0]["result"]["protocolVersion"] == MCP_PROTOCOL_VERSION
-    assert lines[1]["result"]["structuredContent"]["evaluation"]["next_action"] == "task_execute"
+    assert lines[1]["result"]["structuredContent"]["evaluation"]["stop_reason"] == "packet_required"

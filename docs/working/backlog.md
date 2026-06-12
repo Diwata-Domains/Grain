@@ -1643,7 +1643,7 @@ Default status for new backlog items in this file: `draft`
 - **Dependencies:** none
 
 ### P31-T02 — Implement agent enforcement: workflow guard, hooks, resume prompt, PROJECT_RULES
-- **Status:** ready
+- **Status:** done
 - **TASK-ID:** TASK-0205
 - **Description:** Implement the 6-layer enforcement model from `docs/canonical/enforcement_spec.md`. Covers: (1) `grain workflow next` `packet_required` stop reason + done-task stale-pointer fix + packet path in `task_execute` output; (2) `grain workflow guard` command; (3) `grain hooks install` / `uninstall` / `status`; (4) seed `prompts/workflow.resume.md` in `grain init`; (5) PROJECT_RULES.md hard rule additions; (6) AGENTS.md block updates.
 - **Files:** `src/grain/services/workflow_service.py`, `src/grain/cli/workflow.py`, `src/grain/services/hooks_service.py` (new), `src/grain/cli/hooks.py` (new), `src/grain/data/runtime/prompts/workflow.resume.md` (new), `src/grain/data/runtime/PROJECT_RULES.md`

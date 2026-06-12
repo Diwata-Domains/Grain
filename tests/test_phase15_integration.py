@@ -198,7 +198,7 @@ def test_workflow_unblocked_when_previous_phase_sealed(tmp_path: Path):
     )
     result = _run(tmp_path, "workflow", "next")
     assert "previous_phase_not_closed" not in result.output
-    assert "task_execute" in result.output
+    assert "packet_required" in result.output
 
 
 # ── Test 4: reconcile --fix repairs stale state after task close ──────────────
@@ -369,7 +369,7 @@ def test_full_phase15_gate_sequence(tmp_path: Path):
     # Workflow next for Phase 16 should succeed (Phase 15 marker present)
     next_result = _run(tmp_path, "workflow", "next")
     assert "previous_phase_not_closed" not in next_result.output
-    assert "task_execute" in next_result.output
+    assert "packet_required" in next_result.output
 
     # Reconcile clean
     reconcile_result = _run(tmp_path, "workflow", "reconcile")

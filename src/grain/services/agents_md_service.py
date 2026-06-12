@@ -25,37 +25,46 @@ _CLAUDE_MD_FILENAME = "CLAUDE.md"
 
 def _grain_block() -> str:
     return f"""{_MARKER_START}
-## Grain Workflow
+## Grain Workflow — HARD CONSTRAINT
+
+You MUST NOT create or modify implementation files without an open task packet.
+
+See the session start protocol at: `prompts/workflow.resume.md`
+
+---
 
 This repo uses [Grain](https://pypi.org/project/grain-kit/) for structured
 task lifecycle management. All code changes must go through the workflow.
 
-**Before modifying any code, run:**
+**Session start — run this first, before reading any user message or touching files:**
 
 ```
-grain workflow next --format json
+grain --format json workflow next
 ```
 
-This returns the current workflow state and next legal action. Feed the
-output into your first prompt. Never skip straight to implementation or
-work from chat context alone when no packet exists on disk.
+This returns the current workflow state and next legal action. If the result
+shows `stop_reason: packet_required`, create a packet before proceeding:
 
-If there is no active task packet yet, create or activate one through the
-workflow before modifying code.
+```
+grain task create --id <TASK-ID>
+```
+
+Never work from chat context alone when no packet exists on disk. The packet
+files on disk are the authority, not the conversation history.
 
 **Key commands:**
 
 | Command | Purpose |
 |---------|---------|
-| `grain workflow next` | Current state + next action |
-| `grain workflow run` | Activate the next ready task (auto-creates packet) |
+| `grain --format json workflow next` | Current state + next action |
+| `grain workflow guard` | Point-in-time enforcement check |
+| `grain task create --id TASK-####` | Create a task packet |
 | `grain task close --id TASK-#### --quick --summary "..."` | Close a completed task |
 | `grain workflow reconcile --fix` | Repair drift across working docs |
 | `grain phase close` | Seal a completed phase before advancing |
 
-**Do not bypass the workflow.** Editing `docs/working/` files or task
-packets directly without running `grain workflow run` first skips lifecycle
-gates that enforce discipline and traceability.
+**`--format` is a global flag** — place it before the subcommand:
+`grain --format json workflow next` ✓ (not `grain workflow next --format json`)
 {_MARKER_END}"""
 
 

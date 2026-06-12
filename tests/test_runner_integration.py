@@ -112,7 +112,7 @@ def test_activation_chain_workflow_next_sees_activation(tmp_path):
 
     # Before activation: workflow next reports task_execute with no active task
     data_before = _invoke_json(tmp_path, "workflow", "next")
-    assert data_before["evaluation"]["next_action"] == "task_execute"
+    assert data_before["evaluation"]["stop_reason"] == "packet_required"
     assert data_before["evaluation"]["active_task_id"] == ""
 
     # Activate via workflow run
@@ -168,8 +168,8 @@ def test_cross_command_agreement_ready_task_workflow_next(tmp_path):
     _ready_backlog(tmp_path, "P8-T09")
 
     data = _invoke_json(tmp_path, "workflow", "next")
-    assert data["evaluation"]["next_action"] == "task_execute"
-    assert data["evaluation"]["ok"] is True
+    assert data["evaluation"]["stop_reason"] == "packet_required"
+    assert data["evaluation"]["ok"] is True  # packet_required is actionable, not an error
 
 
 def test_cross_command_agreement_ready_task_task_next(tmp_path):
@@ -177,7 +177,7 @@ def test_cross_command_agreement_ready_task_task_next(tmp_path):
     _ready_backlog(tmp_path, "P8-T09")
 
     data = _invoke_json(tmp_path, "task", "next")
-    assert data["task_next"]["next_action"] == "task_execute"
+    assert data["task_next"]["stop_reason"] == "packet_required"
     assert data["task_next"]["planning_required"] is False
     assert data["task_next"]["next_task"] == "P8-T09"
 
@@ -188,7 +188,7 @@ def test_cross_command_agreement_ready_task_phase_next(tmp_path):
 
     data = _invoke_json(tmp_path, "phase", "next")
     assert data["phase_next"]["phase_action"] == "no_phase_action"
-    assert data["phase_next"]["next_action"] == "task_execute"
+    assert data["phase_next"]["stop_reason"] == "packet_required"
 
 
 def test_activation_chain_results_written_routes_to_review(tmp_path):
