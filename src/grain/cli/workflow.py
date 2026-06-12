@@ -5,7 +5,7 @@ import click
 
 from grain.adapters.filesystem import resolve_repo_root
 from grain.domain.errors import UsageError
-from grain.services.guard_service import GuardFinding, GuardResult, run_guard
+from grain.services.guard_service import run_guard
 from grain.services.reconcile_service import reconcile
 from grain.services.task_observability_service import read_task_observability
 from grain.services.workflow_diagnostics_service import (

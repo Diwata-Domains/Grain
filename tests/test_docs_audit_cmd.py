@@ -6,7 +6,6 @@ import json
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-import pytest
 from click.testing import CliRunner
 
 from grain.cli import main
@@ -405,8 +404,8 @@ def test_tooling_notes_aging_warn_when_old(tmp_path):
 def test_tooling_notes_triage_pass_within_threshold(tmp_path):
     _base(tmp_path)
     _write(tmp_path / "docs/working/tooling_notes.md",
-           f"# Tooling Notes\n\n| Date | Type | Command | Observation | Severity | Status |\n"
-           f"|------|------|---------|-------------|----------|--------|\n"
+           "# Tooling Notes\n\n| Date | Type | Command | Observation | Severity | Status |\n"
+           "|------|------|---------|-------------|----------|--------|\n"
            + "".join(f"| 2026-01-{i:02d} | bug | grain | Note {i} | low | open |\n" for i in range(1, 4)))
 
     result = run_audit(tmp_path, doc_filter="tooling_notes")
@@ -417,8 +416,8 @@ def test_tooling_notes_triage_pass_within_threshold(tmp_path):
 def test_tooling_notes_triage_warn_over_threshold(tmp_path):
     _base(tmp_path)
     _write(tmp_path / "docs/working/tooling_notes.md",
-           f"# Tooling Notes\n\n| Date | Type | Command | Observation | Severity | Status |\n"
-           f"|------|------|---------|-------------|----------|--------|\n"
+           "# Tooling Notes\n\n| Date | Type | Command | Observation | Severity | Status |\n"
+           "|------|------|---------|-------------|----------|--------|\n"
            + "".join(f"| 2026-01-{i:02d} | bug | grain | Note {i} | low | open |\n" for i in range(1, 10)))
 
     result = run_audit(tmp_path, doc_filter="tooling_notes")

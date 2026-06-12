@@ -58,7 +58,7 @@ def notes_add(ctx, message, note_type, command, severity):
     if fmt == "json":
         click.echo(json.dumps({"ok": True, "path": _NOTES_PATH, "row": row}, indent=2))
     else:
-        click.echo(f"notes add: ok")
+        click.echo("notes add: ok")
         click.echo(f"  → {_NOTES_PATH}")
 
 
