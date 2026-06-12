@@ -848,3 +848,23 @@ Released between Phase 14 close and Phase 15 start. Not tracked as formal phases
 * What felt efficient: the hardening slices stayed tightly layered — prompt/runtime guardrails, misuse blockers, runner drift reduction, operator diagnostics, then closeout smoke/docs — so each fix built directly on the last one without reopening earlier feature phases
 * What created friction: the installed CLI entrypoint lagged the repo code, duplicate packet drift still appeared when manual and automatic activation mixed, and the backlog parser edge only surfaced at the very end of the phase
 * What to tighten next: keep the active CLI path pinned to the current source tree during development, further reduce manual backlog/current-task normalization after close, and continue adding explicit guidance whenever new workflow stop reasons are introduced
+
+---
+
+### Phase 30
+
+* Tasks completed: 14
+* Blocked tasks: 0
+* Prompt runs: 1 (single agent session)
+* Avg prompt runs per completed task: 0.07
+* Manual interventions: 0
+* First-pass success rate: 14/14
+* Rework count: 0
+* Drift incidents: 0
+* Phase duration: 2026-06-11 (single session)
+
+### Phase 30 Notes
+
+* What felt efficient: planning phase with a locked milestone contract first meant every subsequent spec task had a clear decision anchor; tasks that needed design decisions had those resolved in T01 before any spec writing began
+* What created friction: `grain workflow next --format json` flag order is global not per-command (`grain --format json workflow next`); `grain notes add` command not yet implemented (v0.4.0 planned); 4 bundled files out of date requiring upgrade
+* What to tighten next: the `--format` flag placement inconsistency is a UX friction point that T12 (CLI ergonomics) addresses; `grain notes add` is needed immediately for agents to log friction correctly

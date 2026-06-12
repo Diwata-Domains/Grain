@@ -1,10 +1,11 @@
 # Current Focus
 
 ## Current Phase
-Phase 30 — Planning Not Started
+Phase 31 — DX Hardening and v0.4.0 Foundation
 
 v0.2.0 COMPLETE
 v0.3.0 IMPLEMENTATION COMPLETE
+v0.4.0 PLANNING COMPLETE (Phase 30 closed 2026-06-11)
 
 ## Phase 15 Status
 CLOSED. All 6 tasks done (T01-T06). 775/775 tests passing. Delivered: `grain phase close` (hard lifecycle gate), `grain workflow run` auto-packet bootstrap, `grain workflow reconcile` (drift detection + --fix), Phase 15 integration tests, `AGENTS.md` generation (`grain init` / `grain onboard`), `grain phase archive`. Phase closed 2026-04-17.
@@ -302,8 +303,15 @@ All five phases must ship for v0.2.0 to close.
 - **Phase 19** — Community Adapter Registry (`grain adapter install`, schema validation, discovery pipeline) ✓ closed 2026-04-22
 - **Phase 11-T05 (deferred indefinitely)** — Homebrew formula remains out of scope unless distribution priorities change
 
+## Phase 31 Status
+ACTIVE. 7 tasks (P31-T01 through P31-T07, TASK-0204 through TASK-0210). DX bug fixes (workflow routing, packet ID reuse, phase close flag), agent enforcement implementation, scaffold seeding, `grain docs audit`, archiving model, CLI ergonomics + `grain status`, upgrade enforcement gate. All tasks ready.
+
 ## Upcoming Phase Sequence
-1. **Phase 30** — `v0.4.0` planning and toolkit boundary definition ← active now
+1. **Phase 31** — DX Hardening and v0.4.0 Foundation ← active now
+2. **Phase 32** — `grain suggest` implementation
+3. **Phase 33** — Toolkit contract + workspace model implementation
+4. **Phase 34** — `grain recipe` execution
+5. **Phase 35** — Apply graduation (.docx, .csv, Obsidian)
 
 ## Active Constraints
 - use local filesystem only
@@ -363,3 +371,5 @@ Phase 27 closed: 2026-05-06 — 3 tasks done (grain-verified)
 Phase 28 closed: 2026-05-07 — 5 tasks done (grain-verified)
 
 Phase 29 closed: 2026-05-07 — 5 tasks done (grain-verified)
+
+Phase 30 closed: 2026-06-11 — 14 tasks done (grain-verified)

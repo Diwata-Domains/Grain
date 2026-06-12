@@ -1625,6 +1625,72 @@ Default status for new backlog items in this file: `draft`
 
 ---
 
+## 34. Phase 31 — DX Hardening and v0.4.0 Foundation
+
+> **Status:** active — 7 tasks (TASK-0204 through TASK-0210). All tasks ready. This is the first v0.4.0 execution phase. Fixes active DX bugs before any feature work.
+
+### P31 Notes
+- All primary enforcement work (T02) must complete before feature phases begin
+- DX bug fixes (T01) run first — they unblock correct `grain workflow next` routing
+- TUI extension (T13 spec) deferred to a later phase; Phase 31 covers CLI-layer only
+
+### P31-T01 — Fix active DX bugs: workflow routing, packet ID reuse, phase close flag
+- **Status:** ready
+- **TASK-ID:** TASK-0204
+- **Description:** Fix 3 known DX bugs: (1) `grain workflow next` routes to `task_execute` when execution artifacts exist but review is not surfaced; (2) `next_task_id()` ignores archived packets causing ID reuse after archiving; (3) `grain phase close --phase <N>` flag does not exist. Also fix all spec documents that use `grain workflow next --format json` (wrong flag order — must be `grain --format json workflow next`).
+- **Files:** `src/grain/services/workflow_service.py`, `src/grain/services/task_service.py`, `src/grain/cli/phase.py`, spec docs with wrong flag order
+- **Model:** frontier_model
+- **Dependencies:** none
+
+### P31-T02 — Implement agent enforcement: workflow guard, hooks, resume prompt, PROJECT_RULES
+- **Status:** ready
+- **TASK-ID:** TASK-0205
+- **Description:** Implement the 6-layer enforcement model from `docs/canonical/enforcement_spec.md`. Covers: (1) `grain workflow next` `packet_required` stop reason + done-task stale-pointer fix + packet path in `task_execute` output; (2) `grain workflow guard` command; (3) `grain hooks install` / `uninstall` / `status`; (4) seed `prompts/workflow.resume.md` in `grain init`; (5) PROJECT_RULES.md hard rule additions; (6) AGENTS.md block updates.
+- **Files:** `src/grain/services/workflow_service.py`, `src/grain/cli/workflow.py`, `src/grain/services/hooks_service.py` (new), `src/grain/cli/hooks.py` (new), `src/grain/data/runtime/prompts/workflow.resume.md` (new), `src/grain/data/runtime/PROJECT_RULES.md`
+- **Model:** frontier_model
+- **Dependencies:** P31-T01
+
+### P31-T03 — Implement scaffold seeding fixes and `grain upgrade --add-missing`
+- **Status:** ready
+- **TASK-ID:** TASK-0206
+- **Description:** Implement all 14 gaps from `docs/working/scaffold_audit.md`. Write template files for all missing canonical and working docs, add to `_SEED_FILE_SOURCES`, add `docs/working/proposals/` to `_REQUIRED_DIRS`, add `--name`/`--type` flags to `grain init`, fix `tooling_notes read_when: never` in manifest, add `grain upgrade --add-missing` absent-file detection.
+- **Files:** `src/grain/data/runtime/` (14 new templates), `src/grain/services/init_service.py`, `src/grain/cli/init.py`, `src/grain/services/upgrade_service.py`, `src/grain/data/runtime/docs_manifest.yaml`
+- **Model:** frontier_model
+- **Dependencies:** none
+
+### P31-T04 — Implement `grain docs audit`
+- **Status:** ready
+- **TASK-ID:** TASK-0207
+- **Description:** Implement `grain docs audit` from `docs/working/docs_audit_spec.md`. 21 checks across 6 doc types. `--format json` output. Configurable thresholds via `audit_thresholds` block in manifest. `--fix` with per-finding prompt. Writes `.grain/last_docs_audit.json` for cached reads. `grain workflow guard --check-docs` integration.
+- **Files:** `src/grain/services/docs_audit_service.py` (new), `src/grain/cli/docs.py` (extend), tests
+- **Model:** frontier_model
+- **Dependencies:** P31-T01
+
+### P31-T05 — Implement archiving model: phase close snapshots and `grain archive`
+- **Status:** ready
+- **TASK-ID:** TASK-0208
+- **Description:** Implement the archiving model from `docs/working/archive_spec.md`. (1) Extend `grain phase close` to snapshot working docs to `docs/archive/phases/phase-N/`; (2) implement `grain archive snapshot`, `grain archive milestone`, `grain archive list`, `grain archive show`, `grain archive prune`; (3) implement proposal pruning triggered by `grain suggest --prune` (can stub `grain suggest` for now — just the pruning logic).
+- **Files:** `src/grain/services/archive_service.py` (new), `src/grain/cli/archive.py` (new), `src/grain/services/phase_service.py` (extend), tests
+- **Model:** frontier_model
+- **Dependencies:** none
+
+### P31-T06 — Implement CLI ergonomics: `--format json` coverage, `grain status`, stop reason vocabulary
+- **Status:** ready
+- **TASK-ID:** TASK-0209
+- **Description:** Implement CLI ergonomics from `docs/working/cli_ergonomics_spec.md`. (1) Add `--format json` to `grain docs audit`, `grain archive list`, `grain doctor`, `grain workspace list` (stub), `grain notes list` (stub); (2) canonicalize all stop reasons as constants in `workflow_service.py`; (3) implement `grain status` command (reads `.grain/last_workflow_state.json` and `.grain/last_docs_audit.json` if fresh, else live); (4) add text output symbol style guide to `src/grain/cli/output.py`; (5) update `docs/canonical/cli_spec.md` JSON Output Schemas section.
+- **Files:** `src/grain/cli/status.py` (new), `src/grain/cli/output.py`, `src/grain/services/workflow_service.py`, `docs/canonical/cli_spec.md`
+- **Model:** frontier_model
+- **Dependencies:** P31-T04, P31-T05
+
+### P31-T07 — Implement upgrade enforcement: `upgrade_policy` manifest block and startup gate
+- **Status:** ready
+- **TASK-ID:** TASK-0210
+- **Description:** Implement upgrade enforcement from `docs/working/upgrade_enforcement_spec.md`. (1) Add `upgrade_policy` block parsing to config service; (2) add startup version check in `cli/__init__.py`; (3) implement warn-only banner (stderr, no JSON pollution) and enforce mode (exit code 2, JSON error response); (4) update `grain upgrade` to write `min_version` and `min_version_set_at` on success; (5) add `GRAIN_SKIP_VERSION_CHECK=1` detection with automatic tooling_notes entry; (6) update `grain init` to seed empty `upgrade_policy:` block.
+- **Files:** `src/grain/services/config_service.py`, `src/grain/cli/__init__.py`, `src/grain/services/upgrade_service.py`, `src/grain/services/init_service.py`, tests
+- **Model:** frontier_model
+- **Dependencies:** P31-T03
+
+
 ## 11. Future — Adapter Context Selection (absorbed into Phase 10)
 
 
