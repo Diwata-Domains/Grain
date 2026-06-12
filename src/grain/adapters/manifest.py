@@ -148,6 +148,60 @@ def load_upgrade_policy(root: Path) -> UpgradePolicy:
     )
 
 
+@dataclass
+class BranchPolicy:
+    """branch_policy block from docs_manifest.yaml."""
+
+    mode: str = "off"           # "phase" | "task" | "off"
+    pattern: str = ""           # optional override; empty = use mode default
+    enforce: bool = False
+    enforce_after_days: int = 0
+    message: str = ""
+
+
+def load_branch_policy(root: Path) -> BranchPolicy:
+    """Read the optional ``branch_policy:`` block from docs_manifest.yaml.
+
+    Returns a :class:`BranchPolicy` with defaults (mode: off) for any field not present.
+    Never raises.
+    """
+    try:
+        manifest = load_manifest(root)
+    except Exception:
+        return BranchPolicy()
+
+    raw = manifest.get("branch_policy")
+    if not isinstance(raw, dict):
+        return BranchPolicy()
+
+    def _str(key: str, default: str = "") -> str:
+        val = raw.get(key, default)
+        return str(val).strip() if val is not None else default
+
+    def _bool_val(key: str) -> bool:
+        val = raw.get(key, False)
+        return val if isinstance(val, bool) else False
+
+    def _int_val(key: str) -> int:
+        val = raw.get(key, 0)
+        try:
+            return int(val)
+        except (TypeError, ValueError):
+            return 0
+
+    mode = _str("mode", "off")
+    if mode not in {"phase", "task", "off"}:
+        mode = "off"
+
+    return BranchPolicy(
+        mode=mode,
+        pattern=_str("pattern"),
+        enforce=_bool_val("enforce"),
+        enforce_after_days=_int_val("enforce_after_days"),
+        message=_str("message"),
+    )
+
+
 def load_completion_policy(root: Path) -> CompletionPolicy:
     try:
         manifest = load_manifest(root)

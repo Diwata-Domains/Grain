@@ -31,3 +31,5 @@ class WorkflowEvaluation:
     task_title: str = ""
     # Non-blocking advisories attached to any routing decision.
     warnings: list[str] = field(default_factory=list)
+    # Populated when stop_reason == "wrong_branch"; gives agents an actionable target.
+    suggested_branch: str = ""

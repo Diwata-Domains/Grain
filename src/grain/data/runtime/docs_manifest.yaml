@@ -19,6 +19,13 @@ grain:
   local_embedding_model: sentence-transformers/all-MiniLM-L6-v2
   openai_embedding_model: text-embedding-3-small
 
+branch_policy:
+  mode: off             # "phase" | "task" | "off" (default off = no branch checking)
+  pattern: ""           # optional glob override; empty = use mode default
+  enforce: false        # false = warn banner on stderr; true = wrong_branch stop reason
+  enforce_after_days: 0 # days grace before enforcement activates (0 = immediate)
+  message: ""           # optional custom message shown on violation
+
 upgrade_policy:
   min_version: ""              # set by grain upgrade after successful install
   min_version_set_at: ""       # set by grain upgrade; drives grace period calculation

@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import fnmatch
+import os
 import re
+import subprocess
 from dataclasses import asdict
 from pathlib import Path
 from typing import Any
@@ -30,6 +33,7 @@ STOP_PACKET_REQUIRED = "packet_required"                   # no open packet; rea
 STOP_PHASE_HAS_NO_TASKS = "phase_has_no_tasks"             # active phase has no backlog tasks
 STOP_PHASE_BOUNDARY_REVIEW_CLOSE_REQUIRED = "phase_boundary_review_close_required"  # all tasks done, phase not sealed
 STOP_TASK_PLANNING_REQUIRED = "task_planning_required"     # no executable candidate; planning needed
+STOP_WRONG_BRANCH = "wrong_branch"                         # current branch doesn't satisfy branch_policy
 
 _CURRENT_TASK_REQUIRED = ("Task ID:", "Task Path:", "Status:")
 _TASK_HEADING = re.compile(r"^###\s+(P(\d+)-T(\d+))\s+—\s+(.+)$")
@@ -51,6 +55,14 @@ _PHASE_CLOSE_MIN_ENFORCED = 15
 
 
 def evaluate_workflow_state(
+    root: Path,
+) -> tuple[Any, WorkflowEvaluation | None]:
+    """Public API: evaluate workflow state then apply branch policy check."""
+    result, evaluation = _evaluate_workflow_state_core(root)
+    return _apply_branch_policy_check(root, result, evaluation)
+
+
+def _evaluate_workflow_state_core(
     root: Path,
 ) -> tuple[Any, WorkflowEvaluation | None]:
     """Evaluate repo workflow state and return the next legal one-step action.
@@ -623,6 +635,141 @@ def _allowed_backlog_statuses(packet_status: str) -> set[str]:
 def evaluation_to_dict(evaluation: WorkflowEvaluation) -> dict:
     """Serialize workflow evaluation for JSON-friendly command output."""
     return asdict(evaluation)
+
+
+def _read_current_branch(root: Path) -> str:
+    """Return the current git branch name; empty string on any failure or detached HEAD."""
+    try:
+        result = subprocess.run(
+            ["git", "rev-parse", "--abbrev-ref", "HEAD"],
+            cwd=root,
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        branch = result.stdout.strip()
+        return "" if branch == "HEAD" else branch
+    except Exception:
+        return ""
+
+
+def _branch_matches(branch: str, mode: str, pattern: str, phase: str, task_id: str) -> bool:
+    """Return True if branch satisfies the policy for the given mode/pattern."""
+    if not branch:
+        return False
+
+    if pattern:
+        expanded = pattern.replace("{phase}", phase).replace("{task_id}", task_id)
+        return fnmatch.fnmatch(branch, expanded)
+
+    if mode == "phase":
+        return f"P{phase}" in branch
+
+    if mode == "task":
+        if task_id == "none" or not task_id:
+            return True
+        return task_id in branch or f"P{phase}" in branch
+
+    return True
+
+
+def _suggest_branch(mode: str, phase: str, task_id: str) -> str:
+    if mode == "phase":
+        return f"feature/P{phase}-work"
+    if mode == "task":
+        if task_id and task_id != "none":
+            return f"feature/{task_id}-work"
+        return f"feature/P{phase}-work"
+    return ""
+
+
+def _log_branch_skip_to_tooling_notes(root: Path, branch: str, required: str) -> None:
+    """Write a row to tooling_notes.md recording GRAIN_SKIP_BRANCH_CHECK=1 use."""
+    from datetime import date
+
+    notes_path = root / "docs" / "working" / "tooling_notes.md"
+    today = date.today().isoformat()
+    row = (
+        f"| {today} | friction | medium | grain workflow | "
+        f"GRAIN_SKIP_BRANCH_CHECK=1 used; branch '{branch}', required '{required}' "
+        f"| open |\n"
+    )
+    _HEADER = (
+        "# Tooling Notes\n\n"
+        "| Date | Type | Severity | Command | Message | Status |\n"
+        "|------|------|----------|---------|---------|--------|\n"
+    )
+    try:
+        if not notes_path.exists():
+            notes_path.parent.mkdir(parents=True, exist_ok=True)
+            notes_path.write_text(_HEADER + row, encoding="utf-8")
+        else:
+            notes_path.write_text(notes_path.read_text(encoding="utf-8") + row, encoding="utf-8")
+    except Exception:
+        pass
+
+
+def _apply_branch_policy_check(
+    root: Path,
+    result: Any,
+    evaluation: WorkflowEvaluation | None,
+) -> tuple[Any, WorkflowEvaluation | None]:
+    """Post-process a workflow evaluation with branch policy enforcement."""
+    if evaluation is None:
+        return result, evaluation
+
+    from grain.adapters.manifest import load_branch_policy
+    try:
+        policy = load_branch_policy(root)
+    except Exception:
+        return result, evaluation
+
+    if policy.mode == "off":
+        return result, evaluation
+
+    branch = _read_current_branch(root)
+    phase = evaluation.active_phase or ""
+    task_id = evaluation.active_task_id or ""
+
+    if _branch_matches(branch, policy.mode, policy.pattern, phase, task_id):
+        return result, evaluation
+
+    # Escape hatch
+    if os.environ.get("GRAIN_SKIP_BRANCH_CHECK") == "1":
+        _log_branch_skip_to_tooling_notes(root, branch, policy.mode)
+        return result, evaluation
+
+    in_enforce = policy.enforce
+
+    suggested = _suggest_branch(policy.mode, phase, task_id)
+    violation_msg = (
+        f"branch '{branch}' does not satisfy branch_policy (mode: {policy.mode})"
+        + (f" — suggested: {suggested}" if suggested else "")
+    )
+    if policy.message:
+        violation_msg += f" — {policy.message}"
+
+    if in_enforce:
+        new_evaluation = WorkflowEvaluation(
+            ok=False,
+            stop_reason=STOP_WRONG_BRANCH,
+            blocking_reasons=[violation_msg],
+            affected_artifacts=[],
+            active_phase=phase,
+            active_task_id=task_id,
+            suggested_branch=suggested,
+        )
+        new_result = _command_result(
+            ok=False,
+            command="workflow evaluate",
+            repo=str(root),
+            errors=[violation_msg],
+        )
+        return new_result, new_evaluation
+    else:
+        # Warn-only: attach to existing evaluation warnings
+        evaluation.warnings.append(violation_msg)
+        return result, evaluation
 
 
 def _is_phase_properly_closed(current_focus_path: Path, phase_number: str) -> bool:

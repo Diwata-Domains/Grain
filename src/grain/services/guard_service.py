@@ -83,6 +83,9 @@ def run_guard(
     # Check 4 — implementation_ahead_of_packet
     findings.append(_check_implementation_ahead(root, current_task))
 
+    # Check 5 — branch_policy
+    findings.append(_check_branch_policy(root, current_task))
+
     # Optional check — dev_alignment
     if check_dev_alignment:
         findings.append(_check_dev_alignment(root))
@@ -290,6 +293,99 @@ def _check_implementation_ahead(root: Path, current_task: dict) -> GuardFinding:
         result="pass",
         severity="info",
         message="no implementation files ahead of packet",
+    )
+
+
+def _check_branch_policy(root: Path, current_task: dict) -> GuardFinding:
+    """Check that the current git branch satisfies branch_policy in docs_manifest.yaml."""
+    import os
+    from grain.adapters.manifest import load_branch_policy
+    from grain.services.workflow_service import (
+        _read_current_branch,
+        _branch_matches,
+        _suggest_branch,
+    )
+
+    try:
+        policy = load_branch_policy(root)
+    except Exception:
+        return GuardFinding(
+            id="branch_policy",
+            result="pass",
+            severity="info",
+            message="branch_policy: skipped (manifest unavailable)",
+        )
+
+    if policy.mode == "off":
+        return GuardFinding(
+            id="branch_policy",
+            result="pass",
+            severity="info",
+            message="branch_policy: off",
+        )
+
+    branch = _read_current_branch(root)
+    phase = ""
+    try:
+        from grain.services.workflow_service import _read_current_phase
+        from pathlib import Path as _Path
+        cf = root / "docs" / "working" / "current_focus.md"
+        if cf.exists():
+            phase = _read_current_phase(cf)
+    except Exception:
+        pass
+
+    task_id = current_task.get("task_id", "none") or "none"
+
+    if os.environ.get("GRAIN_SKIP_BRANCH_CHECK") == "1":
+        from grain.services.workflow_service import _log_branch_skip_to_tooling_notes
+        _log_branch_skip_to_tooling_notes(root, branch, policy.mode)
+        return GuardFinding(
+            id="branch_policy",
+            result="pass",
+            severity="info",
+            message=f"branch_policy: skipped via GRAIN_SKIP_BRANCH_CHECK (branch: {branch!r})",
+        )
+
+    if not branch:
+        return GuardFinding(
+            id="branch_policy",
+            result="warn",
+            severity="warning",
+            message="branch_policy: branch could not be determined (detached HEAD or not a git repo)",
+            remediation=f"checkout a branch matching policy mode '{policy.mode}'",
+        )
+
+    if _branch_matches(branch, policy.mode, policy.pattern, phase, task_id):
+        return GuardFinding(
+            id="branch_policy",
+            result="pass",
+            severity="info",
+            message=f"branch_policy: {branch!r} satisfies mode '{policy.mode}'",
+        )
+
+    suggested = _suggest_branch(policy.mode, phase, task_id)
+    msg = (
+        f"branch '{branch}' does not satisfy branch_policy (mode: {policy.mode})"
+        + (f" — suggested: {suggested}" if suggested else "")
+    )
+    if policy.message:
+        msg += f" — {policy.message}"
+
+    if policy.enforce:
+        return GuardFinding(
+            id="branch_policy",
+            result="fail",
+            severity="error",
+            message=msg,
+            remediation=f"git checkout -b {suggested}" if suggested else "switch to a compliant branch",
+        )
+    return GuardFinding(
+        id="branch_policy",
+        result="warn",
+        severity="warning",
+        message=msg,
+        remediation=f"git checkout -b {suggested}" if suggested else "switch to a compliant branch",
     )
 
 

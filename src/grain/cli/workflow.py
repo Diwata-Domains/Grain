@@ -78,6 +78,10 @@ def workflow_next(ctx):
         click.echo(f"    last_stage         {observability['last_stage'] or 'unset'}")
         click.echo(f"    last_action        {observability['last_workflow_action'] or 'unset'}")
 
+    if evaluation.warnings:
+        for w in evaluation.warnings:
+            click.echo(f"  warning           {w}", err=True)
+
     no_active_task = not evaluation.active_task_id
     if no_active_task and evaluation.next_action == "task_execute" and evaluation.candidate_tasks:
         click.echo(
