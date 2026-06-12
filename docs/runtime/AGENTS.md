@@ -119,7 +119,7 @@ For each task:
 8. Prepare handoff or review state
 
 If you lose the thread mid-conversation:
-- re-run `grain workflow next --format json`
+- re-run `grain --format json workflow next`
 - if Grain stops, run `grain workflow explain` before improvising
 - if the explanation points to backlog/packet drift, run `grain workflow reconcile --dry-run`
 - re-read `docs/working/current_task.md`
@@ -136,7 +136,7 @@ If Assay verification is part of the loop:
 When this repository is used from external agent environments:
 
 - Codex or any tool-execution environment that can run local commands should call `grain` directly
-- prefer `grain workflow next --format json` and `grain prompt show --format json` when the caller wants structured state
+- prefer `grain --format json workflow next` and `grain --format json prompt show` when the caller wants structured state
 - Claude/Desktop-style environments may use the local MCP wrapper instead of direct CLI execution
 - `grain mcp manifest` is the local config surface for MCP clients
 - `grain mcp serve` is the stdio transport surface

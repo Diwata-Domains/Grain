@@ -187,8 +187,20 @@ def evaluate_workflow_state(
         packet_status = parse_task_metadata(packet_dir / "task.md").get("status", "")
         active_packet_task_ref = _task_ref_from_packet_dir(packet_dir)
         if packet_status == "done":
-            active_task_id = "none"
-            active_task_status = "idle"
+            # current_task.md points to a completed packet — stale pointer.
+            evaluation = WorkflowEvaluation(
+                ok=False,
+                stop_reason="stale_task_pointer",
+                blocking_reasons=[
+                    f"current_task.md points to completed packet: {active_task_id} — "
+                    "set 'Task ID:' to 'none' in docs/working/current_task.md to clear the stale pointer"
+                ],
+                affected_artifacts=[_DEFAULT_CURRENT_TASK_DOC],
+                active_phase=current_phase,
+                active_task_id=active_task_id,
+                recommended_prompt="prompts/task.close.md",
+            )
+            return _result_with_evaluation(root, evaluation)
         else:
             active_task_status = packet_status or active_task_status
 

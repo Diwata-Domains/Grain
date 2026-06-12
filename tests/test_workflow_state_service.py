@@ -379,7 +379,8 @@ def test_evaluate_workflow_state_recommends_task_review_when_results_exist(tmp_p
     assert evaluation.recommended_prompt == "prompts/task.review.md"
 
 
-def test_evaluate_workflow_state_ignores_done_packet_pointed_to_by_current_task(tmp_path: Path):
+def test_evaluate_workflow_state_surfaces_stale_pointer_for_done_packet(tmp_path: Path):
+    # current_task.md points to a done packet — should surface stale_task_pointer, not silently skip
     _base_docs(
         tmp_path,
         (
@@ -402,11 +403,10 @@ def test_evaluate_workflow_state_ignores_done_packet_pointed_to_by_current_task(
 
     result, evaluation = evaluate_workflow_state(tmp_path)
 
-    assert result.ok is True
+    assert result.ok is False
     assert evaluation is not None
-    assert evaluation.active_task_id == ""
-    assert evaluation.next_action == "task_execute"
-    assert [task.task_ref for task in evaluation.candidate_tasks] == ["P8-T03"]
+    assert evaluation.stop_reason == "stale_task_pointer"
+    assert "TASK-0001" in evaluation.blocking_reasons[0]
 
 
 def test_evaluate_workflow_state_stops_on_conflicting_ready_tasks(tmp_path: Path):

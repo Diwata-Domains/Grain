@@ -108,7 +108,7 @@ grain workflow guard
 grain workflow guard --strict          # treat warnings as violations
 grain workflow guard --check-docs      # include docs audit findings
 grain workflow guard --check-external  # check external workspace dependencies
-grain workflow guard --format json
+grain --format json workflow guard
 ```
 
 Output (ok state):
@@ -209,10 +209,10 @@ exit 0
 
 # Write current workflow state to .grain/last_workflow_state.json
 # Agents can read this at session start instead of calling grain workflow next
-grain workflow next --format json > .grain/last_workflow_state.json 2>/dev/null
+grain --format json workflow next > .grain/last_workflow_state.json 2>/dev/null
 
 # Warn if current_task.md points to a done task
-TASK_STATUS=$(grain workflow guard --format json 2>/dev/null | \
+TASK_STATUS=$(grain --format json workflow guard 2>/dev/null | \
   python3 -c "import sys, json; data = json.load(sys.stdin); [print(c['message']) for c in data.get('checks', []) if c['id'] == 'packet_open' and c['result'] == 'fail']" 2>/dev/null)
 
 if [ -n "$TASK_STATUS" ]; then
@@ -231,7 +231,7 @@ Grain seeds `prompts/workflow.resume.md` in every workspace via `grain init`. Th
 ### Content requirements
 
 The file must:
-1. Instruct the agent to run `grain workflow next --format json` as the first action before reading user messages or touching files
+1. Instruct the agent to run `grain --format json workflow next` as the first action before reading user messages or touching files
 2. Instruct the agent to read `current_task.md` and verify the packet is open and in_progress
 3. Define what to do if the packet is missing: run `grain task create` (or `grain task create --simple`), set status in_progress, then proceed
 4. Reference `.grain/last_workflow_state.json` as a faster alternative to calling `grain workflow next` when it exists
@@ -259,7 +259,7 @@ Two additions to the bundled `PROJECT_RULES.md` template:
    and the packet's task.md has status `in_progress`.
 
 2. The session start checklist must run before any other action:
-   (a) Run: grain workflow next --format json
+   (a) Run: grain --format json workflow next
    (b) Verify: current_task.md points to an in_progress packet
    (c) If no open packet: run grain task create before proceeding
 

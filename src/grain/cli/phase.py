@@ -74,8 +74,9 @@ def phase_next(ctx):
 
 @phase_group.command("close")
 @click.option("--dry-run", is_flag=True, default=False, help="Validate without writing anything.")
+@click.option("--phase", "-p", "phase_override", default=None, metavar="N", help="Phase number to close (must match active phase).")
 @click.pass_context
-def phase_close(ctx, dry_run):
+def phase_close(ctx, dry_run, phase_override):
     """Validate and seal the current phase.
 
     Writes a grain-verified closed marker to current_focus.md.
@@ -87,7 +88,7 @@ def phase_close(ctx, dry_run):
     fmt = ctx.obj.get("fmt", "text") if ctx.obj else "text"
     root = resolve_repo_root(repo)
 
-    result = close_phase(root, dry_run=dry_run)
+    result = close_phase(root, dry_run=dry_run, phase_override=phase_override)
 
     if fmt == "json":
         click.echo(

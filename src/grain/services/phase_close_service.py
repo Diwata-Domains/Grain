@@ -30,13 +30,16 @@ class PhaseCloseResult:
     marker_written: str = ""
 
 
-def close_phase(root: Path, dry_run: bool = False) -> PhaseCloseResult:
+def close_phase(root: Path, dry_run: bool = False, phase_override: str | None = None) -> PhaseCloseResult:
     """Validate and seal the current phase.
 
     Writes a ``Phase N closed:`` marker to ``current_focus.md`` that the
     workflow evaluator checks before allowing next-phase routing.  Does not
     advance the current-phase line — the operator/agent updates
     ``## Current Phase`` explicitly after this command succeeds.
+
+    If ``phase_override`` is given it must match the active phase exactly —
+    this guards against accidentally closing the wrong phase.
     """
     current_focus_path = root / _DEFAULT_PHASE_DOC
     backlog_path = root / _DEFAULT_BACKLOG_DOC
@@ -54,6 +57,16 @@ def close_phase(root: Path, dry_run: bool = False) -> PhaseCloseResult:
         return PhaseCloseResult(
             ok=False,
             errors=["unable to parse current phase from current_focus.md"],
+        )
+
+    if phase_override is not None and phase_override != current_phase:
+        return PhaseCloseResult(
+            ok=False,
+            closed_phase=current_phase,
+            errors=[
+                f"--phase {phase_override} does not match the active phase ({current_phase}) — "
+                "grain phase close only seals the currently active phase"
+            ],
         )
 
     if current_phase == "0":

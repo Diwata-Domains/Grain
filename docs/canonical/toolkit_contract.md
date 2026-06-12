@@ -85,7 +85,7 @@ capabilities:
     command: "grain verify ingest"
     since: "0.3.0"
   - id: workflow_state
-    command: "grain workflow next --format json"
+    command: "grain --format json workflow next"
     since: "0.2.0"
   - id: task_results_write
     description: "Write to tasks/<id>/results.md via grain task close"
@@ -108,8 +108,8 @@ All inter-tool data exchange uses one of two mechanisms:
 A sibling tool calls a Grain CLI command with `--format json` and reads the JSON from stdout. This is the primary mechanism for reading state. No file artifact is left on disk.
 
 ```
-grain workflow next --format json          → current workflow state
-grain task prepare --format json           → assembled context bundle
+grain --format json workflow next          → current workflow state
+grain --format json task prepare           → assembled context bundle
 grain verify status --task <id> --format json → verification state
 ```
 
@@ -136,7 +136,7 @@ The path convention and ingestion command are declared in the tool's `toolkit_co
 The Assay integration (landed in Phase 28 via `grain verify`) is the first concrete instance of the toolkit contract. It is documented here as the reference implementation.
 
 ### What Grain provides to Assay
-- `grain workflow next --format json` — Assay reads this to know which task is active before capturing
+- `grain --format json workflow next` — Assay reads this to know which task is active before capturing
 - `grain verify submit --task <id> --type <type> --artifact <path>` — Assay calls this to open a verification request
 - `grain verify ingest --artifact <path>` — Assay calls this to deliver a capture result
 - `grain verify status --task <id> --format json` — Assay reads this to check if verification is complete

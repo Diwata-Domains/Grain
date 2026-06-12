@@ -20,7 +20,7 @@ Do not perform review or phase closeout in this prompt.
 
 Small fixes and hotfixes still use normal task packets. Do not bypass packet creation just because the change is small.
 This prompt does not authorize implementation without a packet. If no active packet exists on disk yet, create or activate one before editing code.
-If you are resuming a long conversation and the packet or workflow state is no longer certain, stop and refresh from `grain workflow next --format json` plus the packet on disk before implementing anything.
+If you are resuming a long conversation and the packet or workflow state is no longer certain, stop and refresh from `grain --format json workflow next` plus the packet on disk before implementing anything.
 
 If `docs/working/current_task.md` already points to an active task:
 

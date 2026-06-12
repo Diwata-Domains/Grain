@@ -114,13 +114,30 @@ def test_validate_packet_passes_valid(tmp_path):
 
 
 def test_validate_packet_catches_missing_file_and_bad_metadata(tmp_path):
-    # Only task.md present, but with bad status
+    # task.md + one planning file present (non-simple packet), but missing others + bad status
     (tmp_path / "task.md").write_text(
         "## Metadata\n- **ID:** TASK-0001\n- **Status:** NOPE\n- **Phase:** Phase 3\n"
     )
+    (tmp_path / "context.md").write_text("# context\n")
     errors = validate_packet(tmp_path)
-    # Missing context.md, plan.md, deliverable_spec.md + invalid status
-    assert len(errors) >= 4
+    # Missing plan.md, deliverable_spec.md + invalid status (>= 3 errors)
+    assert len(errors) >= 3
+
+
+def test_validate_packet_simple_packet_only_needs_task_md(tmp_path):
+    # simple packet: task.md present, no planning files — valid from file perspective
+    (tmp_path / "task.md").write_text(_VALID_TASK_MD)
+    errors = validate_packet_files(tmp_path)
+    assert errors == []
+
+
+def test_validate_packet_partial_planning_files_still_required(tmp_path):
+    # once any planning file exists, all are required
+    (tmp_path / "task.md").write_text(_VALID_TASK_MD)
+    (tmp_path / "context.md").write_text("# context\n")
+    errors = validate_packet_files(tmp_path)
+    assert any("plan.md" in e for e in errors)
+    assert any("deliverable_spec.md" in e for e in errors)
 
 
 def test_validate_packet_empty_dir_has_errors(tmp_path):

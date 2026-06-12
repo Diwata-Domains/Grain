@@ -1,9 +1,9 @@
 # Current Task
 
-Task ID: TASK-0204
-Task Path: tasks/P31-T01-TASK-0204/
-Status: ready
+Task ID: none
+Task Path: none
+Status: idle
 
-Active: Fix 4 active DX bugs — workflow routing (review not surfaced), packet ID reuse after archiving, `grain phase close --phase` flag missing, `--format` flag order in spec docs.
+Active: none
 
-Next: P31-T02 (agent enforcement implementation) depends on T01.
+Next: P31-T02 (TASK-0205) — agent enforcement implementation (depends on T01, now done).

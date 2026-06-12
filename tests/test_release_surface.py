@@ -34,7 +34,7 @@ def test_packet_first_guardrails_exist_in_shipped_prompt_assets() -> None:
     for path in prompt_pairs:
         content = path.read_text(encoding="utf-8")
         assert "active task packet on disk" in content or "packet on disk is the authority" in content
-        assert "grain workflow next --format json" in content or "verification state on disk" in content
+        assert "grain --format json workflow next" in content or "verification state on disk" in content
 
 
 def test_packet_first_guardrails_exist_in_shipped_runtime_guidance() -> None:
@@ -48,8 +48,8 @@ def test_readme_explains_codex_and_mcp_paths() -> None:
     repo_root = Path(__file__).resolve().parents[1]
     content = (repo_root / "README.md").read_text(encoding="utf-8")
 
-    assert "grain workflow next --format json" in content
-    assert "grain mcp manifest --format json" in content
+    assert "grain --format json workflow next" in content
+    assert "grain --format json mcp manifest" in content
     assert "Codex/tool-execution path: direct CLI" in content
     assert "obsidian_adapter" in content
     assert "database_adapter" in content
@@ -62,7 +62,7 @@ def test_runtime_agents_guidance_keeps_cli_canonical_for_desktop_paths() -> None
     repo_root = Path(__file__).resolve().parents[1]
     content = (repo_root / "docs" / "runtime" / "AGENTS.md").read_text(encoding="utf-8")
 
-    assert "grain workflow next --format json" in content
+    assert "grain --format json workflow next" in content
     assert "grain mcp serve" in content
     assert "The CLI remains canonical even when the MCP wrapper is used." in content
     assert "obsidian_adapter" in content

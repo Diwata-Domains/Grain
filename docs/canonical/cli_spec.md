@@ -122,6 +122,13 @@ Recommended global option:
 --format text|json
 ```
 
+Because `--format` is registered on the top-level `grain` group it must appear **before** any subcommand:
+
+```text
+grain --format json workflow next      ✓ correct
+grain workflow next --format json      ✗ "No such option: --format"
+```
+
 v1 minimum:
 
 - default `text`

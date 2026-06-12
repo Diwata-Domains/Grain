@@ -205,7 +205,7 @@ For Codex or any environment that can invoke local commands directly, the canoni
 Preferred operating pattern:
 
 ```bash
-grain workflow next --format json
+grain --format json workflow next
 grain prompt show --format json
 ```
 
@@ -224,7 +224,7 @@ For Codex-style usage:
 For desktop clients that prefer MCP tools over direct CLI execution, use the local MCP wrapper:
 
 ```bash
-grain mcp manifest --format json
+grain --format json mcp manifest
 grain mcp serve
 ```
 

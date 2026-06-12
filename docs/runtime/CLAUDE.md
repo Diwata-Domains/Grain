@@ -130,7 +130,7 @@ Read:
 - relevant working docs only if needed
 
 If `current_task.md` is idle or the packet does not exist on disk, do not improvise from chat context. Create/select the packet first, then implement.
-If the packet exists but the conversation no longer matches it, stop and return to `grain workflow next --format json` plus the packet files on disk before proceeding.
+If the packet exists but the conversation no longer matches it, stop and return to `grain --format json workflow next` plus the packet files on disk before proceeding.
 
 For office-artifact work:
 - prefer `grain office ...` commands over ad hoc binary-file edits

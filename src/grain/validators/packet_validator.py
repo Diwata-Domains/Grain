@@ -37,8 +37,20 @@ def validate_status_transition(from_status: str, to_status: str) -> list[str]:
     return []
 
 
+_PLANNING_FILES = ("context.md", "plan.md", "deliverable_spec.md")
+
+
 def validate_packet_files(packet_dir: Path) -> list[str]:
-    """Return errors for any required packet files that are missing."""
+    """Return errors for any required packet files that are missing.
+
+    Simple packets — task.md exists but no planning files exist — are exempt
+    from the planning-file requirement.  Once any planning file is present the
+    full set is required, preventing partial setups from silently passing.
+    """
+    has_task_md = (packet_dir / "task.md").exists()
+    has_any_planning_file = any((packet_dir / f).exists() for f in _PLANNING_FILES)
+    if has_task_md and not has_any_planning_file:
+        return []
     return [
         f"missing required file: {name}"
         for name in _REQUIRED_FILES

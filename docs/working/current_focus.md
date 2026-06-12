@@ -230,7 +230,7 @@ CLOSED. All 14 tasks done (P30-T01 through P30-T14, TASK-0190 through TASK-0203)
 Phase 8 delivers a complete workflow automation runner. The intended operating pattern with an agent CLI (Claude Code, Codex, etc.) is:
 
 **Daily loop:**
-1. Run `grain workflow next --format json` to get the current state and next legal step
+1. Run `grain --format json workflow next` to get the current state and next legal step
 2. Feed that output into your agent CLI prompt — it tells the agent exactly what to do next and why
 3. Agent executes the step (task execute, review, or close)
 4. Run `grain workflow run` to execute one guarded step and stop at the next gate

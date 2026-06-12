@@ -1635,7 +1635,7 @@ Default status for new backlog items in this file: `draft`
 - TUI extension (T13 spec) deferred to a later phase; Phase 31 covers CLI-layer only
 
 ### P31-T01 — Fix active DX bugs: workflow routing, packet ID reuse, phase close flag
-- **Status:** ready
+- **Status:** done
 - **TASK-ID:** TASK-0204
 - **Description:** Fix 3 known DX bugs: (1) `grain workflow next` routes to `task_execute` when execution artifacts exist but review is not surfaced; (2) `next_task_id()` ignores archived packets causing ID reuse after archiving; (3) `grain phase close --phase <N>` flag does not exist. Also fix all spec documents that use `grain workflow next --format json` (wrong flag order — must be `grain --format json workflow next`).
 - **Files:** `src/grain/services/workflow_service.py`, `src/grain/services/task_service.py`, `src/grain/cli/phase.py`, spec docs with wrong flag order
