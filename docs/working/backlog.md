@@ -1667,7 +1667,7 @@ Default status for new backlog items in this file: `draft`
 - **Dependencies:** P31-T01
 
 ### P31-T05 — Implement archiving model: phase close snapshots and `grain archive`
-- **Status:** ready
+- **Status:** done
 - **TASK-ID:** TASK-0208
 - **Description:** Implement the archiving model from `docs/working/archive_spec.md`. (1) Extend `grain phase close` to snapshot working docs to `docs/archive/phases/phase-N/`; (2) implement `grain archive snapshot`, `grain archive milestone`, `grain archive list`, `grain archive show`, `grain archive prune`; (3) implement proposal pruning triggered by `grain suggest --prune` (can stub `grain suggest` for now — just the pruning logic).
 - **Files:** `src/grain/services/archive_service.py` (new), `src/grain/cli/archive.py` (new), `src/grain/services/phase_service.py` (extend), tests

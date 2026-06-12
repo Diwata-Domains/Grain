@@ -28,6 +28,7 @@ class PhaseCloseResult:
     errors: list[str] = field(default_factory=list)
     dry_run: bool = False
     marker_written: str = ""
+    archive_path: str = ""
 
 
 def close_phase(root: Path, dry_run: bool = False, phase_override: str | None = None) -> PhaseCloseResult:
@@ -158,10 +159,15 @@ def close_phase(root: Path, dry_run: bool = False, phase_override: str | None = 
     text = text.rstrip("\n") + f"\n\n{marker_line}\n"
     current_focus_path.write_text(text, encoding="utf-8")
 
+    from grain.services.archive_service import archive_phase_docs
+    archive_result = archive_phase_docs(root, current_phase, done_count, dry_run=False)
+    archive_path = archive_result.archive_path if archive_result.ok else ""
+
     return PhaseCloseResult(
         ok=True,
         closed_phase=current_phase,
         tasks_done=done_count,
         dry_run=False,
         marker_written=_DEFAULT_PHASE_DOC,
+        archive_path=archive_path,
     )
