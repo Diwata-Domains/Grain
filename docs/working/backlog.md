@@ -1690,6 +1690,14 @@ Default status for new backlog items in this file: `draft`
 - **Model:** frontier_model
 - **Dependencies:** P31-T03
 
+### P31-T08 — Implement branch policy: `branch_policy` manifest block and workflow gate
+- **Status:** ready
+- **TASK-ID:** TASK-0211
+- **Description:** Implement opt-in branch enforcement from `docs/working/branch_policy_spec.md`. (1) Add `branch_policy` block parsing (`mode: phase|task|off`, `pattern`, `enforce`, `enforce_after_days`, `message`) to config service; (2) detect current git branch in `grain workflow next` and `grain workflow guard`; (3) warn-only mode: banner to stderr only, never blocks; (4) enforce mode: new `wrong_branch` stop reason with suggested branch name; (5) `GRAIN_SKIP_BRANCH_CHECK=1` escape hatch with auto tooling_notes entry; (6) `grain init` seeds absent `branch_policy:` block with `mode: off`; (7) write `docs/working/branch_policy_spec.md` as the canonical spec for this task. Completely absent by default — teams that don't use branches are unaffected.
+- **Files:** `src/grain/services/config_service.py`, `src/grain/services/workflow_service.py`, `src/grain/cli/__init__.py`, `src/grain/services/init_service.py`, `docs/working/branch_policy_spec.md` (new), tests
+- **Model:** frontier_model
+- **Dependencies:** P31-T02
+
 
 ## 11. Future — Adapter Context Selection (absorbed into Phase 10)
 
