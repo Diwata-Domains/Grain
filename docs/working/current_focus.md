@@ -83,7 +83,7 @@ CLOSED. All 5 tasks done (P28-T01 through P28-T05). Delivered: `grain verify sub
 CLOSED. All 5 tasks done (P29-T01 through P29-T05). Delivered: stronger Grain/Assay loop guidance in prompts and runtime docs, earlier workflow misuse blockers, runner packet/template hydration and activation state sync, `grain workflow explain`, and closeout smoke/docs coverage for the hardened operator loop. Phase closed 2026-05-07.
 
 ## Phase 30 Status
-CONTRACT LOCKED. 9 task packets (P30-T01 through P30-T09, TASK-0190 through TASK-0198). Milestone contract written in `docs/working/v0.4.0_contract.md`. Core deliverables: agent enforcement hardening, scaffold seeding fixes, `grain suggest`, toolkit contract + workspace model, `grain recipe` execution, apply graduation. DX friction mapped to Phase 31 (first execution phase). 4 open questions resolved. T01 complete; T02–T09 ready for execution.
+CLOSED. All 14 tasks done (P30-T01 through P30-T14, TASK-0190 through TASK-0203). Milestone contract locked in `docs/working/v0.4.0_contract.md`. 11 core deliverables decided. 14 spec documents written. Phase 31 (DX Hardening) is the first execution phase. Closed 2026-06-11.
 
 ## Immediate Goals
 1. Lock the `v0.4.0` milestone contract before starting new breadth work

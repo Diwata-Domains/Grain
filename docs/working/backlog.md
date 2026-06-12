@@ -1485,7 +1485,7 @@ Default status for new backlog items in this file: `draft`
 
 ## 33. Phase 30 — v0.4.0 Planning and Toolkit Boundary Definition
 
-> **Status:** in_progress — planning tasks updated 2026-06-11. Seven tasks covering milestone contract, toolkit + workspace contracts, recipe spec, apply graduation, dev/runtime alignment, scaffold audit, and `grain suggest` spec.
+> **Status:** CLOSED 2026-06-11 — 14 tasks done (T01–T14, TASK-0190 through TASK-0203). 11 core deliverables. All spec docs written. Phase 31 (DX Hardening) is next.
 
 ### P30 Planning Notes
 - Scope: milestone definition and execution seeding for `v0.4.0`
@@ -1507,7 +1507,7 @@ Default status for new backlog items in this file: `draft`
 - **Ready:** now
 
 ### P30-T02 — Define toolkit contract boundary and multi-repo workspace model
-- **Status:** draft
+- **Status:** done
 - **TASK-ID:** TASK-0191
 - **Description:** Two specs: (1) inter-tool contract for how Assay/Conclave/DAEMON interoperate with Grain — transport format, version model, extension points; (2) workspace context model for monorepo resolution, `grain context link`, and `grain workspace list`.
 - **Files:** `docs/canonical/toolkit_contract.md` (new), `docs/canonical/workspace_model.md` (new)
@@ -1516,7 +1516,7 @@ Default status for new backlog items in this file: `draft`
 - **Ready:** after milestone contract exists
 
 ### P30-T03 — Spec the `grain recipe` command group
-- **Status:** draft
+- **Status:** done
 - **TASK-ID:** TASK-0192
 - **Description:** Full design spec for `grain recipe` — what recipes are, how `grain recipe run` works, recipe file format, relationship to workflow loop and toolkit contract.
 - **Files:** `docs/canonical/recipe_spec.md` (new)
@@ -1525,7 +1525,7 @@ Default status for new backlog items in this file: `draft`
 - **Ready:** after milestone contract and toolkit contract exist
 
 ### P30-T04 — Spec `apply` graduation criteria for office/Obsidian artifacts
-- **Status:** draft
+- **Status:** done
 - **TASK-ID:** TASK-0193
 - **Description:** Define exact conditions for graduating artifact workflows from `propose`/`export` to safe in-place `apply`. Assess `.docx`, spreadsheets, and Obsidian notes. Decide which type(s) graduate in v0.4.0.
 - **Files:** `docs/working/apply_graduation.md` (new)
@@ -1534,7 +1534,7 @@ Default status for new backlog items in this file: `draft`
 - **Ready:** after milestone contract exists
 
 ### P30-T05 — Spec source-tree / version-alignment diagnostics
-- **Status:** draft
+- **Status:** done
 - **TASK-ID:** TASK-0194
 - **Description:** Design the diagnostic surface for dev/runtime alignment. Spec `grain doctor` or an extension to `grain --version` that detects when the installed binary lags the repo source.
 - **Files:** `docs/working/dev_runtime_alignment.md` (new)
@@ -1543,7 +1543,7 @@ Default status for new backlog items in this file: `draft`
 - **Ready:** after milestone contract exists
 
 ### P30-T06 — Scaffold audit: fix seeding gaps, add standard doc types
-- **Status:** draft
+- **Status:** done
 - **TASK-ID:** TASK-0195
 - **Description:** Fix `grain init` seeding gaps (canonical and working docs that are in the manifest but never created). Add: decisions.md, landscape.md, roadmap.md, CHANGELOG.md (Keep a Changelog), proposals/ directory. Add `--name` and `--type` flags to `grain init`. Fix tooling_notes `read_when: never`.
 - **Files:** `src/grain/data/runtime/` templates, `init_service.py`, `src/grain/cli/init.py`, `docs_manifest.yaml`
@@ -1552,7 +1552,7 @@ Default status for new backlog items in this file: `draft`
 - **Ready:** after milestone contract exists
 
 ### P30-T07 — Spec the `grain suggest` command group
-- **Status:** draft
+- **Status:** done
 - **TASK-ID:** TASK-0196
 - **Description:** Full design spec for `grain suggest`. Analyzes project state (open questions, tooling_notes, backlog, git log) and outputs ranked suggestions: `pick-up` (existing task to prioritize) or `new-task` (net-new work not in backlog). Approval gate: `grain suggest accept` creates packet or flips status; `grain suggest dismiss` excludes from future runs. `--format json` for agent consumption.
 - **Files:** `docs/canonical/suggest_spec.md` (new)
@@ -1561,7 +1561,7 @@ Default status for new backlog items in this file: `draft`
 - **Ready:** after milestone contract and toolkit contract exist
 
 ### P30-T08 — Spec agent enforcement model — packet-first discipline and session resume protocol
-- **Status:** draft
+- **Status:** done
 - **TASK-ID:** TASK-0197
 - **Description:** Design agent-agnostic enforcement of packet-first discipline. Primary enforcement is through Grain's own state machine and hooks — not agent-specific config files. Covers: (1) `grain workflow next` refusing to route to `task_execute` without an open in_progress packet; (2) `grain workflow guard` command for point-in-time checks; (3) `grain hooks install` for pre-commit and post-checkout git hooks; (4) `prompts/workflow.resume.md` — agent-agnostic session resume protocol any agent follows; (5) PROJECT_RULES.md hard rule additions; (6) AGENTS.md block improvements. All primary enforcement works with zero AI involvement.
 - **Files:** `docs/canonical/enforcement_spec.md` (new)
@@ -1570,10 +1570,55 @@ Default status for new backlog items in this file: `draft`
 - **Ready:** after milestone contract exists
 
 ### P30-T09 — Spec upstream feedback loop — `grain report` and opt-in telemetry
-- **Status:** draft
+- **Status:** done
 - **TASK-ID:** TASK-0198
 - **Description:** Design the path from a user's local tooling_notes.md to a Grain GitHub issue. Two surfaces: (1) `grain report` — scans tooling_notes for open Grain friction items, lets user select which to report, constructs a pre-filled GitHub issue URL, marks row as `reported`; (2) opt-in internal error telemetry — Grain queues its own exceptions locally and asks before sending on next invocation; (3) `grain notes` command group — `list`, `add`, `resolve` — so any agent can log friction via CLI without editing the file directly; (4) mandatory tooling notes rule added to the bundled PROJECT_RULES.md template. Nothing is sent without explicit user action. Default telemetry is off.
 - **Files:** `docs/canonical/feedback_spec.md` (new)
+- **Model:** frontier_model
+- **Dependencies:** P30-T01
+- **Ready:** after milestone contract exists
+
+### P30-T10 — Spec working document consistency auditing — `grain docs audit`
+- **Status:** done
+- **TASK-ID:** TASK-0199
+- **Description:** Design `grain docs audit` — a broad working doc health check that goes beyond `grain workflow reconcile`. Checks: current_task.md stale pointer, backlog in_progress/packet mismatches, current_focus.md staleness, open_questions accumulation, tooling_notes high-severity triage, change_proposals aging, structural integrity of all registered docs. Read-only. <2s execution. Configurable thresholds. Output: text table + `--format json`. Integrates with `grain workflow guard --check-docs` and the post-checkout hook.
+- **Files:** `docs/working/docs_audit_spec.md` (new)
+- **Model:** frontier_model
+- **Dependencies:** P30-T01
+- **Ready:** after milestone contract exists
+
+### P30-T11 — Spec the archiving model — automatic, suggested, and explicit archive surfaces
+- **Status:** done
+- **TASK-ID:** TASK-0200
+- **Description:** Design a coherent archiving model covering three surfaces: (1) automatic — working doc snapshots at phase close, proposal pruning when signals resolve; (2) suggested — `grain suggest` surfaces milestone-archive and workspace-idle-archive at natural boundaries; (3) explicit — `grain archive snapshot`, `grain archive milestone <version>`, `grain archive list/show`. Consistent with existing `grain phase archive` behavior.
+- **Files:** `docs/working/archive_spec.md` (new)
+- **Model:** frontier_model
+- **Dependencies:** P30-T01
+- **Ready:** after milestone contract exists
+
+### P30-T12 — Spec CLI output ergonomics improvements
+- **Status:** done
+- **TASK-ID:** TASK-0201
+- **Description:** Design improvements to the Grain CLI output surface for both agent consumption and direct human use. Covers: (1) output contract hardening — every automation-relevant command must have a stable `--format json` surface; (2) text output visual quality — consistent use of symbols, alignment, color (where supported); (3) progress indicators that don't pollute machine-readable output; (4) stop reason vocabulary — standardized, documented set of stop reasons across all state machine commands; (5) `grain status` — a single command that shows the complete workspace state at a glance.
+- **Files:** `docs/working/cli_ergonomics_spec.md` (new)
+- **Model:** frontier_model
+- **Dependencies:** P30-T01
+- **Ready:** after milestone contract exists
+
+### P30-T13 — Spec TUI extension for v0.4.0 command surface
+- **Status:** done
+- **TASK-ID:** TASK-0202
+- **Description:** Extend the v0.3.0 TUI (Python + Textual) to surface v0.4.0 commands for direct terminal users. New TUI panels/actions: `grain suggest` results + accept/dismiss flow, `grain docs audit` findings view, `grain archive` controls, `grain doctor` status panel, `grain recipe list` + run flow. Design must not require changes to the CLI contract — the TUI shells over existing commands. Includes a TUI extension spec that defines which views and actions are in scope for v0.4.0 vs. deferred.
+- **Files:** `docs/working/tui_extension_spec.md` (new)
+- **Model:** frontier_model
+- **Dependencies:** P30-T01
+- **Ready:** after milestone contract exists
+
+### P30-T14 — Spec upgrade enforcement — forced upgrade gate
+- **Status:** done
+- **TASK-ID:** TASK-0203
+- **Description:** Design forced upgrade enforcement when a workspace requires a newer Grain version than installed. `upgrade_policy` block in `docs_manifest.yaml` declares `min_version`, `enforce` (default false), and `enforce_after_days` grace period. Enforce mode blocks all commands except `grain upgrade`, `grain --version`, and `grain doctor`. Warn-only mode shows a startup banner to stderr. `grain upgrade` automatically ratchets `min_version` on success. Override escape hatch (`GRAIN_SKIP_VERSION_CHECK=1`) auto-logs to tooling_notes.
+- **Files:** `docs/working/upgrade_enforcement_spec.md` (new)
 - **Model:** frontier_model
 - **Dependencies:** P30-T01
 - **Ready:** after milestone contract exists

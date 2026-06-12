@@ -2,7 +2,7 @@
 
 ## Metadata
 - **ID:** TASK-0195
-- **Status:** draft
+- **Status:** done
 - **Phase:** Phase 30 — v0.4.0 Planning
 - **Backlog:** P30-T06
 - **Packet Path:** tasks/P30-T06-TASK-0195/
