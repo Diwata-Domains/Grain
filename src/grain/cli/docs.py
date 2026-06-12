@@ -1,4 +1,5 @@
 import json
+from datetime import datetime
 
 import click
 
@@ -11,6 +12,108 @@ from grain.services import docs_service
 @click.group("docs")
 def docs_group():
     """Inspect and validate repository documentation state."""
+
+
+@docs_group.command("audit")
+@click.option("--doc", default=None, help="Run checks only for this doc (e.g. current_task, backlog, structural).")
+@click.option("--severity", default=None, type=click.Choice(["high", "medium"]), help="Filter by minimum severity (high=errors only, medium=warnings+errors).")
+@click.option("--fix", is_flag=True, default=False, help="Apply safe auto-fixes (prompts per finding).")
+@click.option("--no-confirm", is_flag=True, default=False, help="Apply fixes without prompting (agent use only). Requires --fix.")
+@click.pass_context
+def docs_audit(ctx, doc, severity, fix, no_confirm):
+    """Run a broad workspace health check across all registered working documents.
+
+    \b
+    Examples:
+      grain docs audit
+      grain docs audit --doc current_task
+      grain docs audit --severity high
+      grain docs audit --format json
+      grain docs audit --fix
+    """
+    repo = ctx.obj.get("repo") if ctx.obj else None
+    fmt = ctx.obj.get("fmt", "text") if ctx.obj else "text"
+    root = resolve_repo_root(repo)
+
+    from grain.services.docs_audit_service import run_audit, save_audit_cache, apply_fixes
+
+    result = run_audit(root, doc_filter=doc, severity_filter=severity)
+    save_audit_cache(root, result)
+
+    if fmt == "json":
+        click.echo(json.dumps({
+            "run_at": result.run_at,
+            "summary": result.summary,
+            "overall": result.overall,
+            "findings": [
+                {
+                    "doc": f.doc,
+                    "check_id": f.check_id,
+                    "severity": f.severity,
+                    "message": f.message,
+                    "remediation": f.remediation,
+                }
+                for f in result.findings
+                if f.severity != "pass"
+            ],
+        }, indent=2))
+        return
+
+    # --- text output ---
+    run_date = result.run_at[:10]
+    click.echo(f"grain docs audit — {run_date}")
+    click.echo("")
+
+    # Group by doc
+    docs_seen: list[str] = []
+    findings_by_doc: dict[str, list] = {}
+    for f in result.findings:
+        if f.doc not in findings_by_doc:
+            docs_seen.append(f.doc)
+            findings_by_doc[f.doc] = []
+        findings_by_doc[f.doc].append(f)
+
+    for doc_key in docs_seen:
+        doc_findings = findings_by_doc[doc_key]
+        click.echo(doc_key)
+        for f in doc_findings:
+            if f.severity == "pass":
+                symbol = click.style("  ✓", fg="green") if _color_ok() else "  ✓"
+                click.echo(f"{symbol}  {f.check_id:<40} {f.message}")
+            elif f.severity == "warning":
+                symbol = click.style("  ⚠", fg="yellow") if _color_ok() else "  ⚠"
+                click.echo(f"{symbol}  {f.check_id:<40} {f.message}")
+                if f.remediation:
+                    click.echo(f"     → {f.remediation}")
+            elif f.severity == "error":
+                symbol = click.style("  ✗", fg="red") if _color_ok() else "  ✗"
+                click.echo(f"{symbol}  {f.check_id:<40} {f.message}")
+                if f.remediation:
+                    click.echo(f"     → {f.remediation}")
+        click.echo("")
+
+    s = result.summary
+    status_color = {"ok": "green", "warning": "yellow", "error": "red"}.get(result.overall, "white")
+    status_label = click.style(result.overall, fg=status_color) if _color_ok() else result.overall
+    click.echo(
+        f"Checks: {s['pass']} pass, {s['warning']} warning(s), {s['error']} error(s) — {status_label}"
+    )
+
+    if fix:
+        non_pass = [f for f in result.findings if f.severity != "pass"]
+        if non_pass:
+            applied = apply_fixes(root, result, confirm=not no_confirm)
+            if applied:
+                click.echo("\nFixes applied:")
+                for desc in applied:
+                    click.echo(f"  - {desc}")
+            else:
+                click.echo("\nNo fixes applied.")
+
+
+def _color_ok() -> bool:
+    ctx = click.get_current_context(silent=True)
+    return ctx is not None
 
 
 @docs_group.command("validate")

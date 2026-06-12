@@ -87,14 +87,9 @@ def run_guard(
     if check_dev_alignment:
         findings.append(_check_dev_alignment(root))
 
-    # Optional check — docs_health (stub — full impl in T04)
+    # Optional check — docs_health via grain docs audit
     if check_docs:
-        findings.append(GuardFinding(
-            id="docs_health",
-            result="pass",
-            severity="info",
-            message="docs health check deferred to grain docs audit (T04)",
-        ))
+        findings.extend(_check_docs_health(root))
 
     violations = [f for f in findings if f.result == "fail"]
     warnings = [f for f in findings if f.result == "warn"]
@@ -296,6 +291,49 @@ def _check_implementation_ahead(root: Path, current_task: dict) -> GuardFinding:
         severity="info",
         message="no implementation files ahead of packet",
     )
+
+
+def _check_docs_health(root: Path) -> list[GuardFinding]:
+    """Run grain docs audit (errors → violations, warnings → guard warnings)."""
+    try:
+        from grain.services.docs_audit_service import run_audit
+        audit_result = run_audit(root, severity_filter="medium")
+    except Exception as exc:
+        return [GuardFinding(
+            id="docs_health",
+            result="warn",
+            severity="warning",
+            message=f"docs audit failed to run: {exc}",
+        )]
+
+    findings: list[GuardFinding] = []
+    for f in audit_result.findings:
+        if f.severity == "error":
+            findings.append(GuardFinding(
+                id=f"docs:{f.check_id}",
+                result="fail",
+                severity="error",
+                message=f.message,
+                remediation=f.remediation,
+            ))
+        elif f.severity == "warning":
+            findings.append(GuardFinding(
+                id=f"docs:{f.check_id}",
+                result="warn",
+                severity="warning",
+                message=f.message,
+                remediation=f.remediation,
+            ))
+
+    if not findings:
+        findings.append(GuardFinding(
+            id="docs_health",
+            result="pass",
+            severity="info",
+            message=f"docs audit: {audit_result.overall} ({audit_result.summary['pass']} pass, "
+                    f"{audit_result.summary['warning']} warning, {audit_result.summary['error']} error)",
+        ))
+    return findings
 
 
 def _check_dev_alignment(root: Path) -> GuardFinding:

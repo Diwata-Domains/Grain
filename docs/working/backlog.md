@@ -1659,7 +1659,7 @@ Default status for new backlog items in this file: `draft`
 - **Dependencies:** none
 
 ### P31-T04 — Implement `grain docs audit`
-- **Status:** ready
+- **Status:** done
 - **TASK-ID:** TASK-0207
 - **Description:** Implement `grain docs audit` from `docs/working/docs_audit_spec.md`. 21 checks across 6 doc types. `--format json` output. Configurable thresholds via `audit_thresholds` block in manifest. `--fix` with per-finding prompt. Writes `.grain/last_docs_audit.json` for cached reads. `grain workflow guard --check-docs` integration.
 - **Files:** `src/grain/services/docs_audit_service.py` (new), `src/grain/cli/docs.py` (extend), tests
