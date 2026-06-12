@@ -12,6 +12,25 @@ from grain.domain.workflow import WorkflowEvaluation, WorkflowTaskState
 from grain.adapters.manifest import load_completion_policy
 from grain.validators.packet_validator import validate_closure, validate_packet
 
+# Canonical stop reasons — never rename without a major version bump
+STOP_REQUIRED_DOCS_MISSING = "required_docs_missing"       # required working doc absent
+STOP_REQUIRED_DOCS_INVALID = "required_docs_invalid"       # required doc present but malformed
+STOP_PROJECT_COMPLETE = "project_complete"                 # all phases done, no pending work
+STOP_BOOTSTRAP_INCOMPLETE = "bootstrap_incomplete"         # grain init not completed
+STOP_PREVIOUS_PHASE_NOT_CLOSED = "previous_phase_not_closed"   # prior phase missing close marker
+STOP_STALE_TASK_POINTER = "stale_task_pointer"             # current_task.md points to done packet
+STOP_WORKFLOW_STATE_DRIFT = "workflow_state_drift"         # backlog, pointer, and packet disagree
+STOP_TASK_BLOCKED = "task_blocked"                         # active task explicitly blocked
+STOP_TASK_NEEDS_FIX = "task_needs_fix"                     # review found issues requiring fixes
+STOP_REVIEW_ARTIFACTS_INCOMPLETE = "review_artifacts_incomplete"   # results.md or handoff.md missing
+STOP_REVIEW_CLOSE_BLOCKED = "review_close_blocked"         # review state not yet approved
+STOP_EXECUTION_IN_FLIGHT = "execution_in_flight"           # in_progress task with no results yet
+STOP_CONFLICTING_NEXT_ACTIONS = "conflicting_next_actions"  # multiple ready tasks, cannot auto-select
+STOP_PACKET_REQUIRED = "packet_required"                   # no open packet; ready tasks exist
+STOP_PHASE_HAS_NO_TASKS = "phase_has_no_tasks"             # active phase has no backlog tasks
+STOP_PHASE_BOUNDARY_REVIEW_CLOSE_REQUIRED = "phase_boundary_review_close_required"  # all tasks done, phase not sealed
+STOP_TASK_PLANNING_REQUIRED = "task_planning_required"     # no executable candidate; planning needed
+
 _CURRENT_TASK_REQUIRED = ("Task ID:", "Task Path:", "Status:")
 _TASK_HEADING = re.compile(r"^###\s+(P(\d+)-T(\d+))\s+—\s+(.+)$")
 _PHASE_HEADING = re.compile(r"^##\s+\d+\.\s+Phase\s+(\d+)\s+—")
@@ -47,7 +66,7 @@ def evaluate_workflow_state(
     if missing:
         evaluation = WorkflowEvaluation(
             ok=False,
-            stop_reason="required_docs_missing",
+            stop_reason=STOP_REQUIRED_DOCS_MISSING,
             blocking_reasons=[f"missing required doc: {path}" for path in missing],
             affected_artifacts=required,
         )
@@ -65,7 +84,7 @@ def evaluate_workflow_state(
     if not current_phase:
         evaluation = WorkflowEvaluation(
             ok=False,
-            stop_reason="required_docs_invalid",
+            stop_reason=STOP_REQUIRED_DOCS_INVALID,
             blocking_reasons=["unable to parse current phase from docs/working/current_focus.md"],
             affected_artifacts=required,
         )
@@ -82,7 +101,7 @@ def evaluate_workflow_state(
     if current_phase == "complete":
         evaluation = WorkflowEvaluation(
             ok=False,
-            stop_reason="project_complete",
+            stop_reason=STOP_PROJECT_COMPLETE,
             blocking_reasons=[
                 "project is marked complete — no further workflow action is required"
             ],
@@ -94,7 +113,7 @@ def evaluate_workflow_state(
     if current_phase == "0":
         evaluation = WorkflowEvaluation(
             ok=False,
-            stop_reason="bootstrap_incomplete",
+            stop_reason=STOP_BOOTSTRAP_INCOMPLETE,
             blocking_reasons=[
                 "working docs are in bootstrap state — run the onboarding prompt to populate "
                 "project-specific content before using the workflow runner"
@@ -124,7 +143,7 @@ def evaluate_workflow_state(
         if not _is_phase_properly_closed(root / _DEFAULT_PHASE_DOC, prev_phase):
             evaluation = WorkflowEvaluation(
                 ok=False,
-                stop_reason="previous_phase_not_closed",
+                stop_reason=STOP_PREVIOUS_PHASE_NOT_CLOSED,
                 blocking_reasons=[
                     f"Phase {prev_phase} was not sealed — check out Phase {prev_phase} "
                     f"and run `grain phase close` to seal it before beginning Phase {current_phase}"
@@ -138,7 +157,7 @@ def evaluate_workflow_state(
     if current_task is None:
         evaluation = WorkflowEvaluation(
             ok=False,
-            stop_reason="required_docs_invalid",
+            stop_reason=STOP_REQUIRED_DOCS_INVALID,
             blocking_reasons=["docs/working/current_task.md is missing required fields"],
             affected_artifacts=required,
             active_phase=current_phase,
@@ -164,7 +183,7 @@ def evaluate_workflow_state(
         if packet_dir is None:
             evaluation = WorkflowEvaluation(
                 ok=False,
-                stop_reason="required_docs_invalid",
+                stop_reason=STOP_REQUIRED_DOCS_INVALID,
                 blocking_reasons=[f"active task packet not found: {active_task_id}"],
                 affected_artifacts=[_DEFAULT_CURRENT_TASK_DOC, "tasks/"],
                 active_phase=current_phase,
@@ -176,7 +195,7 @@ def evaluate_workflow_state(
         if packet_errors:
             evaluation = WorkflowEvaluation(
                 ok=False,
-                stop_reason="required_docs_invalid",
+                stop_reason=STOP_REQUIRED_DOCS_INVALID,
                 blocking_reasons=[f"packet invalid: {err}" for err in packet_errors],
                 affected_artifacts=[str(packet_dir.relative_to(root))],
                 active_phase=current_phase,
@@ -190,7 +209,7 @@ def evaluate_workflow_state(
             # current_task.md points to a completed packet — stale pointer.
             evaluation = WorkflowEvaluation(
                 ok=False,
-                stop_reason="stale_task_pointer",
+                stop_reason=STOP_STALE_TASK_POINTER,
                 blocking_reasons=[
                     f"current_task.md points to completed packet: {active_task_id} — "
                     "set 'Task ID:' to 'none' in docs/working/current_task.md to clear the stale pointer"
@@ -212,7 +231,7 @@ def evaluate_workflow_state(
             if not backlog_status_for_active:
                 evaluation = WorkflowEvaluation(
                     ok=False,
-                    stop_reason="workflow_state_drift",
+                    stop_reason=STOP_WORKFLOW_STATE_DRIFT,
                     blocking_reasons=[
                         f"active packet {active_packet_task_ref} is not represented in backlog for phase {current_phase}"
                     ],
@@ -225,7 +244,7 @@ def evaluate_workflow_state(
             if backlog_status_for_active not in _allowed_backlog_statuses(active_task_status):
                 evaluation = WorkflowEvaluation(
                     ok=False,
-                    stop_reason="workflow_state_drift",
+                    stop_reason=STOP_WORKFLOW_STATE_DRIFT,
                     blocking_reasons=[
                         f"active packet status '{active_task_status}' does not match backlog status '{backlog_status_for_active}' for {active_packet_task_ref}"
                     ],
@@ -240,7 +259,7 @@ def evaluate_workflow_state(
         if active_task_status == "blocked":
             evaluation = WorkflowEvaluation(
                 ok=False,
-                stop_reason="task_blocked",
+                stop_reason=STOP_TASK_BLOCKED,
                 blocking_reasons=[f"active task is blocked: {active_task_id}"],
                 affected_artifacts=[
                     _DEFAULT_CURRENT_TASK_DOC,
@@ -255,7 +274,7 @@ def evaluate_workflow_state(
         if active_task_status == "needs_fix":
             evaluation = WorkflowEvaluation(
                 ok=False,
-                stop_reason="task_needs_fix",
+                stop_reason=STOP_TASK_NEEDS_FIX,
                 blocking_reasons=[f"active task needs fixes before closure: {active_task_id}"],
                 affected_artifacts=[
                     _DEFAULT_CURRENT_TASK_DOC,
@@ -273,7 +292,7 @@ def evaluate_workflow_state(
             if missing_review_artifacts:
                 evaluation = WorkflowEvaluation(
                     ok=False,
-                    stop_reason="review_artifacts_incomplete",
+                    stop_reason=STOP_REVIEW_ARTIFACTS_INCOMPLETE,
                     blocking_reasons=missing_review_artifacts,
                     affected_artifacts=[str(packet_dir.relative_to(root))],
                     active_phase=current_phase,
@@ -285,7 +304,7 @@ def evaluate_workflow_state(
             if closure_errors:
                 evaluation = WorkflowEvaluation(
                     ok=False,
-                    stop_reason="review_close_blocked",
+                    stop_reason=STOP_REVIEW_CLOSE_BLOCKED,
                     blocking_reasons=closure_errors,
                     affected_artifacts=[
                         str(packet_dir.relative_to(root)),
@@ -313,7 +332,7 @@ def evaluate_workflow_state(
         if not (packet_dir / "results.md").exists():
             evaluation = WorkflowEvaluation(
                 ok=False,
-                stop_reason="execution_in_flight",
+                stop_reason=STOP_EXECUTION_IN_FLIGHT,
                 blocking_reasons=[
                     "task has no results.md — complete implementation and document outcomes "
                     "before advancing; use `grain task close --quick` for conversational workflows"
@@ -349,7 +368,7 @@ def evaluate_workflow_state(
         if drift_tasks:
             evaluation = WorkflowEvaluation(
                 ok=False,
-                stop_reason="workflow_state_drift",
+                stop_reason=STOP_WORKFLOW_STATE_DRIFT,
                 blocking_reasons=[
                     "backlog shows active work but docs/working/current_task.md is unset",
                     *[f"backlog active task without current_task pointer: {task.task_ref} ({task.status})" for task in drift_tasks],
@@ -368,7 +387,7 @@ def evaluate_workflow_state(
     if len(ready_tasks) > 1:
         evaluation = WorkflowEvaluation(
             ok=False,
-            stop_reason="conflicting_next_actions",
+            stop_reason=STOP_CONFLICTING_NEXT_ACTIONS,
             blocking_reasons=[
                 "multiple ready tasks in active phase require deterministic selection",
                 *[f"ready task: {task.task_ref}" for task in ready_tasks],
@@ -385,7 +404,7 @@ def evaluate_workflow_state(
         create_cmd = f"grain task create --id {task.task_id}" if task.task_id else "grain task create"
         evaluation = WorkflowEvaluation(
             ok=True,
-            stop_reason="packet_required",
+            stop_reason=STOP_PACKET_REQUIRED,
             blocking_reasons=[
                 "no in-progress task packet — create one before executing",
                 f"ready task: {task.task_ref}" + (f" ({task.task_id})" if task.task_id else ""),
@@ -412,7 +431,7 @@ def evaluate_workflow_state(
     if not backlog_tasks:
         evaluation = WorkflowEvaluation(
             ok=False,
-            stop_reason="phase_has_no_tasks",
+            stop_reason=STOP_PHASE_HAS_NO_TASKS,
             blocking_reasons=[
                 f"phase {current_phase} has no tasks defined in the backlog yet — "
                 "add tasks before executing"
@@ -426,7 +445,7 @@ def evaluate_workflow_state(
     if not open_tasks:
         evaluation = WorkflowEvaluation(
             ok=False,
-            stop_reason="phase_boundary_review_close_required",
+            stop_reason=STOP_PHASE_BOUNDARY_REVIEW_CLOSE_REQUIRED,
             blocking_reasons=[
                 "no executable tasks remain in active phase; phase-level review/close required"
             ],
@@ -438,7 +457,7 @@ def evaluate_workflow_state(
 
     evaluation = WorkflowEvaluation(
         ok=False,
-        stop_reason="task_planning_required",
+        stop_reason=STOP_TASK_PLANNING_REQUIRED,
         blocking_reasons=["no ready task found for active phase"],
         affected_artifacts=[_DEFAULT_BACKLOG_DOC],
         active_phase=current_phase,

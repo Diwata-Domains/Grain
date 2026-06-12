@@ -1675,7 +1675,7 @@ Default status for new backlog items in this file: `draft`
 - **Dependencies:** none
 
 ### P31-T06 — Implement CLI ergonomics: `--format json` coverage, `grain status`, stop reason vocabulary
-- **Status:** ready
+- **Status:** done
 - **TASK-ID:** TASK-0209
 - **Description:** Implement CLI ergonomics from `docs/working/cli_ergonomics_spec.md`. (1) Add `--format json` to `grain docs audit`, `grain archive list`, `grain doctor`, `grain workspace list` (stub), `grain notes list` (stub); (2) canonicalize all stop reasons as constants in `workflow_service.py`; (3) implement `grain status` command (reads `.grain/last_workflow_state.json` and `.grain/last_docs_audit.json` if fresh, else live); (4) add text output symbol style guide to `src/grain/cli/output.py`; (5) update `docs/canonical/cli_spec.md` JSON Output Schemas section.
 - **Files:** `src/grain/cli/status.py` (new), `src/grain/cli/output.py`, `src/grain/services/workflow_service.py`, `docs/canonical/cli_spec.md`

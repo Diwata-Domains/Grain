@@ -1,0 +1,15 @@
+{
+  "task_id": "TASK-0209",
+  "packet_dir": "tasks/P31-T06-TASK-0209",
+  "executor_identity": "",
+  "model_class": "",
+  "last_stage": "close",
+  "last_stage_at": "2026-06-12T15:01:56Z",
+  "last_workflow_action": "task_close",
+  "last_workflow_action_at": "2026-06-12T15:01:56Z",
+  "started_at": "2026-06-12T15:01:56Z",
+  "updated_at": "2026-06-12T15:01:56Z",
+  "stage_timestamps": {
+    "close_at": "2026-06-12T15:01:56Z"
+  }
+}

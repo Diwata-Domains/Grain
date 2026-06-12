@@ -12,6 +12,12 @@ except PackageNotFoundError:
     except Exception:
         _VERSION = "unknown"
 
+try:
+    from grain.services.doctor_service import detect_install_mode as _detect_mode
+    _INSTALL_MODE = _detect_mode()
+except Exception:
+    _INSTALL_MODE = "unknown"
+
 from .init import init_cmd
 from .docs import docs_group
 from .task import task_group
@@ -29,6 +35,9 @@ from .office import office_group
 from .tui import tui_cmd
 from .hooks import hooks_group
 from .archive import archive_group
+from .doctor import doctor_cmd
+from .status import status_cmd
+from .notes import notes_group
 from .workflow import workflow_group
 from .onboard import onboard_cmd
 from .upgrade import upgrade_cmd
@@ -129,7 +138,12 @@ def _maybe_warn_if_upgrade_needed(root_path, invoked_subcommand: str | None) -> 
 
 
 @click.group()
-@click.version_option(_VERSION, "--version", "-V")
+@click.version_option(
+    _VERSION,
+    "--version",
+    "-V",
+    message=f"grain, version %(version)s ({_INSTALL_MODE})",
+)
 @click.option("--repo", default=None, metavar="PATH", help="Path to repository root (auto-detected if omitted).")
 @click.option(
     "--format",
@@ -207,6 +221,9 @@ main.add_command(office_group)
 main.add_command(tui_cmd)
 main.add_command(hooks_group)
 main.add_command(archive_group)
+main.add_command(doctor_cmd)
+main.add_command(status_cmd)
+main.add_command(notes_group)
 main.add_command(workflow_group)
 main.add_command(onboard_cmd)
 main.add_command(upgrade_cmd)
