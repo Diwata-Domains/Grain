@@ -868,3 +868,23 @@ Released between Phase 14 close and Phase 15 start. Not tracked as formal phases
 * What felt efficient: planning phase with a locked milestone contract first meant every subsequent spec task had a clear decision anchor; tasks that needed design decisions had those resolved in T01 before any spec writing began
 * What created friction: `grain workflow next --format json` flag order is global not per-command (`grain --format json workflow next`); `grain notes add` command not yet implemented (v0.4.0 planned); 4 bundled files out of date requiring upgrade
 * What to tighten next: the `--format` flag placement inconsistency is a UX friction point that T12 (CLI ergonomics) addresses; `grain notes add` is needed immediately for agents to log friction correctly
+
+---
+
+### Phase 31
+
+* Tasks completed: 8 (T01–T08: agent enforcement, guard refactor, scaffold gaps, docs audit, archiving, CLI ergonomics, upgrade enforcement, branch policy)
+* Blocked tasks: 0
+* Prompt runs: 2 (two context windows; compacted mid-phase)
+* Avg prompt runs per completed task: 0.25
+* Manual interventions: 1 (template field addition — Suggested Action on OQ/CP templates)
+* First-pass success rate: 8/8
+* Rework count: 0
+* Drift incidents: 0
+* Phase duration: 2026-06-03 – 2026-06-12
+
+### Phase 31 Notes
+
+* What felt efficient: the spec-first approach from P30 paid off — T07 and T08 had complete specs (upgrade_enforcement_spec.md, branch_policy_spec.md) that made implementation mechanical; stop reason constants were the right call before building enforcement gates
+* What created friction: macOS sed -i arg parsing tripped up a string replacement step; CliRunner(mix_stderr=False) not available in the installed Click build; phase 31 tests required phase < 16 to avoid previous_phase_not_closed gate
+* What to tighten next: warrant explicit phase number check in test helpers to avoid routing gate surprises; sed should always be replaced with Python for multi-pattern replacements on macOS
