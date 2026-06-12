@@ -1485,64 +1485,98 @@ Default status for new backlog items in this file: `draft`
 
 ## 33. Phase 30 — v0.4.0 Planning and Toolkit Boundary Definition
 
-> **Status:** planned — define the next milestone after the v0.3.0 operator-surface buildout. Focus on recipe execution, toolkit contracts, safe real mutation, and active-development runtime alignment.
+> **Status:** in_progress — planning tasks updated 2026-06-11. Seven tasks covering milestone contract, toolkit + workspace contracts, recipe spec, apply graduation, dev/runtime alignment, scaffold audit, and `grain suggest` spec.
 
 ### P30 Planning Notes
 - Scope: milestone definition and execution seeding for `v0.4.0`
 - Primary outcomes:
+  - lock `grain suggest` as a core v0.4.0 deliverable — proactive task suggestion with human approval gate
   - promote recipes from planned direction into explicit executable scope
-  - define the Grain ↔ Assay ↔ sibling-tool contract boundary clearly enough for real toolkit interoperability
-  - decide where office and vault artifact flows can safely graduate from `propose/export` into real `apply`
-  - reduce development friction from invoking stale installed CLI binaries instead of current repo code
-  - seed the next execution phases without reopening broad adapter-sprawl planning
+  - define Grain ↔ toolkit contract AND multi-repo workspace resolution model
+  - decide where office/vault artifact flows can safely graduate from `propose/export` into `apply`
+  - map DX friction from tooling_notes into an early execution phase — not stretch
+  - fix `grain init` scaffold seeding gaps so it is immediately useful out of the box
 
 ### P30-T01 — Lock the `v0.4.0` milestone contract
 - **Status:** draft
-- **Description:** Define the milestone theme, required deliverables, explicit non-goals, and release boundary for `v0.4.0`. This should decide whether the milestone is primarily recipe-centric, contract-centric, mutation-centric, or a bounded combination, and should keep the scope tighter than the broad operator-surface expansion in `v0.3.0`.
-- **Files:** `docs/working/current_focus.md`, `docs/working/implementation_plan.md`, `docs/working/backlog.md`
+- **TASK-ID:** TASK-0190
+- **Description:** Formalize the v0.4.0 milestone contract. Locks `grain suggest` as core, maps tooling_notes DX items to execution phase order, resolves four open design questions (recipe unit, transport format, apply threshold, suggest signal quality bar).
+- **Files:** `docs/working/v0.4.0_contract.md` (new), `docs/working/current_focus.md`
 - **Model:** frontier_model
 - **Dependencies:** Phase 29 close
 - **Ready:** now
 
-### P30-T02 — Define recipe execution surfaces and packet scaffolds
+### P30-T02 — Define toolkit contract boundary and multi-repo workspace model
 - **Status:** draft
-- **Description:** Move the recipe layer from “direction” to “product contract”. Define the CLI surface, recipe metadata, packet expectations, and how recipes compose with the existing workflow runner without becoming a second orchestration system.
-- **Files:** working docs, potentially canonical proposal notes if command contracts need formalization
+- **TASK-ID:** TASK-0191
+- **Description:** Two specs: (1) inter-tool contract for how Assay/Conclave/DAEMON interoperate with Grain — transport format, version model, extension points; (2) workspace context model for monorepo resolution, `grain context link`, and `grain workspace list`.
+- **Files:** `docs/canonical/toolkit_contract.md` (new), `docs/canonical/workspace_model.md` (new)
 - **Model:** frontier_model
 - **Dependencies:** P30-T01
 - **Ready:** after milestone contract exists
 
-### P30-T03 — Define shared toolkit contracts for sibling-app interop
+### P30-T03 — Spec the `grain recipe` command group
 - **Status:** draft
-- **Description:** Define the Grain-side contract boundary for sibling tools such as Assay and future toolkit apps. Scope should include exchange artifacts, ownership boundaries, and how tool-to-tool communication stays file-backed and inspectable instead of chat-memory-driven.
-- **Files:** working docs, change proposals if canonical contract docs need updates later
+- **TASK-ID:** TASK-0192
+- **Description:** Full design spec for `grain recipe` — what recipes are, how `grain recipe run` works, recipe file format, relationship to workflow loop and toolkit contract.
+- **Files:** `docs/canonical/recipe_spec.md` (new)
+- **Model:** frontier_model
+- **Dependencies:** P30-T01, P30-T02
+- **Ready:** after milestone contract and toolkit contract exist
+
+### P30-T04 — Spec `apply` graduation criteria for office/Obsidian artifacts
+- **Status:** draft
+- **TASK-ID:** TASK-0193
+- **Description:** Define exact conditions for graduating artifact workflows from `propose`/`export` to safe in-place `apply`. Assess `.docx`, spreadsheets, and Obsidian notes. Decide which type(s) graduate in v0.4.0.
+- **Files:** `docs/working/apply_graduation.md` (new)
 - **Model:** frontier_model
 - **Dependencies:** P30-T01
 - **Ready:** after milestone contract exists
 
-### P30-T04 — Define safe `apply` graduation criteria for non-code artifacts
+### P30-T05 — Spec source-tree / version-alignment diagnostics
 - **Status:** draft
-- **Description:** Decide which `.docx`, spreadsheet, and Obsidian flows can safely move from `propose/export` into true `apply` behavior, what validator thresholds are required, and what still remains intentionally comparison-first.
-- **Files:** working docs, office/vault planning notes
-- **Model:** frontier_model
-- **Dependencies:** P30-T01
-- **Ready:** after milestone contract exists
-
-### P30-T05 — Define active-development runtime alignment strategy
-- **Status:** draft
-- **Description:** Eliminate the repeated development-time drift where the installed `grain` binary lags the repo code. Decide the supported active-development invocation path, diagnostic warnings, and whether Grain should gain an explicit self-check for source-tree vs installed-version mismatch.
-- **Files:** working docs, release/development notes
+- **TASK-ID:** TASK-0194
+- **Description:** Design the diagnostic surface for dev/runtime alignment. Spec `grain doctor` or an extension to `grain --version` that detects when the installed binary lags the repo source.
+- **Files:** `docs/working/dev_runtime_alignment.md` (new)
 - **Model:** open_model
 - **Dependencies:** P30-T01
 - **Ready:** after milestone contract exists
 
-### P30-T06 — Seed the first `v0.4.0` execution phases and tasks
+### P30-T06 — Scaffold audit: fix seeding gaps, add standard doc types
 - **Status:** draft
-- **Description:** Break the locked `v0.4.0` milestone into concrete execution phases and small task groups so the next implementation cycle can start cleanly once planning is accepted.
-- **Files:** `docs/working/backlog.md`, `docs/working/current_focus.md`, `docs/working/implementation_plan.md`
+- **TASK-ID:** TASK-0195
+- **Description:** Fix `grain init` seeding gaps (canonical and working docs that are in the manifest but never created). Add: decisions.md, landscape.md, roadmap.md, CHANGELOG.md (Keep a Changelog), proposals/ directory. Add `--name` and `--type` flags to `grain init`. Fix tooling_notes `read_when: never`.
+- **Files:** `src/grain/data/runtime/` templates, `init_service.py`, `src/grain/cli/init.py`, `docs_manifest.yaml`
 - **Model:** frontier_model
-- **Dependencies:** P30-T02 through P30-T05
-- **Ready:** after the planning surfaces above are locked
+- **Dependencies:** P30-T01
+- **Ready:** after milestone contract exists
+
+### P30-T07 — Spec the `grain suggest` command group
+- **Status:** draft
+- **TASK-ID:** TASK-0196
+- **Description:** Full design spec for `grain suggest`. Analyzes project state (open questions, tooling_notes, backlog, git log) and outputs ranked suggestions: `pick-up` (existing task to prioritize) or `new-task` (net-new work not in backlog). Approval gate: `grain suggest accept` creates packet or flips status; `grain suggest dismiss` excludes from future runs. `--format json` for agent consumption.
+- **Files:** `docs/canonical/suggest_spec.md` (new)
+- **Model:** frontier_model
+- **Dependencies:** P30-T01, P30-T02
+- **Ready:** after milestone contract and toolkit contract exist
+
+### P30-T08 — Spec agent enforcement model — packet-first discipline and session resume protocol
+- **Status:** draft
+- **TASK-ID:** TASK-0197
+- **Description:** Design agent-agnostic enforcement of packet-first discipline. Primary enforcement is through Grain's own state machine and hooks — not agent-specific config files. Covers: (1) `grain workflow next` refusing to route to `task_execute` without an open in_progress packet; (2) `grain workflow guard` command for point-in-time checks; (3) `grain hooks install` for pre-commit and post-checkout git hooks; (4) `prompts/workflow.resume.md` — agent-agnostic session resume protocol any agent follows; (5) PROJECT_RULES.md hard rule additions; (6) AGENTS.md block improvements. All primary enforcement works with zero AI involvement.
+- **Files:** `docs/canonical/enforcement_spec.md` (new)
+- **Model:** frontier_model
+- **Dependencies:** P30-T01
+- **Ready:** after milestone contract exists
+
+### P30-T09 — Spec upstream feedback loop — `grain report` and opt-in telemetry
+- **Status:** draft
+- **TASK-ID:** TASK-0198
+- **Description:** Design the path from a user's local tooling_notes.md to a Grain GitHub issue. Two surfaces: (1) `grain report` — scans tooling_notes for open Grain friction items, lets user select which to report, constructs a pre-filled GitHub issue URL, marks row as `reported`; (2) opt-in internal error telemetry — Grain queues its own exceptions locally and asks before sending on next invocation; (3) `grain notes` command group — `list`, `add`, `resolve` — so any agent can log friction via CLI without editing the file directly; (4) mandatory tooling notes rule added to the bundled PROJECT_RULES.md template. Nothing is sent without explicit user action. Default telemetry is off.
+- **Files:** `docs/canonical/feedback_spec.md` (new)
+- **Model:** frontier_model
+- **Dependencies:** P30-T01
+- **Ready:** after milestone contract exists
 
 ---
 
