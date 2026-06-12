@@ -7,6 +7,43 @@ Versioning: [Semantic Versioning](https://semver.org/)
 
 ---
 
+## [0.3.1] — 2026-06-12
+
+### Added
+- **`grain workflow guard`** — standalone enforcement command; runs packet, phase, branch, and docs checks; callable from git hooks, CI, or any agent without invoking the full workflow runner
+- **`grain hooks install`** — writes pre-commit and post-checkout git hooks that run `grain workflow guard` automatically; `grain hooks list` and `grain hooks remove` included
+- **`grain docs audit`** — 18 read-only workspace health checks across 6 doc types; `--doc`, `--severity`, and `--fix` flags; `grain workflow guard --check-docs` integration
+- **`grain archive`** — phase close snapshots (automatic), milestone snapshots, and point-in-time snapshots; `grain archive snapshot`, `grain archive milestone`, `grain archive list`, `grain archive show`, `grain archive prune`
+- **`grain doctor`** — install-mode detection (`editable`/`installed`/`dev`), version/source alignment checks, workspace resolution report; `--format json` output
+- **`grain status`** — single workspace-state command combining workflow state and docs health; reads caches (<5 min / <10 min TTL) to stay under 1s; `--format json` output
+- **`grain notes add/list`** — stub for logging workflow friction and observations to `docs/working/tooling_notes.md` with structured table rows; full implementation in Phase 37
+- **`grain init --name/--type` flags** — substitute project name and type into the seeded `docs_manifest.yaml` at init time; reminder banner when `--name` is omitted
+- **`grain upgrade --add-missing`** — detects and seeds absent seeded files without overwriting existing ones
+- **`upgrade_policy` manifest block** — workspaces declare `min_version`, `enforce`, and `enforce_after_days`; Grain warns on version mismatch or blocks with exit code 2 in enforce mode; `GRAIN_SKIP_VERSION_CHECK=1` escape hatch logs to `tooling_notes.md`; `grain upgrade` ratchets `min_version` after every successful run
+- **`branch_policy` manifest block** — opt-in branch enforcement (`mode: phase`, `mode: task`, or `off`); warn-only or `wrong_branch` stop reason with a suggested branch name; `GRAIN_SKIP_BRANCH_CHECK=1` escape hatch; `grain workflow guard` check #5
+- **Stop reason constants** — 18 module-level string constants in `workflow_service.py` replacing all inline string literals; `STOP_WRONG_BRANCH` added
+- **`WorkflowEvaluation.suggested_branch`** — new field populated on `wrong_branch` stop reason; gives agents an actionable `git checkout -b` target without prose parsing
+- **`grain --version` install mode** — version output now includes `(editable)`, `(installed)`, or `(dev)` suffix
+- **13 new scaffold templates** — `product_scope.md`, `architecture.md`, `decisions.md`, `landscape_canonical.md`, `landscape_working.md`, `backlog.md`, `current_focus.md`, `open_questions.md`, `change_proposals.md`, `roadmap.md`, `current_task.md`, `CHANGELOG.md`, `workflow_metrics.md` — seeded by `grain init`
+- **`Suggested Action` field** on open question and change proposal templates
+- **`workflow.resume.md` prompt** — agent-agnostic session resume protocol seeded in every new workspace
+- **Phase close archives** — `grain phase close` now automatically snapshots working docs to `docs/archive/phases/phase-{N}/`
+
+### Changed
+- `grain workflow next` evaluation post-processed by `_apply_branch_policy_check` — branch warning added to `evaluation.warnings` in warn mode; text output renders warnings to stderr
+- `grain workflow guard` refactored from a stub to a real enforcement service with 5 named checks; `--check-docs` and `--check-dev-alignment` flags added
+- `PROJECT_RULES.md` hardened with packet-first and branch discipline rules
+- `docs_manifest.yaml` gains `branch_policy` and `upgrade_policy` blocks (seeded off/empty by default)
+- `AGENTS.md` generation updated to reference `workflow.resume.md`
+- `docs/runtime/docs_manifest.yaml` `tooling_notes read_when` fixed from `never` to `["encountering_blockers", "logging_friction"]`
+
+### Fixed
+- `grain workflow next` stale `current_task.md` pointer to a done-task packet now produces `stale_task_pointer` stop reason instead of blocking the runner silently
+- `grain phase close` `--phase` flag now accepted correctly (was incorrectly rejected in some invocations)
+- `grain --format json workflow next` flag-order fix (`--format` is a group-level flag, not a subcommand flag)
+
+---
+
 ## [0.3.0] — 2026-06-11
 
 ### Added
