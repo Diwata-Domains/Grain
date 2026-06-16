@@ -154,8 +154,8 @@ Use `--format json` when the calling environment wants structured state. Use tex
 **Claude Desktop / MCP:**
 
 ```bash
-grain mcp manifest    # inspect available tools
-grain mcp serve       # start local stdio MCP wrapper
+grain --format json mcp manifest    # inspect available tools
+grain mcp serve                     # start local stdio MCP wrapper
 ```
 
 Both paths preserve the same workflow rules and packet-first boundaries.
