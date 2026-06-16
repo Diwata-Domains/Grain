@@ -1,43 +1,40 @@
-# Community Adapter Registry Scaffold
+# Community Adapter Registry
 
-This directory mirrors the minimum reviewed-registry shape expected by Phase 19.
+Community adapters extend Grain with context profiles for specific domains, frameworks, or toolchains. They follow the same adapter contract as official adapters and are distributed separately from the core package.
 
-## Purpose
+## Submitting an adapter
 
-Community adapters live outside the core Grain repo, but they must remain explicit, reviewable, and compatible with the same adapter contract as official adapters. This scaffold shows the minimum package and review artifacts a reviewed community adapter submission should include.
-
-## Submission Layout
-
-One reviewed community adapter submission should include:
-
-- `adapter_package.yaml` — package metadata consumed by validation and install flows
-- `adapter_profile.md` — one declarative adapter profile payload
-- `review_metadata.yaml` — registry-maintainer review metadata for the submission
-
-Recommended reviewed-registry layout:
+Each adapter submission lives in its own directory under `submissions/`:
 
 ```text
 community_adapter_registry/
   submissions/
     <package_id>/
-      adapter_package.yaml
-      adapter_profile.md
-      review_metadata.yaml
+      adapter_package.yaml   — package metadata (id, name, description, version, author)
+      adapter_profile.md     — the adapter profile payload
+      review_metadata.yaml   — maintainer review record (filled in during review)
 ```
 
-## Trust Boundaries
+Templates for each file are in `templates/`.
 
-- Community adapters are reviewed proposals, not Official adapters.
-- Community adapters must pass package validation before local install.
-- Local install remains explicit: use a package directory or a local reviewed-registry checkout plus handle.
-- Promotion from Community to Official is a separate maintainer decision and is not encoded in these scaffold files.
+To submit:
+1. Copy the templates into `submissions/<your-package-id>/`
+2. Fill in `adapter_package.yaml` and `adapter_profile.md`
+3. Leave `review_metadata.yaml` as-is — the maintainer fills this in
+4. Open a pull request — CI validates the schema automatically
 
-## Templates
+## Trust model
 
-Template files live under `templates/`:
+| Tier | Meaning |
+|---|---|
+| **Official** | Shipped with Grain; maintained by Diwata Labs |
+| **Verified** | Reviewed and approved by maintainer |
+| **Community** | Schema-validated by CI; not individually reviewed beyond schema |
 
-- `adapter_package.yaml`
-- `adapter_profile.md`
-- `review_metadata.yaml`
+Community adapters are schema-validated but not functionally tested by the maintainer. Install them with `grain adapter install` and evaluate them for your use case.
 
-Use these as the starting point for new submissions in the dedicated reviewed community registry repository.
+## Local install
+
+```bash
+grain adapter install --source path/to/adapter_package.yaml
+```
