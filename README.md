@@ -1,7 +1,6 @@
 # Grain
 
 [![PyPI](https://img.shields.io/pypi/v/grain-kit)](https://pypi.org/project/grain-kit/)
-[![CI](https://github.com/Diwata-Labs/Grain/actions/workflows/ci.yml/badge.svg)](https://github.com/Diwata-Labs/Grain/actions/workflows/ci.yml)
 [![License: AGPL-3.0-only](https://img.shields.io/badge/license-AGPL--3.0--only-blue)](LICENSE)
 
 **Deterministic workflow for agent CLIs.**
