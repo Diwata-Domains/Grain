@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2024-2026 Shaznay Sison
+# SPDX-License-Identifier: AGPL-3.0-only
+
 """Phase close service — validates and seals a completed phase."""
 
 from __future__ import annotations

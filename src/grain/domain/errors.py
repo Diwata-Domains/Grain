@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2024-2026 Shaznay Sison
+# SPDX-License-Identifier: AGPL-3.0-only
+
 """Domain-level error types for Forge.
 
 Exit codes are defined in cli_spec.md Section 5. Each exception class maps

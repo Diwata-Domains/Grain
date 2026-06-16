@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2024-2026 Shaznay Sison
+# SPDX-License-Identifier: AGPL-3.0-only
+
 """CLI error handling and exit code mapping.
 
 Maps domain exception types to exit codes defined in cli_spec.md Section 5.

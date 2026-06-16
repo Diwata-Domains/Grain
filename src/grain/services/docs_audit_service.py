@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2024-2026 Shaznay Sison
+# SPDX-License-Identifier: AGPL-3.0-only
+
 """Docs audit service — read-only workspace health checks across 6 document types."""
 
 from __future__ import annotations

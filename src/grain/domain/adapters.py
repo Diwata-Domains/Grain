@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2024-2026 Shaznay Sison
+# SPDX-License-Identifier: AGPL-3.0-only
+
 """Domain models for adapter profile configuration and capability surface protocol."""
 
 from __future__ import annotations

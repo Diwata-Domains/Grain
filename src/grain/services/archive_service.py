@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2024-2026 Shaznay Sison
+# SPDX-License-Identifier: AGPL-3.0-only
+
 """Archive service — working doc snapshots, phase close archives, milestone archives."""
 
 from __future__ import annotations

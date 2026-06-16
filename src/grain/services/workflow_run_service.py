@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2024-2026 Shaznay Sison
+# SPDX-License-Identifier: AGPL-3.0-only
+
 """Workflow runner service — executes one legal workflow step or stops at a gate."""
 
 from __future__ import annotations

@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2024-2026 Shaznay Sison
+# SPDX-License-Identifier: AGPL-3.0-only
+
 """Authority-order validator.
 
 Validates authority-related constraints across a DocumentRegistry and manifest:

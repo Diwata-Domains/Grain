@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2024-2026 Shaznay Sison
+# SPDX-License-Identifier: AGPL-3.0-only
+
 """Manifest schema validator.
 
 Validates that a parsed manifest dict conforms to the schema defined in

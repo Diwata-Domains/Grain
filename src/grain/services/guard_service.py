@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2024-2026 Shaznay Sison
+# SPDX-License-Identifier: AGPL-3.0-only
+
 """Workflow guard service — point-in-time enforcement checks.
 
 All checks are read-only. Returns a structured list of findings that

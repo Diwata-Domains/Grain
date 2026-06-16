@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2024-2026 Shaznay Sison
+# SPDX-License-Identifier: AGPL-3.0-only
+
 """Document existence validator.
 
 Checks that each path declared in a DocumentRegistry exists on the filesystem

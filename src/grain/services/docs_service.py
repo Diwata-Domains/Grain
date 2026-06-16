@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2024-2026 Shaznay Sison
+# SPDX-License-Identifier: AGPL-3.0-only
+
 """Docs service — orchestrates manifest loading and all Phase 2 validators."""
 
 from pathlib import Path

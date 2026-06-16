@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2024-2026 Shaznay Sison
+# SPDX-License-Identifier: AGPL-3.0-only
+
 """Domain models for the orchestration service planning layer.
 
 All types here represent proposal artifacts. They must pass through the

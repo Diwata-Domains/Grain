@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2024-2026 Shaznay Sison
+# SPDX-License-Identifier: AGPL-3.0-only
+
 """grain notes — tooling_notes.md CLI stub.
 
 Full implementation is Phase 37. This stub unblocks agents that call

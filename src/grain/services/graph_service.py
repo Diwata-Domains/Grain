@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2024-2026 Shaznay Sison
+# SPDX-License-Identifier: AGPL-3.0-only
+
 """Knowledge graph builder service (Phase 10 Layer 3)."""
 
 from __future__ import annotations

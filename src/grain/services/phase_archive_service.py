@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2024-2026 Shaznay Sison
+# SPDX-License-Identifier: AGPL-3.0-only
+
 """Phase archive service — move closed phase packets to tasks/archive/phase-N/."""
 
 from __future__ import annotations

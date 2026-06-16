@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2024-2026 Shaznay Sison
+# SPDX-License-Identifier: AGPL-3.0-only
+
 """Context domain model for Phase 4 context assembly.
 
 Provides PacketFile, PacketSourceSet, discover_packet_files(), and

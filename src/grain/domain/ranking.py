@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2024-2026 Shaznay Sison
+# SPDX-License-Identifier: AGPL-3.0-only
+
 """Domain contracts for deterministic ranking and score breakdowns."""
 
 from __future__ import annotations

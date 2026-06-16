@@ -7,7 +7,7 @@ name = "grain-kit"
 version = "0.3.1"
 description = "CLI-first workflow toolkit for structured AI-assisted software development."
 readme = "README.md"
-license = "MIT"
+license = "AGPL-3.0-only"
 requires-python = ">=3.11"
 keywords = [
     "ai",

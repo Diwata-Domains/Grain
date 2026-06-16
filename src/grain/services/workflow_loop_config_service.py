@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2024-2026 Shaznay Sison
+# SPDX-License-Identifier: AGPL-3.0-only
+
 """Service for loading workflow loop configuration from runtime YAML."""
 
 from __future__ import annotations

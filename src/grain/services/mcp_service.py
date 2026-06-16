@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2024-2026 Shaznay Sison
+# SPDX-License-Identifier: AGPL-3.0-only
+
 """Thin local MCP wrapper over existing Grain read-oriented services."""
 
 from __future__ import annotations

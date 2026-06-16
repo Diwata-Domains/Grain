@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2024-2026 Shaznay Sison
+# SPDX-License-Identifier: AGPL-3.0-only
+
 """Shared review-bundle and validator pipeline for office artifact writes."""
 
 from __future__ import annotations

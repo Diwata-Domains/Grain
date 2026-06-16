@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2024-2026 Shaznay Sison
+# SPDX-License-Identifier: AGPL-3.0-only
+
 """CLI command for upgrading Grain-managed files to the current bundled versions."""
 
 from __future__ import annotations
