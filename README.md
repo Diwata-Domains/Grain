@@ -158,7 +158,10 @@ grain --format json mcp manifest    # inspect available tools
 grain mcp serve                     # start local stdio MCP wrapper
 ```
 
-Both paths preserve the same workflow rules and packet-first boundaries.
+Current intent:
+- Codex/tool-execution path: direct CLI
+- Claude/Desktop-style path: local stdio MCP wrapper over the same Grain services
+- both paths preserve the same workflow rules and packet-first boundaries
 
 ---
 
