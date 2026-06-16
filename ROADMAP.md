@@ -27,7 +27,7 @@ See [CHANGELOG.md](CHANGELOG.md) for the full list.
 
 ## Next — v0.4.0
 
-The proactive assistance release. The focus shifts from enforcing the workflow to making it easier to feed.
+The proactive assistance release. Grain learns to suggest what to work on next, surfaces workflow friction as actionable GitHub issues, and lays the telemetry foundation for the broader Diwata stack.
 
 ### `grain suggest`
 
@@ -36,19 +36,41 @@ Proactive task suggestion with a human approval gate. Grain reads the current wo
 - `grain suggest` — analyze workspace and surface candidate tasks
 - `grain suggest --accept <id>` — promote a suggestion to a real packet
 - `grain suggest --prune` — clear stale or rejected suggestions
-- Suggestion quality improves as the workspace accumulates richer canonical docs and closed packet history
+- `grain workflow next` surfaces a suggestion automatically when no obvious next task exists
 
-### DX Hardening Foundation
+### Phase close task archiving
 
-Before feature work begins, known friction points are addressed:
+`grain phase close` now automatically moves task packets to `tasks/archive/phase-N/` alongside the existing doc snapshot. Closing a phase fully seals it — no manual cleanup needed.
 
-- `grain workflow next` routing fix — active execution artifacts correctly surface review instead of re-entering execute
-- `grain phase close --phase <N>` flag now accepted consistently
-- Packet ID allocation correctly skips archived packets — no more ID reuse after archiving
-- `grain upgrade --add-missing` covers all 14 scaffold gaps identified in the current audit
-- `grain docs audit` and `grain archive` ergonomics improvements
-- `grain status` reads `.grain/last_workflow_state.json` and `.grain/last_docs_audit.json` caches when fresh
-- `--format json` flag-order canonicalized across all commands
+- Packets are moved, not copied — the active `tasks/` directory stays clean
+- `--keep-tasks` flag skips the move when a task is being carried forward to the next phase
+- `grain archive show --phase N` surfaces the full packet list from the archive
+
+### `grain notes` — full implementation
+
+The friction log graduates from a write-only stub to a queryable, actionable inbox.
+
+- `grain notes list --open` — filterable by type (`bug` | `friction` | `question` | `note`) and status
+- `grain notes resolve <id>` — mark a note addressed
+- `grain notes publish <id>` — submit a note directly to GitHub Issues via the API; no browser required
+- Open notes surface as findings in `grain docs audit`
+- Workspace GitHub repo configured in `docs_manifest.yaml`; token via `GRAIN_GITHUB_TOKEN`
+
+### Workflow metrics
+
+Per-phase velocity and cost tracking surfaced through a new `grain metrics` command.
+
+- Phase duration, task count, and closure rate per phase
+- Stop-reason frequency — which gates fire most often
+- Exportable as JSON for external analysis
+
+### Pulse telemetry foundation
+
+Grain lays the event emission contract for Pulse — the planned Diwata-wide telemetry layer. Grain's side is intentionally thin: structured, versioned events emitted at key workflow moments (phase close, task close, suggest accept, stop reasons). Transport and aggregation are Pulse's responsibility.
+
+- Opt-in via `telemetry.enabled` in `docs_manifest.yaml` or `GRAIN_TELEMETRY_ENDPOINT` env var
+- Events are typed and versioned — safe to evolve without breaking Pulse consumers
+- No telemetry is emitted unless explicitly enabled
 
 ---
 
