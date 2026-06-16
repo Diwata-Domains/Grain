@@ -1,0 +1,6 @@
+{
+  "phase": 24,
+  "tasks_done": 5,
+  "tasks_archive": "tasks/archive/phase-24/",
+  "note": "Doc snapshot not available — phase closed before archive feature (v0.3.1). Task packets archived at tasks_archive path."
+}
