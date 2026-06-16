@@ -4,88 +4,75 @@ This document outlines the planned direction for Grain. It is intentionally high
 
 ---
 
-## Now — v0.1.x (Active)
+## Current — v0.3.1
 
-Stabilization and distribution quality. Each patch is small and targeted.
+The enforcement and hardening release. Grain now actively guards the workflow rather than just describing it.
 
-- `grain upgrade` — update Grain-managed prompts and templates in existing projects
-- `grain upgrade --diff` / `--interactive` — review changes before applying
-- `grain:` config block in `docs_manifest.yaml` — project-level defaults for supervision, format, upgrade checks
-- Bundled runtime doc content fixes — removing Grain-specific language from files seeded into user projects
-- Jupyter notebook (`.ipynb`) support via `code_adapter`
-- Existing project adoption improvements (`grain onboard`)
+**Shipped in this release:**
+- `grain workflow guard` — standalone enforcement command; callable from git hooks, CI, or any agent
+- `grain hooks install / list / remove` — writes pre-commit and post-checkout hooks that run the guard automatically
+- `grain docs audit` — 18 workspace health checks across 6 doc types; `--fix` flag; guard integration
+- `grain archive` — phase close snapshots (automatic), milestone snapshots, point-in-time snapshots
+- `grain status` — single command combining workflow state and docs health; cached reads stay under 1s
+- `grain doctor` — install-mode detection, version alignment checks, workspace resolution report
+- `grain upgrade --add-missing` — seeds absent files without overwriting existing ones
+- `upgrade_policy` and `branch_policy` manifest blocks — workspaces declare minimum version and branch discipline rules
+- `workflow.resume.md` prompt — agent-agnostic session resume protocol seeded in every new workspace
+- 13 new scaffold templates seeded by `grain init`
+- `grain --format json` coverage expanded across workflow, archive, status, and doctor commands
+
+See [CHANGELOG.md](CHANGELOG.md) for the full list.
 
 ---
 
-## Next — v0.2.0
+## Next — v0.4.0
 
-The intelligence and domain expansion release.
+The proactive assistance release. The focus shifts from enforcing the workflow to making it easier to feed.
 
-### Semantic Enrichment Layer
-- Embedding-based document and code search to complement the tree-sitter knowledge graph
-- Semantic similarity scoring for context selection — move beyond file-pattern matching
-- Local-first: runs without a cloud provider when `embedding_provider: local` is set in project config
-- Provider-agnostic: `local`, `openai`, or `none` via `grain.embedding_provider` in `docs_manifest.yaml`
+### `grain suggest`
 
-### Ranking and Decision Layer
-- Score and rank candidate context sources by relevance to the active task
-- Replace static adapter priority rules with weighted, evidence-backed selection
-- Depends on the Semantic Enrichment Layer
+Proactive task suggestion with a human approval gate. Grain reads the current workspace state — open questions, doc gaps, backlog shape, recent closures — and proposes concrete next tasks with draft context and plan seeds. Suggestions are proposals only; nothing is written until explicitly approved.
 
-### Adapter Write-Back
-Close the read→write loop for the currently supported extractors. Agents can already *read* structured files via context; write-back lets them deliver changes back into those formats as a formal task output.
+- `grain suggest` — analyze workspace and surface candidate tasks
+- `grain suggest --accept <id>` — promote a suggestion to a real packet
+- `grain suggest --prune` — clear stale or rejected suggestions
+- Suggestion quality improves as the workspace accumulates richer canonical docs and closed packet history
 
-- `SpreadsheetExtractor.write(changes)` — agent-produced row/cell changes applied back to `.xlsx` / `.csv`
-- `DocsExtractor.write(changes)` — paragraph, heading, and table updates applied back to `.docx`
-- `NotebookExtractor.write(changes)` — cell content updates applied back to `.ipynb`
-- PDF remains read-only (no write-back planned)
-- Deliverable handler in `grain task close` — routes structured agent output to the correct writer based on declared deliverable type in `deliverable_spec.md`
-- Write-back is gated behind task closure, not mid-execution — changes only apply when the agent formally closes the task
-- External app agents and embedded document assistants are treated as execution surfaces, not workflow authorities
-- Grain remains the source of truth through task packets, review artifacts, and closure state
-- Bridge app-native editing back into repo task packets so spreadsheet and document changes participate in the normal execute → review → close workflow
+### DX Hardening Foundation
 
-### Data Adapter
-- First-class support for data science and ML workflows
-- Richer `.ipynb` context: cell outputs, dataset references, model training artifacts
-- File patterns: `.ipynb`, `.parquet`, `.h5`, `.hdf5`, `model_card.md`, `requirements.txt`
-- `.ipynb` migrated from `code_adapter` to `data_adapter` as its primary home
-- Suggested automatically by `grain onboard` when ML/data signals are detected in the repo
+Before feature work begins, known friction points are addressed:
 
-### Community Adapter Registry
-- Discovery and distribution pipeline for community-contributed adapter profiles
-- Adapter contract is already stable — community adapters follow the same schema as official adapters
-- Tiers: **Official** (shipped with Grain), **Verified** (reviewed by maintainer), **Community** (PR-based, schema-validated)
-- `grain adapter install <source>` — fetch and apply a community adapter from a URL or registry handle
-- Automated schema validation in CI for community adapter PRs
+- `grain workflow next` routing fix — active execution artifacts correctly surface review instead of re-entering execute
+- `grain phase close --phase <N>` flag now accepted consistently
+- Packet ID allocation correctly skips archived packets — no more ID reuse after archiving
+- `grain upgrade --add-missing` covers all 14 scaffold gaps identified in the current audit
+- `grain docs audit` and `grain archive` ergonomics improvements
+- `grain status` reads `.grain/last_workflow_state.json` and `.grain/last_docs_audit.json` caches when fresh
+- `--format json` flag-order canonicalized across all commands
 
-### Homebrew Formula
-- Deferred from v0.1.x — resume when the Homebrew tap and release flow is ready
-- Install path: `brew install diwata-labs/tap/grain`
+---
+
+## Later
+
+These are directions with enough signal to name but not yet scoped for a specific release.
+
+- **Multi-adapter tasks** — tasks that span code, docs, and data domains simultaneously without adapter-switching overhead
+- **`grain notes`** — structured friction and observation logging to `tooling_notes.md` with queryable history
+- **Workflow metrics** — per-phase cost, velocity, and quality tracking; exportable summaries
+- **Codex and Claude-native integration improvements** — tighter MCP tool surface for desktop clients that prefer tool calls over direct CLI invocation
+- **`grain workspace`** — multi-project views and cross-workspace backlog queries
 
 ---
 
 ## Companion Project — Assay
 
-Assay is an independent application built by the same team, using Grain as its own workflow system.
+[Assay](https://github.com/Diwata-Labs/Assay) is an independent verification layer built by the same team, using Grain as its own workflow system.
 
-**What it is:** an independent verification layer for AI-assisted software builds. Where Grain orchestrates the build workflow, Assay verifies the output — running tests, checking contracts, and surfacing issues before a human reviews.
+**What it is:** visual and functional verification for software projects. Assay runs Playwright tests in Docker, captures screenshots, computes pixel-level diffs against approved baselines, and surfaces results through a dashboard with a before/after slider.
 
-**How it relates to Grain:** Grain ships a bridge contract (`grain verify` command group stub and a result payload schema) that Assay will implement. The two are decoupled — Grain works fully without Assay, and Assay is useful beyond Grain-managed projects.
+**How it relates to Grain:** Grain ships a bridge contract (`grain verify` command group) that Assay implements. The two are decoupled — Grain works fully without Assay, and Assay is useful beyond Grain-managed projects.
 
-**Status:** planned. The bridge contract is defined. Assay is being scoped and built as a separate project in the same organization.
-
----
-
-## Under Consideration
-
-These are not committed. They represent directions that may become roadmap items once current work stabilizes.
-
-- **`grain workflow reconcile`** — working-doc reconciliation CLI (currently a manual checklist step)
-- **Multi-adapter cross-cutting task support** — tasks that span code, docs, and data domains simultaneously
-- **TUI interface** — terminal UI for workflow state inspection; not before core CLI surface is stable
-- **Telemetry and workflow metrics automation** — structured per-phase cost and quality tracking
-- **Multi-user coordination** — explicitly out of scope for v1 and v2; may be revisited later
+**Status:** live at [pypi.org/project/assay-kit](https://pypi.org/project/assay-kit/).
 
 ---
 
@@ -94,6 +81,7 @@ These are not committed. They represent directions that may become roadmap items
 These are explicit non-goals for the foreseeable future:
 
 - GUI or web dashboard
-- Database-backed state
+- Database-backed workflow state
 - Cloud-hosted workflow execution
-- Vendor lock-in to any specific AI provider
+- Vendor lock-in to any specific AI provider or agent CLI
+- Multi-user real-time collaboration
