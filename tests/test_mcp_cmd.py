@@ -86,7 +86,13 @@ def test_mcp_initialize_and_list_tools(tmp_path: Path) -> None:
     listed = handle_request(tmp_path, {"jsonrpc": "2.0", "id": 2, "method": "tools/list", "params": {}})
     assert listed is not None
     tool_names = [tool["name"] for tool in listed["result"]["tools"]]
-    assert tool_names == ["workflow_next", "prompt_show", "review_summary", "office_review_show"]
+    assert tool_names == [
+        "workflow_next",
+        "prompt_show",
+        "review_summary",
+        "office_review_show",
+        "create_task",
+    ]
 
 
 def test_mcp_workflow_next_tool_returns_structured_content(tmp_path: Path) -> None:
@@ -171,3 +177,54 @@ def test_mcp_serve_stdio_handles_initialize_and_tool_call(tmp_path: Path) -> Non
     assert len(lines) == 2
     assert lines[0]["result"]["protocolVersion"] == MCP_PROTOCOL_VERSION
     assert lines[1]["result"]["structuredContent"]["evaluation"]["stop_reason"] == "packet_required"
+
+
+_GRAIN_ROOT = Path(__file__).resolve().parent.parent
+
+
+def _with_templates(repo: Path) -> None:
+    import shutil
+
+    shutil.copytree(_GRAIN_ROOT / "templates", repo / "templates")
+
+
+def test_mcp_tools_list_includes_create_task(tmp_path: Path) -> None:
+    response = handle_request(tmp_path, {"jsonrpc": "2.0", "id": 1, "method": "tools/list"})
+    names = [tool["name"] for tool in response["result"]["tools"]]
+    assert "create_task" in names
+
+
+def test_mcp_create_task_creates_packet(tmp_path: Path) -> None:
+    _with_templates(tmp_path)
+    response = handle_request(
+        tmp_path,
+        {
+            "jsonrpc": "2.0",
+            "id": 2,
+            "method": "tools/call",
+            "params": {
+                "name": "create_task",
+                "arguments": {"phase": 3, "task_num": 4, "title": "Test task"},
+            },
+        },
+    )
+
+    result = response["result"]
+    assert result["isError"] is False, result
+    payload = result["structuredContent"]
+    assert payload["task_id"].startswith("TASK-")
+    assert payload["packet_dir"].startswith("tasks/P3-T04-")
+    assert (tmp_path / payload["packet_dir"] / "task.md").exists()
+
+
+def test_mcp_create_task_requires_integer_phase(tmp_path: Path) -> None:
+    response = handle_request(
+        tmp_path,
+        {
+            "jsonrpc": "2.0",
+            "id": 3,
+            "method": "tools/call",
+            "params": {"name": "create_task", "arguments": {"task_num": 4}},
+        },
+    )
+    assert response["result"]["isError"] is True

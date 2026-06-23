@@ -71,6 +71,29 @@ TOOLS: tuple[McpTool, ...] = (
             "additionalProperties": False,
         },
     ),
+    McpTool(
+        name="create_task",
+        title="Create Task",
+        description=(
+            "Create a new Grain task packet: allocate the next TASK-#### id and scaffold the "
+            "packet files. A write action — callers should confirm before invoking."
+        ),
+        input_schema={
+            "type": "object",
+            "properties": {
+                "phase": {"type": "integer", "description": "Phase number (e.g. 3)."},
+                "task_num": {"type": "integer", "description": "Task number within the phase (e.g. 4)."},
+                "title": {"type": "string", "description": "Task title (optional)."},
+                "simple": {
+                    "type": "boolean",
+                    "description": "Minimal packet: task.md + results.md only.",
+                    "default": False,
+                },
+            },
+            "required": ["phase", "task_num"],
+            "additionalProperties": False,
+        },
+    ),
 )
 
 
@@ -226,6 +249,29 @@ def _call_tool(root: Path, name: str, arguments: dict) -> dict:
                     "task_id": task_id,
                     "review_path": str(review_path.relative_to(root)),
                     "office_review": payload,
+                }
+            )
+
+        if name == "create_task":
+            from grain.services.task_service import create_packet_directory
+
+            phase = arguments.get("phase")
+            task_num = arguments.get("task_num")
+            if not isinstance(phase, int) or isinstance(phase, bool):
+                raise ValueError("create_task requires an integer 'phase'")
+            if not isinstance(task_num, int) or isinstance(task_num, bool):
+                raise ValueError("create_task requires an integer 'task_num'")
+            title = arguments.get("title") or ""
+            simple = bool(arguments.get("simple", False))
+            result = create_packet_directory(root, phase, task_num, title=title, simple=simple)
+            if not result.ok:
+                return _tool_error({"errors": result.errors or ["task creation failed"]})
+            return _tool_success(
+                {
+                    "ok": True,
+                    "task_id": result.task_id,
+                    "packet_dir": result.files_created[0] if result.files_created else "",
+                    "files_created": result.files_created,
                 }
             )
     except ValueError as exc:
