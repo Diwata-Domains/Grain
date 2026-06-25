@@ -1,3 +1,54 @@
+## [0.4.0] — 2026-06-25
+
+### Chores
+- add root 'trace' script to avoid macOS /usr/bin/trace collision
+- clear ruff lint (unused imports, f-string placeholder)
+- add agent-triggerable release + server-side convention lint
+- close Phase 32 (v0.4.0) — archive 10 packets
+- merge staging → main — v0.4.0 Proactive Assistance
+- add publish-pypi workflow (mirror of public Scry repo)
+- sync monorepo to published mirror (scry-kit / import scry)
+- consolidate prospects into diwa; add Apollo→Scry migration backlog
+- add data-lake stack compose, env example, and CLAUDE.md for CCX21
+
+### Bug Fixes
+- emit bracketed '## [version]' changelog heading
+- accept '## Phase N —' backlog headings in phase parsers
+- parse Closed-Phase Ledger table rows in phase audit
+- make telemetry emission non-blocking and guard builders
+- recompute corrupt metrics cache; atomic write
+- cap publish issue title and fix notes status filter
+- make notes round-trip safe and ID-stable
+- preserve backlog tasks_done and surface packet move failures
+- gate suggest accept pick-up on active task
+
+### Documentation
+- finalize v0.4.0 Phase 32 status; add v0.5.0 backlog items
+- correct to plan-only reality; de-risk WARDRIVE prep
+- WARDRIVE prep — Scry Core publish plan, status reconcile, Apollo migration packet, IP separation
+- sync diwa product docs with FI decisions
+- plan v0.4.0 Proactive Assistance (Phase 32, 10 packets)
+- update ip_and_licensing
+- add source-available positioning; extend landscape (Webrecorder, Firecrawl, Crawlee)
+- define open-core boundary; mark BSL + boundary done
+
+### Features
+- extract publishable public Scry Core; correct plan-only doc errors
+- add phase_status_consistency docs-audit check
+- add opt-in Pulse telemetry emission foundation
+- add grain metrics for per-phase velocity tracking
+- add github feedback report and notes publish
+- implement queryable notes friction inbox
+- archive task packets on phase close and surface in show
+- add suggest engine and workflow-next surfacing
+- add POST /skills/create_grain_task to execute the confirmed task-creation skill
+- add create_task MCP write tool + create_grain_task Grimoire skill
+- add GET /overview endpoint for the Sovereign Today screen
+- wire Today screen onto Ironvale shell with mocked overview data
+- add ChatSurface and ItemCard to the app shell tier
+- add app shell tier — AppShell, AppNav, ScrollArea for the Sovereign/Sanctum apps
+- scaffold Phase 1 — fleet manifest + status/deploy/logs CLI; fix datalake CCX23
+
 # Changelog
 
 All notable changes to grain-kit are documented here.
