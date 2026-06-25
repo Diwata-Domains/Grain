@@ -191,13 +191,16 @@ def suggest_show(ctx, proposal_id):
 @suggest_group.command("accept")
 @click.argument("proposal_id")
 @click.option("--no-confirm", is_flag=True, default=False,
-              help="Skip the interactive prompt for new-task accept (D4: still shows content).")
+              help="Auto-confirm switching the active task for a pick-up accept. "
+                   "new-task accept ALWAYS prompts regardless (D4).")
 @click.pass_context
 def suggest_accept(ctx, proposal_id, no_confirm):
     """Accept a proposal.
 
-    pick-up activates the existing ready task. new-task ALWAYS shows the proposed
-    task.md and requires confirmation before any packet is created (D4).
+    pick-up activates the existing ready task; if a different task is already
+    in_progress it refuses (or prompts) rather than clobbering current_task.md.
+    new-task ALWAYS shows the proposed task.md and requires confirmation before
+    any packet is created (D4).
     """
     repo = ctx.obj.get("repo") if ctx.obj else None
     fmt = ctx.obj.get("fmt", "text") if ctx.obj else "text"
@@ -223,14 +226,35 @@ def suggest_accept(ctx, proposal_id, no_confirm):
         click.echo(f"suggest accept: {proposal_id} (new-task — confirmation required)")
         click.echo("")
         click.echo(result.proposed_task_md)
-        if no_confirm:
-            confirmed = click.confirm("Create this packet?", default=False)
-        else:
-            confirmed = click.confirm("Create this packet?", default=False)
+        # D4: new-task accept always prompts, even with --no-confirm.
+        confirmed = click.confirm("Create this packet?", default=False)
         if not confirmed:
             click.echo("suggest accept: cancelled (no packet created)")
             return
         result = accept(root, proposal_id, confirmed=True)
+
+    # pick-up active-task gate: another task is in_progress. Refuse (json/--no-confirm
+    # off) or, in interactive text mode, prompt before switching the active task.
+    elif result.needs_confirm and result.kind == "pick-up":
+        if fmt == "json":
+            click.echo(json.dumps({
+                "ok": False,
+                "needs_confirm": True,
+                "proposal_id": result.proposal_id,
+                "kind": result.kind,
+                "task_ref": result.task_ref,
+                "errors": result.errors,
+            }, indent=2))
+            raise SystemExit(1)
+        for e in result.errors:
+            click.echo(f"error  {e}", err=True)
+        if no_confirm:
+            result = accept(root, proposal_id, confirmed=True)
+        else:
+            if not click.confirm("Switch the active task and pick this up?", default=False):
+                click.echo("suggest accept: cancelled (active task unchanged)")
+                return
+            result = accept(root, proposal_id, confirmed=True)
 
     if fmt == "json":
         click.echo(json.dumps({

@@ -306,6 +306,28 @@ def _current_task_id(root: Path) -> str:
     return parsed.get("task_id", "none") or "none"
 
 
+def _active_in_progress_task_id(root: Path) -> str:
+    """Return the task id of the currently in_progress task, or '' if none.
+
+    Mirrors run_workflow_step's single-active-task invariant: a task counts as
+    active only when current_task.md records a real task id with Status: in_progress.
+    """
+    from grain.services.workflow_service import _read_current_task
+
+    path = root / _CURRENT_TASK_PATH
+    if not path.exists():
+        return ""
+    parsed = _read_current_task(path)
+    if not parsed:
+        return ""
+    task_id = parsed.get("task_id", "none") or "none"
+    if task_id == "none":
+        return ""
+    if parsed.get("status", "").strip().lower() != "in_progress":
+        return ""
+    return task_id
+
+
 def _backlog_phases(root: Path) -> list[dict]:
     from grain.services.docs_audit_service import _parse_backlog_phases
 
@@ -686,11 +708,27 @@ def _rank(proposals: list[SuggestionProposal]) -> list[SuggestionProposal]:
 
 
 def top_suggestion(root: Path) -> SuggestionProposal | None:
-    """Read-only top suggestion for workflow-next surfacing — writes nothing."""
+    """Read-only top suggestion for workflow-next surfacing — writes nothing.
+
+    Mirrors generate()'s suppression: a signal that already has a
+    dismissed/accepted/expired proposal must not be re-surfaced (the dismiss
+    contract: 'not surfaced again for the same signal').
+    """
     try:
         candidates = _build_suggestions(root)
     except Exception:
         return None
+    if not candidates:
+        return None
+    try:
+        suppressed = {
+            _signal_key(p)
+            for p in list_existing_proposals(root)
+            if p.status in (STATUS_DISMISSED, STATUS_ACCEPTED, STATUS_EXPIRED)
+        }
+    except Exception:
+        suppressed = set()
+    candidates = [c for c in candidates if _signal_key(c) not in suppressed]
     if not candidates:
         return None
     ranked = _rank(candidates)
@@ -767,7 +805,10 @@ def _oq_still_blocking(root: Path, ref: str) -> bool:
 
 def _tooling_note_still_open(root: Path, ref: str) -> bool:
     for note in _read_aging_high_tooling_notes(root):
-        key = f"{note['date']} {note['command']}".strip()
+        # Build the key identically to the generated signal_ref (Priority 3): a
+        # blank Command column falls back to 'tooling' so they always match.
+        cmd_label = note["command"] or "tooling"
+        key = f"{note['date']} {cmd_label}".strip()
         if key == ref:
             return True
     return False
@@ -807,7 +848,7 @@ def accept(root: Path, proposal_id: str, *, confirmed: bool = False) -> AcceptRe
         )
 
     if proposal.kind == KIND_PICK_UP:
-        result = _accept_pickup(root, proposal)
+        result = _accept_pickup(root, proposal, confirmed=confirmed)
     elif proposal.kind == KIND_NEW_TASK:
         result = _accept_new_task(root, proposal, confirmed=confirmed)
     else:
@@ -824,8 +865,9 @@ def accept(root: Path, proposal_id: str, *, confirmed: bool = False) -> AcceptRe
     return result
 
 
-def _accept_pickup(root: Path, proposal: SuggestionProposal) -> AcceptResult:
-    import grain.cli.output  # noqa: F401  — fully init the cli package first (avoids import cycle)
+def _accept_pickup(
+    root: Path, proposal: SuggestionProposal, *, confirmed: bool = False
+) -> AcceptResult:
     from grain.domain.packets import write_packet_status
     from grain.services.workflow_run_service import (
         _create_packet_for_ref,
@@ -836,6 +878,23 @@ def _accept_pickup(root: Path, proposal: SuggestionProposal) -> AcceptResult:
     )
 
     task_ref = proposal.task_ref
+
+    # Single-active-task gate (mirrors run_workflow_step's execution_in_flight gate):
+    # never clobber current_task.md / backlog when a DIFFERENT task is in_progress.
+    active_id = _active_in_progress_task_id(root)
+    if active_id and active_id != proposal.task_id and active_id != task_ref and not confirmed:
+        return AcceptResult(
+            ok=False,
+            proposal_id=proposal.id,
+            kind=proposal.kind,
+            needs_confirm=True,
+            task_ref=task_ref,
+            errors=[
+                f"active task {active_id} is in progress; close or block it before "
+                f"picking up {task_ref} (re-run with confirmation to switch anyway)"
+            ],
+        )
+
     files_created: list[str] = []
     files_updated: list[str] = []
 

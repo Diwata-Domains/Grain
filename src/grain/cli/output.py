@@ -3,27 +3,15 @@
 
 import dataclasses
 import json
-from dataclasses import dataclass, field
 
 import click
 
+# CommandResult moved to the domain layer to break the cli<->services import cycle
+# (services import it without pulling in grain.cli). Re-exported here for callers
+# that still do `from grain.cli.output import CommandResult`.
+from grain.domain.command_result import CommandResult
 
-@dataclass
-class CommandResult:
-    ok: bool = True
-    command: str = ""
-    repo: str = ""
-    task_id: str = ""
-    status: str = ""
-    files_created: list[str] = field(default_factory=list)
-    files_updated: list[str] = field(default_factory=list)
-    files_skipped: list[str] = field(default_factory=list)
-    files_blocked: list[str] = field(default_factory=list)
-    errors: list[str] = field(default_factory=list)
-    warnings: list[str] = field(default_factory=list)
-    primary_adapter: str = ""
-    secondary_adapters: list[str] = field(default_factory=list)
-    bootstrapped_task_id: str = ""
+__all__ = ["CommandResult", "print_result"]
 
 
 def print_result(result: CommandResult, fmt: str = "text") -> None:

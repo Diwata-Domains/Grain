@@ -306,6 +306,42 @@ def test_expire_newtask_when_oq_resolved(tmp_path):
     assert read_proposal(tmp_path, pid).status == "expired"
 
 
+def test_tooling_note_blank_command_not_prematurely_expired(packet_repo):
+    """Regression (LOW): a blank Command column must not break the expiry key.
+
+    The generated signal_ref falls back to '<date> tooling' for a blank command;
+    _tooling_note_still_open must build the same key so a still-open note is NOT
+    reported resolved (which would prematurely expire / clobber-on-accept).
+    """
+    root = packet_repo
+    _focus(root)
+    _current_task_none(root)
+    _backlog(root, "## 1. Phase 30 — Build\n\n")
+    old = (date.today() - timedelta(days=40)).isoformat()
+    _write(
+        root / "docs/working/tooling_notes.md",
+        "# Tooling Notes\n\n"
+        "| Date | Type | Severity | Command | Message | Status |\n"
+        "|------|------|----------|---------|---------|--------|\n"
+        f"| {old} | bug | high |  | something broke | open |\n",
+    )
+    r = generate(root, auto_prune=False)
+    newtasks = [p for p in r.proposals if p.kind == "new-task"]
+    assert len(newtasks) == 1
+    pid = newtasks[0].id
+    assert newtasks[0].signal_ref == f"{old} tooling"
+
+    # The note is still open → re-generation must keep the proposal pending.
+    generate(root, auto_prune=False)
+    assert read_proposal(root, pid).status == "pending"
+
+    # Accept must act on the still-open note (not expire it).
+    res = accept(root, pid, confirmed=True)
+    assert res.ok, res.errors
+    assert res.expired is False
+    assert read_proposal(root, pid).status == "accepted"
+
+
 # ── Accept / dismiss ─────────────────────────────────────────────────────────────
 
 def test_accept_pickup_opens_task(packet_repo):
@@ -326,6 +362,66 @@ def test_accept_pickup_opens_task(packet_repo):
     assert any(name.startswith("P30-T01-") for name in packets)
     current = (root / "docs/working/current_task.md").read_text()
     assert "Status: in_progress" in current
+    assert read_proposal(root, pid).status == "accepted"
+
+
+def _current_task_active(root: Path, task_id: str, task_path: str) -> None:
+    _write(
+        root / "docs/working/current_task.md",
+        f"# Current Task\n\nTask ID: {task_id}\nTask Path: {task_path}\nStatus: in_progress\n",
+    )
+
+
+def test_accept_pickup_refuses_when_another_task_in_progress(packet_repo):
+    """Regression (HIGH): accepting a pick-up must NOT clobber an active task.
+
+    With TASK-9999 already in_progress, accepting the pick-up for a different
+    ready task must refuse (needs_confirm) and leave current_task.md / backlog
+    untouched instead of silently switching the active task.
+    """
+    root = packet_repo
+    _focus(root)
+    _current_task_active(root, "TASK-9999", "tasks/P30-T99-TASK-9999/")
+    _backlog(root,
+             "## 1. Phase 30 — Build\n\n"
+             "### P30-T01 — Build the thing\n"
+             "- **Status:** ready\n")
+    r = generate(root, auto_prune=False)
+    pid = [p for p in r.proposals if p.kind == "pick-up"][0].id
+
+    current_before = (root / "docs/working/current_task.md").read_text()
+    backlog_before = (root / "docs/working/backlog.md").read_text()
+
+    res = accept(root, pid)
+    assert res.ok is False
+    assert res.needs_confirm is True
+    assert "TASK-9999" in " ".join(res.errors)
+    # Active task pointer and backlog are untouched — no state corruption.
+    assert (root / "docs/working/current_task.md").read_text() == current_before
+    assert (root / "docs/working/backlog.md").read_text() == backlog_before
+    # No packet was created for the refused pick-up.
+    assert not any(d.name.startswith("P30-T01-") for d in (root / "tasks").iterdir())
+    # Proposal stays pending (not accepted).
+    assert read_proposal(root, pid).status == "pending"
+
+
+def test_accept_pickup_switches_when_confirmed(packet_repo):
+    """An explicit confirm allows switching the active task to the pick-up."""
+    root = packet_repo
+    _focus(root)
+    _current_task_active(root, "TASK-9999", "tasks/P30-T99-TASK-9999/")
+    _backlog(root,
+             "## 1. Phase 30 — Build\n\n"
+             "### P30-T01 — Build the thing\n"
+             "- **Status:** ready\n")
+    r = generate(root, auto_prune=False)
+    pid = [p for p in r.proposals if p.kind == "pick-up"][0].id
+
+    res = accept(root, pid, confirmed=True)
+    assert res.ok, res.errors
+    current = (root / "docs/working/current_task.md").read_text()
+    assert "P30-T01-" in current
+    assert "TASK-9999" not in current
     assert read_proposal(root, pid).status == "accepted"
 
 
@@ -444,3 +540,41 @@ def test_top_suggestion_writes_nothing(tmp_path):
     assert top.task_ref == "P30-T01"
     # No proposals were persisted.
     assert list_existing_proposals(tmp_path) == []
+
+
+def test_top_suggestion_suppresses_dismissed_signal(tmp_path):
+    """Regression (MEDIUM): top_suggestion must not re-surface a dismissed signal.
+
+    `grain workflow next` uses top_suggestion; after dismissing the only pick-up,
+    it must stop surfacing that same signal (the dismiss-not-resurfaced contract).
+    """
+    _focus(tmp_path)
+    _current_task_none(tmp_path)
+    _backlog(tmp_path,
+             "## 1. Phase 30 — Build\n\n"
+             "### P30-T01 — Ready thing\n"
+             "- **Status:** ready\n")
+    r = generate(tmp_path, auto_prune=False)
+    pid = [p for p in r.proposals if p.kind == "pick-up"][0].id
+
+    # Before dismiss, the pick-up is the top suggestion.
+    assert top_suggestion(tmp_path).task_ref == "P30-T01"
+
+    dismiss(tmp_path, pid)
+    # After dismiss, the same signal must not be surfaced again.
+    assert top_suggestion(tmp_path) is None
+
+
+def test_top_suggestion_suppresses_accepted_signal(tmp_path):
+    """An accepted signal must also not be re-surfaced by top_suggestion."""
+    _focus(tmp_path)
+    _current_task_none(tmp_path)
+    _backlog(tmp_path,
+             "## 1. Phase 30 — Build\n\n"
+             "### P30-T01 — Ready thing\n"
+             "- **Status:** ready\n")
+    r = generate(tmp_path, auto_prune=False)
+    pid = [p for p in r.proposals if p.kind == "pick-up"][0].id
+    # Mark the proposal accepted directly (avoid packet machinery).
+    set_proposal_status(tmp_path, pid, "accepted")
+    assert top_suggestion(tmp_path) is None

@@ -9,7 +9,7 @@ import re
 from pathlib import Path
 from typing import Any
 
-from grain.cli.output import CommandResult
+from grain.domain.command_result import CommandResult
 from grain.domain.packets import write_packet_status
 from grain.services.task_observability_service import update_task_observability
 

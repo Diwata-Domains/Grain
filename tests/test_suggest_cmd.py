@@ -161,6 +161,77 @@ def test_accept_pickup_opens_task(packet_repo):
     assert read_proposal(root, pid).status == "accepted"
 
 
+def _current_task_active(root: Path, task_id: str, task_path: str) -> None:
+    _write(
+        root / "docs/working/current_task.md",
+        f"# Current Task\n\nTask ID: {task_id}\nTask Path: {task_path}\nStatus: in_progress\n",
+    )
+
+
+def test_accept_pickup_gate_text_cancel_then_switch(packet_repo):
+    """Regression (HIGH): accepting a pick-up while another task is in_progress
+    must prompt rather than clobber; 'n' cancels, 'y' switches."""
+    root = packet_repo
+    _focus(root)
+    _current_task_active(root, "TASK-9999", "tasks/P30-T99-TASK-9999/")
+    _ready_backlog(root)
+    gen = _run(root, "suggest", fmt="json")
+    pid = json.loads(gen.output)["proposals"][0]["id"]
+
+    current_before = (root / "docs/working/current_task.md").read_text()
+
+    # Decline the switch → active task unchanged, nothing accepted.
+    res = _run(root, "suggest", "accept", pid, input="n\n")
+    assert res.exit_code == 0, res.output
+    assert "cancelled" in res.output
+    assert (root / "docs/working/current_task.md").read_text() == current_before
+    assert read_proposal(root, pid).status == "pending"
+
+    # Confirm the switch → active task changes, proposal accepted.
+    res2 = _run(root, "suggest", "accept", pid, input="y\n")
+    assert res2.exit_code == 0, res2.output
+    assert "accepted" in res2.output
+    current_after = (root / "docs/working/current_task.md").read_text()
+    assert "TASK-9999" not in current_after
+    assert "P30-T01-" in current_after
+    assert read_proposal(root, pid).status == "accepted"
+
+
+def test_accept_pickup_gate_no_confirm_switches(packet_repo):
+    """--no-confirm auto-confirms switching the active task for a pick-up."""
+    root = packet_repo
+    _focus(root)
+    _current_task_active(root, "TASK-9999", "tasks/P30-T99-TASK-9999/")
+    _ready_backlog(root)
+    gen = _run(root, "suggest", fmt="json")
+    pid = json.loads(gen.output)["proposals"][0]["id"]
+
+    res = _run(root, "suggest", "accept", pid, "--no-confirm")
+    assert res.exit_code == 0, res.output
+    assert "accepted" in res.output
+    assert "TASK-9999" not in (root / "docs/working/current_task.md").read_text()
+    assert read_proposal(root, pid).status == "accepted"
+
+
+def test_accept_pickup_gate_json_refuses_without_clobber(packet_repo):
+    """JSON mode refuses the pick-up (needs_confirm, exit 1) without clobbering."""
+    root = packet_repo
+    _focus(root)
+    _current_task_active(root, "TASK-9999", "tasks/P30-T99-TASK-9999/")
+    _ready_backlog(root)
+    gen = _run(root, "suggest", fmt="json")
+    pid = json.loads(gen.output)["proposals"][0]["id"]
+
+    current_before = (root / "docs/working/current_task.md").read_text()
+    res = _run(root, "suggest", "accept", pid, fmt="json")
+    assert res.exit_code == 1
+    data = json.loads(res.output)
+    assert data["needs_confirm"] is True
+    assert data["ok"] is False
+    assert (root / "docs/working/current_task.md").read_text() == current_before
+    assert read_proposal(root, pid).status == "pending"
+
+
 # ── accept new-task requires confirm (D4) ────────────────────────────────────────
 
 def test_accept_newtask_requires_confirm_even_no_confirm(packet_repo):
