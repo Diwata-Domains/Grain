@@ -205,6 +205,45 @@ def load_branch_policy(root: Path) -> BranchPolicy:
     )
 
 
+@dataclass
+class GithubConfig:
+    """github block from docs_manifest.yaml — the upstream issue tracker.
+
+    ``repo`` is the ``owner/name`` slug that ``grain notes publish`` and
+    ``grain issue create`` file issues against via the REST API. ``report_repo``
+    is the canonical upstream Grain repo that the URL-based ``grain report``
+    targets (defaults to the project ``repo`` when unset).
+    """
+
+    repo: str = ""
+    report_repo: str = "Diwata-Domains/grain"
+
+
+def load_github_config(root: Path) -> GithubConfig:
+    """Read the optional ``github:`` block from docs_manifest.yaml.
+
+    Returns a :class:`GithubConfig` with defaults for any field not present.
+    Never raises — if the manifest is missing or the block is absent, defaults apply.
+    """
+    try:
+        manifest = load_manifest(root)
+    except Exception:
+        return GithubConfig()
+
+    raw = manifest.get("github")
+    if not isinstance(raw, dict):
+        return GithubConfig()
+
+    def _str(key: str, default: str = "") -> str:
+        val = raw.get(key, default)
+        return str(val).strip() if val is not None else default
+
+    return GithubConfig(
+        repo=_str("repo"),
+        report_repo=_str("report_repo", "Diwata-Domains/grain") or "Diwata-Domains/grain",
+    )
+
+
 def load_completion_policy(root: Path) -> CompletionPolicy:
     try:
         manifest = load_manifest(root)

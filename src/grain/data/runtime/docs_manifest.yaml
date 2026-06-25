@@ -19,6 +19,14 @@ grain:
   local_embedding_model: sentence-transformers/all-MiniLM-L6-v2
   openai_embedding_model: text-embedding-3-small
 
+# GitHub feedback targets. `grain notes publish` and `grain issue create` file
+# issues into github.repo via the REST API (token via GRAIN_GITHUB_TOKEN env
+# only — never stored here). `grain report` builds a pre-filled issue URL against
+# github.report_repo (the upstream Grain repo) for browser-confirmed feedback.
+github:
+  repo: ""                          # owner/name to file issues into via the API
+  report_repo: Diwata-Domains/grain # upstream repo for the URL-based grain report
+
 branch_policy:
   mode: off             # "phase" | "task" | "off" (default off = no branch checking)
   pattern: ""           # optional glob override; empty = use mode default

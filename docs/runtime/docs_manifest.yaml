@@ -17,6 +17,12 @@ grain:
   local_embedding_model: sentence-transformers/all-MiniLM-L6-v2
   openai_embedding_model: text-embedding-3-small
 
+# GitHub feedback targets for `grain notes publish` / `grain issue create` (API,
+# token via GRAIN_GITHUB_TOKEN env only) and `grain report` (pre-filled URL).
+github:
+  repo: ""                          # owner/name to file issues into via the API
+  report_repo: Diwata-Domains/grain # upstream repo for the URL-based grain report
+
 canonical:
   - id: product_scope
     path: docs/canonical/product_scope.md

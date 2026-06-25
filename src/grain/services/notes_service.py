@@ -66,6 +66,14 @@ class NoteResolveResult:
     errors: list[str] = field(default_factory=list)
 
 
+@dataclass
+class NoteStatusResult:
+    ok: bool
+    note: Note | None = None
+    path: str = ""
+    errors: list[str] = field(default_factory=list)
+
+
 # ── Public API ────────────────────────────────────────────────────────────────
 
 def add_note(
@@ -166,6 +174,28 @@ def resolve_note(root: Path, note_id: int, resolution: str = "") -> NoteResolveR
 
     _rewrite_notes(path, notes)
     return NoteResolveResult(ok=True, note=target, path=rel)
+
+
+def set_note_status(root: Path, note_id: int, status: str) -> NoteStatusResult:
+    """Flip a note to an arbitrary status (e.g. ``reported``, ``published``).
+
+    Used by ``grain report`` (URL path) and ``grain notes publish`` (API path) to
+    mark a row after it has been escalated upstream. Returns ``ok=False`` with an
+    error if the note does not exist.
+    """
+    path = root / _NOTES_PATH
+    rel = str(Path(_NOTES_PATH))
+    if not path.exists():
+        return NoteStatusResult(ok=False, path=rel, errors=[f"note {note_id} not found"])
+
+    notes = _read_notes(path)
+    target = next((n for n in notes if n.id == note_id), None)
+    if target is None:
+        return NoteStatusResult(ok=False, path=rel, errors=[f"note {note_id} not found"])
+
+    target.status = status
+    _rewrite_notes(path, notes)
+    return NoteStatusResult(ok=True, note=target, path=rel)
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────

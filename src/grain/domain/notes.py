@@ -24,7 +24,9 @@ TABLE_SEP = "|----|------|------|---------|-------------|----------|--------|"
 
 # Allowed enums (the CLI mirrors these via click.Choice).
 NOTE_TYPES: frozenset[str] = frozenset({"friction", "bug", "observation"})
-NOTE_STATUSES: frozenset[str] = frozenset({"open", "closed", "resolved"})
+NOTE_STATUSES: frozenset[str] = frozenset(
+    {"open", "closed", "resolved", "reported", "published"}
+)
 NOTE_SEVERITIES: frozenset[str] = frozenset({"low", "medium", "high"})
 
 # Open notes of these types surface as docs-audit findings.

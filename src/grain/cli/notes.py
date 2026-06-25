@@ -177,3 +177,78 @@ def notes_resolve(ctx, note_id, resolution):
     click.echo(f"  id      {n.id}")
     click.echo(f"  status  {n.status}")
     click.echo(f"  → {result.path}")
+
+
+@notes_group.command("publish")
+@click.argument("note_id", type=int)
+@click.pass_context
+def notes_publish(ctx, note_id):
+    """File a note as an issue in github.repo via the API, then mark it published.
+
+    Headless, no browser. Maps the note type to a label (bug→bug,
+    friction/feature→enhancement). The token is read from GRAIN_GITHUB_TOKEN
+    only — never written to workspace files. A missing token yields a clear,
+    non-crashing error.
+
+    \b
+    Example:
+      GRAIN_GITHUB_TOKEN=ghp_... grain notes publish 3
+    """
+    repo = ctx.obj.get("repo") if ctx.obj else None
+    fmt = ctx.obj.get("fmt", "text") if ctx.obj else "text"
+    root = resolve_repo_root(repo)
+
+    from grain.adapters.manifest import load_github_config
+    from grain.services.github_service import (
+        build_issue_body,
+        create_issue,
+        label_for_type,
+    )
+    from grain.services.notes_service import set_note_status, show_note
+
+    note_result = show_note(root, note_id)
+    if not note_result.ok:
+        if fmt == "json":
+            click.echo(json.dumps(
+                {"ok": False, "errors": note_result.errors}, indent=2,
+            ))
+            return
+        for e in note_result.errors:
+            click.echo(f"error  {e}", err=True)
+        raise click.UsageError(f"note not found: {note_id}")
+
+    note = note_result.note
+    gh = load_github_config(root)
+    label = label_for_type(note.type)
+    title = f"[{note.type}] {note.command or 'grain'} — {note.body}"
+    body = build_issue_body(note.body, severity=note.severity)
+
+    result = create_issue(gh.repo, title, body, [label])
+
+    marked = False
+    if result.ok:
+        marked = set_note_status(root, note_id, "published").ok
+
+    if fmt == "json":
+        click.echo(json.dumps({
+            "ok": result.ok,
+            "id": note_id,
+            "issue_url": result.issue_url,
+            "issue_number": result.issue_number,
+            "labels": result.labels,
+            "repo": result.repo,
+            "published": marked,
+            "errors": result.errors,
+        }, indent=2))
+        return
+
+    if not result.ok:
+        for e in result.errors:
+            click.echo(f"error  {e}", err=True)
+        raise click.ClickException("notes publish failed")
+
+    click.echo("notes publish: ok")
+    click.echo(f"  id      {note_id}")
+    click.echo(f"  label   {', '.join(result.labels)}")
+    click.echo(f"  status  published")
+    click.echo(f"  → {result.issue_url}")

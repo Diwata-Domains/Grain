@@ -43,6 +43,8 @@ from .archive import archive_group
 from .doctor import doctor_cmd
 from .status import status_cmd
 from .notes import notes_group
+from .report import report_cmd
+from .issue import issue_group
 from .workflow import workflow_group
 from .suggest import suggest_group
 from .onboard import onboard_cmd
@@ -343,6 +345,8 @@ main.add_command(archive_group)
 main.add_command(doctor_cmd)
 main.add_command(status_cmd)
 main.add_command(notes_group)
+main.add_command(report_cmd)
+main.add_command(issue_group)
 main.add_command(workflow_group)
 main.add_command(suggest_group)
 main.add_command(onboard_cmd)
