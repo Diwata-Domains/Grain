@@ -791,6 +791,163 @@ def test_required_section_missing_warn_when_absent(tmp_path):
     assert warns
 
 
+# ── cross_doc_phase_agreement ─────────────────────────────────────────────────
+
+def test_cross_doc_phase_agreement_pass_when_aligned(tmp_path):
+    _base(tmp_path)
+    # current_focus declares Phase 1 (from _base); project_state agrees.
+    _write(tmp_path / "docs/working/project_state.md",
+           "# Project State\n\n**Active phase:** Phase 1 — Foundation\n")
+
+    result = run_audit(tmp_path, doc_filter="cross_doc")
+    findings = [f for f in result.findings if f.check_id == "cross_doc_phase_agreement"]
+    assert findings
+    assert all(f.severity == "pass" for f in findings)
+
+
+def test_cross_doc_phase_agreement_error_when_docs_disagree(tmp_path):
+    _base(tmp_path)
+    # current_focus says Phase 1; project_state says Phase 30 — drift.
+    _write(tmp_path / "docs/working/project_state.md",
+           "# Project State\n\n**Active phase:** Phase 30 — v0.4.0 planning\n")
+
+    result = run_audit(tmp_path, doc_filter="cross_doc")
+    errors = [f for f in result.findings
+              if f.check_id == "cross_doc_phase_agreement" and f.severity == "error"]
+    assert errors
+    assert "Phase 1" in errors[0].message and "Phase 30" in errors[0].message
+    assert result.overall == "error"
+
+
+def test_cross_doc_phase_agreement_error_with_current_task_phase(tmp_path):
+    # current_task.md can also declare a phase via a "Phase: N" line.
+    _base(tmp_path)
+    _write(tmp_path / "docs/working/current_task.md",
+           "# Current Task\n\nTask ID: none\nPhase: 9\nStatus: unset\n")
+
+    result = run_audit(tmp_path, doc_filter="cross_doc")
+    errors = [f for f in result.findings
+              if f.check_id == "cross_doc_phase_agreement" and f.severity == "error"]
+    assert errors  # current_focus=1 vs current_task=9
+
+
+def test_cross_doc_phase_agreement_pass_when_only_one_declares(tmp_path):
+    # Only current_focus declares a phase; no project_state, no task phase.
+    _base(tmp_path)
+    result = run_audit(tmp_path, doc_filter="cross_doc")
+    findings = [f for f in result.findings if f.check_id == "cross_doc_phase_agreement"]
+    assert findings
+    assert all(f.severity == "pass" for f in findings)
+    assert "fewer than two" in findings[0].message
+
+
+# ── archive_claim_missing ─────────────────────────────────────────────────────
+
+def test_archive_claim_missing_pass_when_dir_exists(tmp_path):
+    _base(tmp_path)
+    _write(tmp_path / "docs/working/backlog.md",
+           "# Backlog\n\n## Phase 1 — Foundation ✓ CLOSED\n"
+           "9 tasks done — archived to `tasks/archive/phase-1/`\n")
+    (tmp_path / "tasks" / "archive" / "phase-1").mkdir(parents=True)
+
+    result = run_audit(tmp_path, doc_filter="cross_doc")
+    findings = [f for f in result.findings if f.check_id == "archive_claim_missing"]
+    assert findings
+    assert all(f.severity == "pass" for f in findings)
+
+
+def test_archive_claim_missing_warn_when_dir_absent(tmp_path):
+    _base(tmp_path)
+    _write(tmp_path / "docs/working/backlog.md",
+           "# Backlog\n\n## Phase 7 — Onboarding ✓ CLOSED\n"
+           "7 tasks done — archived to `tasks/archive/phase-7/`\n")
+    # tasks/archive/phase-7 deliberately not created
+
+    result = run_audit(tmp_path, doc_filter="cross_doc")
+    warns = [f for f in result.findings
+             if f.check_id == "archive_claim_missing" and f.severity == "warning"]
+    assert warns
+    assert "phase-7" in warns[0].message
+
+
+def test_archive_claim_missing_scans_current_focus_ledger(tmp_path):
+    _base(tmp_path)
+    _write(tmp_path / "docs/working/current_focus.md",
+           "# Current Focus\n\n## Current Phase\nPhase 1 — Foundation\n\n"
+           "Full task detail lives in `tasks/archive/phase-12/`.\n")
+
+    result = run_audit(tmp_path, doc_filter="cross_doc")
+    warns = [f for f in result.findings
+             if f.check_id == "archive_claim_missing" and f.severity == "warning"]
+    assert warns
+    assert "phase-12" in warns[0].message
+
+
+def test_archive_claim_missing_pass_when_no_claims(tmp_path):
+    _base(tmp_path)
+    # _base backlog has no archive claims and template "phase-{N}" has no digit.
+    result = run_audit(tmp_path, doc_filter="cross_doc")
+    findings = [f for f in result.findings if f.check_id == "archive_claim_missing"]
+    assert findings
+    assert all(f.severity == "pass" for f in findings)
+    assert "no task-archive claims" in findings[0].message
+
+
+# ── task_id_counter_drift ─────────────────────────────────────────────────────
+
+def test_task_id_counter_drift_pass_when_no_declaration(tmp_path):
+    _base(tmp_path)
+    (tmp_path / "tasks" / "P1-T01-TASK-0001").mkdir(parents=True)
+
+    result = run_audit(tmp_path, doc_filter="cross_doc")
+    findings = [f for f in result.findings if f.check_id == "task_id_counter_drift"]
+    assert findings
+    assert all(f.severity == "pass" for f in findings)
+    assert "no 'highest/next task ID'" in findings[0].message
+
+
+def test_task_id_counter_drift_warn_when_stale(tmp_path):
+    _base(tmp_path)
+    # Real archive max is TASK-0076; CLAUDE.md claims TASK-0031.
+    (tmp_path / "tasks" / "archive" / "phase-5" / "P5-T01-TASK-0076").mkdir(parents=True)
+    (tmp_path / "tasks" / "P1-T01-TASK-0010").mkdir(parents=True)
+    _write(tmp_path / "docs/runtime/CLAUDE.md",
+           "# CLAUDE\n\nThe highest task ID is TASK-0031.\n")
+
+    result = run_audit(tmp_path, doc_filter="cross_doc")
+    warns = [f for f in result.findings
+             if f.check_id == "task_id_counter_drift" and f.severity == "warning"]
+    assert warns
+    assert "TASK-0031" in warns[0].message and "TASK-0076" in warns[0].message
+
+
+def test_task_id_counter_drift_pass_when_matches(tmp_path):
+    _base(tmp_path)
+    (tmp_path / "tasks" / "P1-T01-TASK-0076").mkdir(parents=True)
+    _write(tmp_path / "docs/runtime/AGENTS.md",
+           "# AGENTS\n\nNext task ID: TASK-0076\n")
+
+    result = run_audit(tmp_path, doc_filter="cross_doc")
+    findings = [f for f in result.findings if f.check_id == "task_id_counter_drift"]
+    assert findings
+    assert all(f.severity == "pass" for f in findings)
+
+
+def test_task_id_counter_drift_ignores_plain_task_references(tmp_path):
+    # A doc that merely mentions a TASK-#### in prose (no "highest/next" keyword)
+    # must NOT be treated as a counter declaration.
+    _base(tmp_path)
+    (tmp_path / "tasks" / "P1-T01-TASK-0010").mkdir(parents=True)
+    _write(tmp_path / "docs/runtime/CLAUDE.md",
+           "# CLAUDE\n\nSee TASK-0003 for the button fix.\n")
+
+    result = run_audit(tmp_path, doc_filter="cross_doc")
+    findings = [f for f in result.findings if f.check_id == "task_id_counter_drift"]
+    assert findings
+    assert all(f.severity == "pass" for f in findings)
+    assert "no 'highest/next task ID'" in findings[0].message
+
+
 # ── CLI integration tests ──────────────────────────────────────────────────────
 
 def test_audit_cmd_text_output_format(tmp_path):

@@ -16,6 +16,7 @@ from pathlib import Path
 _CURRENT_TASK_PATH = "docs/working/current_task.md"
 _BACKLOG_PATH = "docs/working/backlog.md"
 _CURRENT_FOCUS_PATH = "docs/working/current_focus.md"
+_PROJECT_STATE_PATH = "docs/working/project_state.md"
 _OQ_PATH = "docs/working/open_questions.md"
 _TOOLING_NOTES_PATH = "docs/working/tooling_notes.md"
 _PROPOSALS_PATH = "docs/working/change_proposals.md"
@@ -31,6 +32,32 @@ _CLOSED_LINE_RE = re.compile(r"Phase\s+(\d+)\b[^\n]*?\b(?:CLOSED|closed)\b", re.
 # to _CLOSED_LINE_RE; the ledger section parser below recovers them explicitly.
 _LEDGER_HEADING_RE = re.compile(r"^#{1,6}\s.*\bClosed-Phase Ledger\b", re.IGNORECASE)
 _LEDGER_ROW_RE = re.compile(r"^\|\s*(\d+)\s*(?:[–\-]\s*(\d+)\s*)?\|")
+
+# Cross-document phase declarations. These match how the working docs name the
+# active/current phase: current_focus.md uses a "## Current Phase" heading; the
+# bullet-style "**Phase:** N" / "**Active phase:** Phase N" forms appear in
+# project_state.md; a bare "Phase: N" / "Phase N" line covers current_task.md.
+_DECLARED_PHASE_RES = (
+    re.compile(r"\*\*Active\s+phase:\*\*\s*(?:Phase\s+)?(\d+)", re.IGNORECASE),
+    re.compile(r"\*\*Current\s+phase:\*\*\s*(?:Phase\s+)?(\d+)", re.IGNORECASE),
+    re.compile(r"\*\*Phase:\*\*\s*(?:Phase\s+)?(\d+)", re.IGNORECASE),
+    re.compile(r"^Active\s+phase:\s*(?:Phase\s+)?(\d+)", re.IGNORECASE),
+    re.compile(r"^Phase:\s*(?:Phase\s+)?(\d+)", re.IGNORECASE),
+)
+
+# Archive-claim mining: "archived to `tasks/archive/phase-7/`" and bare
+# "tasks/archive/phase-7" references that assert an on-disk task archive exists.
+_ARCHIVE_CLAIM_RE = re.compile(r"tasks/archive/phase-(\d+)\b")
+
+# Task-ID counter declarations in runtime/registered docs, e.g.
+# "highest task ID is TASK-0031" or "next task ID: TASK-0032". The leading
+# keyword keeps us from matching ordinary task references in prose.
+_TASK_COUNTER_RE = re.compile(
+    r"(?:highest|next|last|latest|max(?:imum)?)\s+task\s*id"
+    r"[^\n]*?\bTASK-(\d+)\b",
+    re.IGNORECASE,
+)
+_TASK_ID_NUM_RE = re.compile(r"TASK-(\d+)")
 
 
 # ── Domain objects ─────────────────────────────────────────────────────────────
@@ -73,6 +100,7 @@ _DOC_FILTER_MAP = {
     "tooling_notes": _TOOLING_NOTES_PATH,
     "change_proposals": _PROPOSALS_PATH,
     "structural": "structural",
+    "cross_doc": "cross_doc",
 }
 
 
@@ -103,6 +131,8 @@ def run_audit(
         all_findings.extend(_check_change_proposals(root, config))
     if "structural" in groups:
         all_findings.extend(_check_structural(root))
+    if "cross_doc" in groups:
+        all_findings.extend(_check_cross_doc(root))
 
     if severity_filter == "high":
         visible = [f for f in all_findings if f.severity == "error"]
@@ -197,6 +227,7 @@ def _resolve_groups(doc_filter: str | None) -> set[str]:
     all_groups = {
         "current_task", "backlog", "current_focus",
         "open_questions", "tooling_notes", "change_proposals", "structural",
+        "cross_doc",
     }
     if not doc_filter:
         return all_groups
@@ -978,6 +1009,246 @@ def _check_required_sections(root: Path, entries: list[dict]) -> list[AuditFindi
             message=f"all {sections_checked} required section(s) present",
         ))
     return findings
+
+
+# ── Cross-document / structural drift checks ──────────────────────────────────
+
+def _check_cross_doc(root: Path) -> list[AuditFinding]:
+    """Cross-document drift checks: catch the failure modes that single-doc
+    checks miss because the contradiction only exists *between* documents.
+
+    1. cross_doc_phase_agreement — multiple working docs naming different active
+       phase numbers.
+    2. archive_claim_missing — a doc claims a phase was archived to a
+       ``tasks/archive/phase-N/`` directory that does not exist on disk.
+    3. task_id_counter_drift — a registered doc declares a "highest/next task ID"
+       that no longer matches the real maximum TASK-#### on disk.
+    """
+    findings: list[AuditFinding] = []
+    findings.extend(_check_cross_doc_phase_agreement(root))
+    findings.extend(_check_archive_claim_missing(root))
+    findings.extend(_check_task_id_counter_drift(root))
+    return findings
+
+
+def _check_cross_doc_phase_agreement(root: Path) -> list[AuditFinding]:
+    """Flag when two working docs declare DIFFERENT active phase numbers.
+
+    Collects the declared active/current phase number from current_focus.md,
+    current_task.md, and project_state.md (each optional). Degrades to pass when
+    fewer than two docs declare a phase.
+    """
+    doc = "cross_doc"
+    sources = (
+        (_CURRENT_FOCUS_PATH, "current_focus.md"),
+        (_CURRENT_TASK_PATH, "current_task.md"),
+        (_PROJECT_STATE_PATH, "project_state.md"),
+    )
+
+    declared: list[tuple[str, str]] = []  # (doc_label, phase_number)
+    for rel_path, label in sources:
+        path = root / rel_path
+        if not path.exists():
+            continue
+        phase = _declared_phase_number(path.read_text(encoding="utf-8"))
+        if phase:
+            declared.append((label, phase))
+
+    if len(declared) < 2:
+        return [AuditFinding(
+            doc=doc, check_id="cross_doc_phase_agreement", severity="pass",
+            message="fewer than two docs declare an active phase — skipped",
+        )]
+
+    distinct = {num for _, num in declared}
+    if len(distinct) > 1:
+        detail = ", ".join(f"{label}=Phase {num}" for label, num in declared)
+        return [AuditFinding(
+            doc=doc, check_id="cross_doc_phase_agreement", severity="error",
+            message=f"working docs disagree on the active phase: {detail}",
+            remediation=(
+                "reconcile the active phase across current_focus.md, "
+                "current_task.md, and project_state.md so they name one phase"
+            ),
+        )]
+
+    agreed = next(iter(distinct))
+    return [AuditFinding(
+        doc=doc, check_id="cross_doc_phase_agreement", severity="pass",
+        message=f"all declaring docs agree on Phase {agreed}",
+    )]
+
+
+def _check_archive_claim_missing(root: Path) -> list[AuditFinding]:
+    """Flag claims that a phase was archived to ``tasks/archive/phase-N/`` when
+    that directory does not exist under the repo root.
+
+    Scans backlog.md and the current_focus ledger for archive claims.
+    """
+    doc = "cross_doc"
+    claims: set[int] = set()  # phase numbers claimed as archived
+    for rel_path in (_BACKLOG_PATH, _CURRENT_FOCUS_PATH):
+        path = root / rel_path
+        if not path.exists():
+            continue
+        text = path.read_text(encoding="utf-8")
+        for m in _ARCHIVE_CLAIM_RE.finditer(text):
+            # A literal "phase-N" with a concrete number is a claim; the
+            # "phase-{N}" template placeholder in prose has no digit and is
+            # skipped by the \d+ match.
+            claims.add(int(m.group(1)))
+
+    if not claims:
+        return [AuditFinding(
+            doc=doc, check_id="archive_claim_missing", severity="pass",
+            message="no task-archive claims found — skipped",
+        )]
+
+    missing = sorted(
+        n for n in claims if not (root / "tasks" / "archive" / f"phase-{n}").is_dir()
+    )
+    if missing:
+        return [
+            AuditFinding(
+                doc=doc, check_id="archive_claim_missing", severity="warning",
+                message=(
+                    f"archive claim points to a missing directory: "
+                    f"tasks/archive/phase-{n}/"
+                ),
+                remediation=(
+                    f"create tasks/archive/phase-{n}/ (grain phase close) or "
+                    f"correct the archive claim"
+                ),
+            )
+            for n in missing
+        ]
+
+    return [AuditFinding(
+        doc=doc, check_id="archive_claim_missing", severity="pass",
+        message=f"all {len(claims)} archive claim(s) resolve to existing directories",
+    )]
+
+
+def _check_task_id_counter_drift(root: Path) -> list[AuditFinding]:
+    """Flag a registered doc whose declared "highest/next task ID" no longer
+    matches the real maximum TASK-#### across ``tasks/`` and ``tasks/archive/``.
+
+    Passes (n/a) when no doc declares such a counter.
+    """
+    doc = "cross_doc"
+    declarations = _collect_task_id_declarations(root)
+    if not declarations:
+        return [AuditFinding(
+            doc=doc, check_id="task_id_counter_drift", severity="pass",
+            message="no 'highest/next task ID' declaration found — skipped",
+        )]
+
+    actual_max = _max_task_id_on_disk(root)
+    if actual_max is None:
+        return [AuditFinding(
+            doc=doc, check_id="task_id_counter_drift", severity="pass",
+            message="no TASK-#### packets on disk — skipped",
+        )]
+
+    findings: list[AuditFinding] = []
+    for label, declared in declarations:
+        if declared != actual_max:
+            findings.append(AuditFinding(
+                doc=doc, check_id="task_id_counter_drift", severity="warning",
+                message=(
+                    f"{label} declares highest/next task ID TASK-{declared:04d} "
+                    f"but the real maximum on disk is TASK-{actual_max:04d}"
+                ),
+                remediation=(
+                    f"update {label} to reflect TASK-{actual_max:04d} "
+                    f"(the actual max across tasks/ and tasks/archive/)"
+                ),
+            ))
+
+    if findings:
+        return findings
+    return [AuditFinding(
+        doc=doc, check_id="task_id_counter_drift", severity="pass",
+        message=f"declared task ID counter matches disk max TASK-{actual_max:04d}",
+    )]
+
+
+def _declared_phase_number(text: str) -> str:
+    """Return the active/current phase number a doc declares, or "".
+
+    Tries explicit "Active phase"/"Current Phase"/"Phase:" markers first, then
+    falls back to the shared _extract_current_phase parser (which handles the
+    "## Current Phase" heading + following "Phase N" line in current_focus.md).
+    """
+    for line in text.splitlines():
+        for pattern in _DECLARED_PHASE_RES:
+            m = pattern.search(line)
+            if m:
+                return m.group(1)
+    phase_line = _extract_current_phase(text)
+    if phase_line:
+        m = re.search(r"Phase\s+(\d+)", phase_line)
+        if m:
+            return m.group(1)
+    return ""
+
+
+def _collect_task_id_declarations(root: Path) -> list[tuple[str, int]]:
+    """Scan registered docs for "highest/next task ID: TASK-####" declarations.
+
+    Returns (doc_label, declared_number) pairs. Reads the doc set from the
+    manifest (canonical/working/runtime), plus the well-known runtime agent
+    docs (CLAUDE.md / AGENTS.md) which carry these counters but may not be
+    individually registered.
+    """
+    candidates: list[str] = []
+    manifest_path = root / _MANIFEST_PATH
+    if manifest_path.exists():
+        try:
+            import yaml  # type: ignore
+            manifest = yaml.safe_load(manifest_path.read_text(encoding="utf-8")) or {}
+            for entry in _collect_manifest_doc_entries(manifest):
+                p = entry.get("path", "")
+                if p and not p.endswith("/"):
+                    candidates.append(p)
+        except Exception:
+            pass
+    for extra in ("docs/runtime/CLAUDE.md", "docs/runtime/AGENTS.md",
+                  "CLAUDE.md", "AGENTS.md"):
+        if extra not in candidates:
+            candidates.append(extra)
+
+    declarations: list[tuple[str, int]] = []
+    seen: set[str] = set()
+    for rel_path in candidates:
+        if rel_path in seen:
+            continue
+        seen.add(rel_path)
+        path = root / rel_path
+        if not path.exists():
+            continue
+        text = path.read_text(encoding="utf-8")
+        for m in _TASK_COUNTER_RE.finditer(text):
+            declarations.append((rel_path, int(m.group(1))))
+    return declarations
+
+
+def _max_task_id_on_disk(root: Path) -> int | None:
+    """Return the highest TASK-#### number found across tasks/ and
+    tasks/archive/ (packet directory names), or None if none exist."""
+    tasks_root = root / "tasks"
+    if not tasks_root.exists():
+        return None
+    max_id: int | None = None
+    for path in tasks_root.rglob("*"):
+        if not path.is_dir():
+            continue
+        m = _TASK_ID_NUM_RE.search(path.name)
+        if m:
+            num = int(m.group(1))
+            if max_id is None or num > max_id:
+                max_id = num
+    return max_id
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
