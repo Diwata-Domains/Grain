@@ -888,3 +888,22 @@ Released between Phase 14 close and Phase 15 start. Not tracked as formal phases
 * What felt efficient: the spec-first approach from P30 paid off — T07 and T08 had complete specs (upgrade_enforcement_spec.md, branch_policy_spec.md) that made implementation mechanical; stop reason constants were the right call before building enforcement gates
 * What created friction: macOS sed -i arg parsing tripped up a string replacement step; CliRunner(mix_stderr=False) not available in the installed Click build; phase 31 tests required phase < 16 to avoid previous_phase_not_closed gate
 * What to tighten next: warrant explicit phase number check in test helpers to avoid routing gate surprises; sed should always be replaced with Python for multi-pattern replacements on macOS
+
+---
+
+### Phase 32
+
+* Tasks completed: 10 (T01 suggest-spec confirm, T02 suggest engine, T03 phase-close archiving, T04 archive show, T05 workflow-next surfacing, T06 notes inbox, T07 metrics, T08 telemetry foundation, T09 GitHub feedback, T10 docs hygiene)
+* Blocked tasks: 0
+* Prompt runs: multi-agent — recon (8) + implement (7) + adversarial review (7) + fix (7) sequential/parallel agent workflows
+* Manual interventions: founder decisions (v0.4.0-first scoping; T09 = report + publish both surfaces; v0.5.0 backlog adds; grain-only-to-main split from local Scry work)
+* First-pass success rate: 7/7 features built green, but adversarial review then found 23 real defects unit tests missed
+* Rework count: 23 review findings fixed (8 high / 5 medium / 10 low), +43 regression tests
+* Drift incidents: 2 — v0.4.0 contract had drifted to the composable-toolkit theme (reconciled; toolkit work moved to v0.5.0); phase-heading regex bug class (`## N. Phase N —` vs real `## Phase N —`) surfaced at phase close (fixed in 4 modules)
+* Phase duration: 2026-06-24 – 2026-06-25
+
+### Phase 32 Notes
+
+* What felt efficient: spec-first paid off again (locked suggest_spec/feedback_spec made implementation mechanical); the recon -> implement -> adversarial-review -> fix pipeline caught and fixed real state-corruption/data-loss bugs before merge; test-gated per-feature commits kept the suite monotonically green (1192 -> 1414)
+* What created friction: the `_PHASE_HEADING` regex required a leading list number (`## N. Phase N —`) but the backlog uses `## Phase N —`, silently breaking backlog parsing in 4 modules and blocking phase close (the hygiene task fixed only the docs_audit twin); node/pnpm/git-cliff unavailable in the agent sandbox blocked `trace lint-commit`/`trace release` (validated commit format by hand); pushing main risked sweeping unrelated local Scry/WARDRIVE work onto origin (caught pre-push, split onto scry-wip)
+* What to tighten next: DRY the phase-heading regex into ONE shared definition instead of 4 copies, and add a guard/docs-audit check that the backlog heading format matches what the parsers expect; build the v0.5.0 quick-lane so trivial work skips full packet ceremony; expose a token-budget proxy so the efficiency claim is measured, not assumed

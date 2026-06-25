@@ -276,18 +276,6 @@ Key deliverables: `grain workflow guard`, `grain hooks install/list/remove`, `gr
 - **Dependencies:** none
 
 ---
-
-## Phase 33 — v0.5.0 Planning
-
-> **Status:** ACTIVE (planning) — no execution tasks yet. v0.5.0 scope lives in `docs/working/v0.5.0_contract.md` (DRAFT); this phase locks it into execution phases + packets in a dedicated planning pass, the way Phase 30 planned v0.4.0.
-
-### P33 Notes
-- Candidate v0.5.0 deliverables: general-purpose / non-code workspaces, `grain recipe` execution + `recipe suggest`, external signal ingestion, safe apply graduation, Grain-as-engine contract, toolkit contract, dev/runtime alignment, context token-budget proxy, graduated-ceremony / quick lane, package self-update (humans + familiars)
-- Locked specs already exist for several: `recipe_spec.md`, `toolkit_contract.md`, `workspace_model.md`, `apply_graduation.md`, `feedback_spec.md`
-- Do not start execution until v0.4.0 is released (`pnpm trace release minor`) and the suggest/feedback foundation is stable
-
----
-
 ## Backlog Maintenance Rules
 
 1. Backlog items must remain concrete and implementable

@@ -1,26 +1,32 @@
 # Current Focus
 
 ## Current Phase
-Phase 33 — v0.5.0 planning (planning pass; no execution tasks yet)
+Phase 32 — v0.4.0 Proactive Assistance
 
-> **Status:** v0.4.0 (Proactive Assistance) implementation complete on `main` + `staging`
-> — 1414 tests passing, adversarially reviewed (23 findings fixed). Its execution phase is
-> CLOSED and archived (see the ledger). v0.4.0 release pending `pnpm trace release minor`
-> (bumps 0.3.1→0.4.0, generates CHANGELOG, tags `grain-v0.4.0` → PyPI).
-> **Next:** lock the v0.5.0 scope into execution phases — see `docs/working/v0.5.0_contract.md`.
+> **Status:** IMPLEMENTATION COMPLETE — all 10 tasks done on `feature/grain-v0.4.0`
+> (built + adversarially reviewed + fixed; 1411 tests passing). Pending: merge to
+> staging, then release on main.
+> **Milestone:** v0.4.0 (Theme: Proactive Assistance)
 > **Last shipped:** v0.3.1 (Phase 31 close, 2026-06-12)
+> **Release step (on main, at release):** `pnpm trace release minor` → bumps 0.3.1→0.4.0,
+> generates CHANGELOG, tags. Then `grain phase close` archives the Phase 32 packets.
 
-All execution phases through Phase 32 are CLOSED. The Closed-Phase Ledger below is the
+All execution phases through Phase 31 are CLOSED. The Closed-Phase Ledger below is the
 authoritative one-line status of every closed phase; full task detail lives in
 `tasks/archive/phase-{N}/` and `docs/archive/phases/phase-{N}/`. This file names the
 focus; `docs/working/backlog.md` owns task state.
 
 ## Immediate Priorities
-1. Release v0.4.0: `pnpm trace release minor` on main (version + CHANGELOG + tag → PyPI).
-2. Start the v0.5.0 planning pass — see `docs/working/v0.5.0_contract.md` (general-purpose
-   workspaces, recipes, signals, apply graduation, engine contract, token-budget proxy,
-   quick lane, package self-update).
-3. (Separately) push the `scry-wip` branch's Scry/WARDRIVE commits via their own path.
+1. Merge `feature/grain-v0.4.0` → `staging`.
+2. At release: `pnpm trace release minor` on main (version + CHANGELOG + tag); then
+   `grain phase close` to archive Phase 32 packets.
+3. Start the v0.5.0 planning pass — see `docs/working/v0.5.0_contract.md`
+   (general-purpose workspaces, recipes, signals, apply graduation, engine contract,
+   token-budget proxy, quick lane, package self-update).
+
+(All 10 Phase 32 tasks are done; see `backlog.md` Phase 32. Phase remains formally open
+until `grain phase close` is run at release — that is the only reason it is not yet in the
+Closed-Phase Ledger below.)
 
 ## Active Constraints
 - local filesystem only; no background services or hidden state
@@ -81,14 +87,13 @@ Anything described as "active" above must NOT appear here, and vice versa.
 | 29    | Workflow Compliance Hardening | 2026-05-07 | 5 | v0.3.0 |
 | 30    | v0.4.0 Planning / Toolkit Boundary | 2026-06-11 | 14 | v0.4.0 |
 | 31    | DX Hardening and v0.4.0 Foundation | 2026-06-12 | 8 | v0.3.1 |
-| 32    | v0.4.0 Proactive Assistance | 2026-06-25 | 10 | v0.4.0 |
 
 v0.1.x (v0.1.0–v0.1.11) and v0.2.0 are COMPLETE and PyPI-published.
-v0.3.0 and v0.3.1 shipped (v0.3.1 at Phase 31 close); v0.4.0 implementation complete
-on main, pending `trace release`.
+v0.3.0 and v0.3.1 shipped (v0.3.1 at Phase 31 close).
 
 ## Upcoming Phase Sequence
-1. v0.5.0 — composable toolkit + general-purpose workspaces + safe apply (see
-   `v0.5.0_contract.md`); phase breakdown locked in a dedicated v0.5.0 planning pass.
+1. Phase 32 — v0.4.0 Proactive Assistance ← active now
+2. v0.5.0 — composable toolkit + general-purpose workspaces + safe apply (see `v0.5.0_contract.md`);
+   phase breakdown locked in a dedicated v0.5.0 planning pass after v0.4.0 merges.
 
 Phase 32 closed: 2026-06-25 — 10 tasks done (grain-verified)
