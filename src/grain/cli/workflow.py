@@ -117,7 +117,7 @@ def workflow_next(ctx):
         else:
             click.echo(f"    objective       {suggestion.get('objective') or suggestion['title']}")
         click.echo(f"    signal          {suggestion['signal']}")
-        click.echo(f"    → run           grain suggest  (then `grain suggest accept ...`)")
+        click.echo("    → run           grain suggest  (then `grain suggest accept ...`)")
 
 
 @workflow_group.command("guard")

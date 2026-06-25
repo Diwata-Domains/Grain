@@ -575,7 +575,7 @@ def _build_suggestions(root: Path) -> list[SuggestionProposal]:
             suggestions.append(SuggestionProposal(
                 id="",
                 kind=KIND_PICK_UP,
-                title=f"{task_ref}" + (f" ({task_id})" if task_id else "") + f" — open as current task",
+                title=f"{task_ref}" + (f" ({task_id})" if task_id else "") + " — open as current task",
                 signal="Ready task in active phase" if is_active else "Ready task in next-blocked phase",
                 signal_ref=task_ref,
                 rationale=f"Task is ready in {phase_label} ({phase_tag} phase).",
