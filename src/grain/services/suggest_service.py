@@ -856,11 +856,15 @@ def accept(root: Path, proposal_id: str, *, confirmed: bool = False) -> AcceptRe
             ok=False, proposal_id=proposal_id, errors=[f"unknown kind: {proposal.kind}"]
         )
 
-    # Side-band telemetry (opt-in, never raises, never alters control flow).
-    # Only emit on a real accept — not the new-task confirmation prompt.
+    # Side-band telemetry (opt-in, never raises, never alters control flow or
+    # timing). Only emit on a real accept — not the new-task confirmation prompt.
+    # emit_built guards builder construction too.
     if result.ok:
-        from grain.services.telemetry_service import emit, make_suggest_accept_event
-        emit(root, make_suggest_accept_event(proposal_id, proposal.kind))
+        from grain.services.telemetry_service import (
+            emit_built,
+            make_suggest_accept_event,
+        )
+        emit_built(root, make_suggest_accept_event, proposal_id, proposal.kind)
 
     return result
 

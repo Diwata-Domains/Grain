@@ -12,6 +12,7 @@ the strict never-raises contract — plus instrumentation of the four moments
 from __future__ import annotations
 
 import json
+import time
 from pathlib import Path
 
 from grain.domain.telemetry import (
@@ -26,6 +27,8 @@ from grain.services import telemetry_service
 from grain.services.telemetry_service import (
     ENDPOINT_ENV_VAR,
     emit,
+    emit_built,
+    flush,
     is_enabled,
     make_phase_close_event,
     make_suggest_accept_event,
@@ -87,6 +90,7 @@ def test_manifest_enabled_no_endpoint_queues(tmp_path, monkeypatch):
     assert is_enabled(tmp_path) is True
 
     emit(tmp_path, make_phase_close_event("31", 7))
+    flush()  # delivery is async (daemon thread); drain it for a deterministic read
 
     queued = _read_queue(tmp_path)
     assert len(queued) == 1
@@ -103,6 +107,7 @@ def test_env_endpoint_enables_and_falls_back_to_queue(tmp_path, monkeypatch):
     assert is_enabled(tmp_path) is True
 
     emit(tmp_path, make_suggest_accept_event("SUG-20260625-001", "pick-up"))
+    flush()
 
     queued = _read_queue(tmp_path)
     assert len(queued) == 1
@@ -123,6 +128,7 @@ def test_endpoint_post_success_does_not_queue(tmp_path, monkeypatch):
     monkeypatch.setattr(telemetry_service, "_try_post", _fake_post)
 
     emit(tmp_path, make_task_close_event("TASK-0042", quick=True))
+    flush()
 
     assert len(posted) == 1
     assert posted[0][0] == "https://pulse.example/ingest"
@@ -139,6 +145,7 @@ def test_endpoint_post_failure_queues(tmp_path, monkeypatch):
     monkeypatch.setattr(telemetry_service, "_try_post", lambda endpoint, record: False)
 
     emit(tmp_path, make_workflow_next_stop_event("phase_has_no_tasks", "32"))
+    flush()
 
     queued = _read_queue(tmp_path)
     assert len(queued) == 1
@@ -158,6 +165,7 @@ def test_env_endpoint_wins_over_manifest_endpoint(tmp_path, monkeypatch):
 
     monkeypatch.setattr(telemetry_service, "_try_post", _fake_post)
     emit(tmp_path, make_phase_close_event("30", 1))
+    flush()
 
     assert seen == ["https://env.example/ingest"]
 
@@ -173,8 +181,9 @@ def test_emit_never_raises_on_unwritable_root(tmp_path, monkeypatch):
         raise OSError("disk full")
 
     monkeypatch.setattr(telemetry_service, "_append_to_queue", _boom)
-    # Must not raise.
+    # Must not raise — neither on the caller's thread nor on the dispatch thread.
     emit(tmp_path, make_task_close_event("TASK-0001"))
+    flush()
 
 
 def test_emit_never_raises_when_disabled_and_manifest_broken(tmp_path, monkeypatch):
@@ -184,6 +193,86 @@ def test_emit_never_raises_when_disabled_and_manifest_broken(tmp_path, monkeypat
     assert is_enabled(tmp_path) is False
     emit(tmp_path, make_phase_close_event("1", 1))
     assert not _queue_path(tmp_path).exists()
+
+
+# ── Non-blocking: emission never alters caller timing ──────────────────────────
+
+def test_emit_does_not_block_on_slow_endpoint(tmp_path, monkeypatch):
+    # Regression for the synchronous-POST timing bug: when telemetry is enabled
+    # with a configured endpoint, emit() must return immediately and NOT wait on
+    # the network round-trip. A POST that blocks for ~1s must not delay emit().
+    monkeypatch.delenv(ENDPOINT_ENV_VAR, raising=False)
+    _manifest(tmp_path, enabled=True, endpoint="https://pulse.example/ingest")
+
+    post_started = []
+
+    def _slow_post(endpoint, record):
+        post_started.append(True)
+        time.sleep(1.0)  # simulate a slow/unreachable endpoint
+        return True
+
+    monkeypatch.setattr(telemetry_service, "_try_post", _slow_post)
+
+    start = time.monotonic()
+    emit(tmp_path, make_phase_close_event("30", 5))
+    elapsed = time.monotonic() - start
+
+    # emit() returns essentially instantly — the slow POST runs off-thread.
+    assert elapsed < 0.5, f"emit blocked for {elapsed:.3f}s on a slow endpoint"
+
+    # And the work genuinely happened in the background once we drain it.
+    flush()
+    assert post_started == [True]
+
+
+def test_emit_does_not_block_when_queue_write_is_slow(tmp_path, monkeypatch):
+    # The on-disk fallback also runs off the caller's thread.
+    monkeypatch.delenv(ENDPOINT_ENV_VAR, raising=False)
+    _manifest(tmp_path, enabled=True)  # no endpoint → queue path
+
+    def _slow_queue(root, record):
+        time.sleep(1.0)
+
+    monkeypatch.setattr(telemetry_service, "_append_to_queue", _slow_queue)
+
+    start = time.monotonic()
+    emit(tmp_path, make_task_close_event("TASK-0001"))
+    elapsed = time.monotonic() - start
+
+    assert elapsed < 0.5, f"emit blocked for {elapsed:.3f}s on a slow queue write"
+    flush()
+
+
+# ── emit_built guards builder construction (never-raises covers the full path) ──
+
+def test_emit_built_swallows_raising_builder(tmp_path, monkeypatch):
+    # Regression: builder construction must be inside the never-raises guard, so
+    # a builder that raises does not propagate out of the call site.
+    monkeypatch.delenv(ENDPOINT_ENV_VAR, raising=False)
+    _manifest(tmp_path, enabled=True)
+
+    def _boom_builder(*args, **kwargs):
+        raise ValueError("builder exploded")
+
+    # Must not raise even though the builder raises and telemetry is enabled.
+    emit_built(tmp_path, _boom_builder, "x", kind="y")
+    flush()
+    # Nothing was emitted because the event was never built.
+    assert _read_queue(tmp_path) == []
+
+
+def test_emit_built_emits_built_event(tmp_path, monkeypatch):
+    # Happy path: emit_built builds via the passed builder and emits the event.
+    monkeypatch.delenv(ENDPOINT_ENV_VAR, raising=False)
+    _manifest(tmp_path, enabled=True)
+
+    emit_built(tmp_path, make_task_close_event, "TASK-0099", quick=True)
+    flush()
+
+    queued = _read_queue(tmp_path)
+    assert len(queued) == 1
+    assert queued[0]["event_type"] == EVENT_TASK_CLOSE
+    assert queued[0]["payload"] == {"task_id": "TASK-0099", "quick": True}
 
 
 # ── Event builders are typed + versioned ───────────────────────────────────────

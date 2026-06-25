@@ -26,6 +26,7 @@ from grain.domain.telemetry import (
 from grain.services.phase_close_service import close_phase
 from grain.services.suggest_service import accept, generate
 from grain.services.task_service import create_packet_directory, quick_close_packet
+from grain.services.telemetry_service import flush
 
 
 def _write(path: Path, content: str = "") -> None:
@@ -41,6 +42,8 @@ def _enable_telemetry(tmp_path: Path) -> None:
 
 
 def _queue(tmp_path: Path) -> list[dict]:
+    # Emission is async (daemon thread); drain it so the queue read is deterministic.
+    flush()
     path = tmp_path / ".grain" / "telemetry_queue.jsonl"
     if not path.exists():
         return []

@@ -398,14 +398,14 @@ def _emit_stop_reason_telemetry(root, evaluation):
         return
     try:
         from grain.services.telemetry_service import (
-            emit,
+            emit_built,
             make_workflow_next_stop_event,
         )
-        emit(
+        emit_built(
             root,
-            make_workflow_next_stop_event(
-                evaluation.stop_reason, evaluation.active_phase or ""
-            ),
+            make_workflow_next_stop_event,
+            evaluation.stop_reason,
+            evaluation.active_phase or "",
         )
     except Exception:
         return

@@ -4,16 +4,25 @@
 """Telemetry service — opt-in, fire-and-forget event emission for Pulse.
 
 ``emit(root, event)`` is the single entry point. It is strictly side-band: it
-NEVER raises and NEVER changes caller control flow. Emission only happens when
-telemetry is explicitly enabled (``telemetry.enabled: true`` in
-docs_manifest.yaml OR the ``GRAIN_TELEMETRY_ENDPOINT`` environment variable is
-set). Default off → nothing is emitted and no queue file is written.
+NEVER raises, NEVER changes caller control flow, and NEVER alters the caller's
+timing. Emission only happens when telemetry is explicitly enabled
+(``telemetry.enabled: true`` in docs_manifest.yaml OR the
+``GRAIN_TELEMETRY_ENDPOINT`` environment variable is set). Default off → nothing
+is emitted and no queue file is written.
+
+Non-blocking by construction: the only work ``emit`` does on the caller's thread
+is the cheap, local gate check and event serialization. The network POST (and
+its on-disk queue fallback) run on a short-lived daemon thread, so close /
+accept / next / suggest-accept return without ever waiting on the network — even
+when a configured endpoint is slow or unreachable.
 
 When enabled, the event is POSTed to the configured Pulse endpoint. If no
 endpoint is configured, or the endpoint is unreachable, the event is appended to
 ``.grain/telemetry_queue.jsonl`` so a later Pulse drain can pick it up. Building
 events for the four instrumented moments goes through the ``make_*_event``
-helpers so the typed, versioned contract stays in one place.
+helpers so the typed, versioned contract stays in one place. ``flush(timeout)``
+joins any in-flight dispatch threads — used by tests (and available to a drain)
+to make the otherwise-async path deterministic; production callers never call it.
 """
 
 from __future__ import annotations
@@ -21,6 +30,7 @@ from __future__ import annotations
 import dataclasses
 import json
 import os
+import threading
 import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
@@ -41,7 +51,14 @@ ENDPOINT_ENV_VAR = "GRAIN_TELEMETRY_ENDPOINT"
 
 _QUEUE_FILE = "telemetry_queue.jsonl"
 _GRAIN_DIR = ".grain"
+# Kept short so even a stalled drain thread tears down quickly; it runs off the
+# hot path so this timeout never affects the instrumented operation's latency.
 _POST_TIMEOUT_SECONDS = 2.0
+
+# Tracks in-flight dispatch threads so ``flush`` can join them. A daemon thread
+# never blocks interpreter exit, so this is only consulted by ``flush``.
+_PENDING_LOCK = threading.Lock()
+_PENDING: list[threading.Thread] = []
 
 
 def _now_iso() -> str:
@@ -71,11 +88,14 @@ def is_enabled(root: Path) -> bool:
 
 
 def emit(root: Path, event: TelemetryEvent) -> None:
-    """Emit one telemetry event. Fire-and-forget; NEVER raises.
+    """Emit one telemetry event. Fire-and-forget; NEVER raises; NEVER blocks.
 
-    No-op when telemetry is disabled (the default). When enabled, POSTs the event
-    to the configured endpoint; on any failure (no endpoint, transport error)
-    the event is appended to ``.grain/telemetry_queue.jsonl`` for later drain.
+    No-op when telemetry is disabled (the default). When enabled, the network
+    POST (and its on-disk queue fallback) are dispatched on a short-lived daemon
+    thread so the caller returns immediately — instrumentation never alters the
+    timing of the instrumented operation. On any POST failure (no endpoint,
+    transport error) the event is appended to ``.grain/telemetry_queue.jsonl``
+    for a later Pulse drain.
     """
     try:
         if not is_enabled(root):
@@ -87,13 +107,70 @@ def emit(root: Path, event: TelemetryEvent) -> None:
         record = dataclasses.asdict(event)
         endpoint = _resolve_endpoint(root)
 
-        if endpoint and _try_post(endpoint, record):
-            return
-
-        _append_to_queue(root, record)
+        _dispatch(root, endpoint, record)
     except Exception:
         # Telemetry is strictly side-band — never propagate any failure.
         return
+
+
+def emit_built(root: Path, builder, *args, **kwargs) -> None:
+    """Build an event via ``builder(*args, **kwargs)`` and emit it, guarded.
+
+    Wraps event-builder construction inside the same never-raises guarantee as
+    ``emit`` so the full path (build + emit) is covered at every call site, even
+    if a builder were to raise. Use this at instrumentation points instead of
+    evaluating the builder as an unguarded argument to ``emit``.
+    """
+    try:
+        event = builder(*args, **kwargs)
+    except Exception:
+        return
+    emit(root, event)
+
+
+def _dispatch(root: Path, endpoint: str, record: dict) -> None:
+    """Run the POST-or-queue work on a short-lived daemon thread (never blocks)."""
+    thread = threading.Thread(
+        target=_deliver,
+        args=(root, endpoint, record),
+        name="grain-telemetry",
+        daemon=True,
+    )
+    with _PENDING_LOCK:
+        _PENDING.append(thread)
+    thread.start()
+
+
+def _deliver(root: Path, endpoint: str, record: dict) -> None:
+    """Off-thread delivery: POST, falling back to the on-disk queue. Never raises."""
+    try:
+        if endpoint and _try_post(endpoint, record):
+            return
+        _append_to_queue(root, record)
+    except Exception:
+        # Strictly side-band — swallow everything on the background thread too.
+        return
+    finally:
+        current = threading.current_thread()
+        with _PENDING_LOCK:
+            if current in _PENDING:
+                _PENDING.remove(current)
+
+
+def flush(timeout: float | None = 5.0) -> None:
+    """Join any in-flight dispatch threads. Never raises.
+
+    Makes the otherwise-async emission path deterministic (tests, or a future
+    drain that wants to wait for delivery). Production instrumentation never
+    calls this — the dispatch threads are daemons and clean up on their own.
+    """
+    with _PENDING_LOCK:
+        pending = list(_PENDING)
+    for thread in pending:
+        try:
+            thread.join(timeout)
+        except Exception:
+            continue
 
 
 def _try_post(endpoint: str, record: dict) -> bool:

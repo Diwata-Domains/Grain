@@ -227,9 +227,10 @@ def close_packet(root: Path, task_id: str) -> CommandResult:
     if results_path.exists():
         files_updated.insert(0, str(results_path.relative_to(root)))
 
-    # Side-band telemetry (opt-in, never raises, never alters control flow).
-    from grain.services.telemetry_service import emit, make_task_close_event
-    emit(root, make_task_close_event(task_id))
+    # Side-band telemetry (opt-in, never raises, never alters control flow or
+    # timing). emit_built guards builder construction too.
+    from grain.services.telemetry_service import emit_built, make_task_close_event
+    emit_built(root, make_task_close_event, task_id)
 
     return CommandResult(
         ok=True,
@@ -311,9 +312,10 @@ def quick_close_packet(
     files_written = [str(results_path.relative_to(root))]
     files_written.append(str((packet_dir / "task.md").relative_to(root)))
 
-    # Side-band telemetry (opt-in, never raises, never alters control flow).
-    from grain.services.telemetry_service import emit, make_task_close_event
-    emit(root, make_task_close_event(task_id, quick=True))
+    # Side-band telemetry (opt-in, never raises, never alters control flow or
+    # timing). emit_built guards builder construction too.
+    from grain.services.telemetry_service import emit_built, make_task_close_event
+    emit_built(root, make_task_close_event, task_id, quick=True)
 
     return CommandResult(
         ok=True,
