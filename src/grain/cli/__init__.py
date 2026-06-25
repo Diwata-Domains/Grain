@@ -44,6 +44,7 @@ from .doctor import doctor_cmd
 from .status import status_cmd
 from .notes import notes_group
 from .workflow import workflow_group
+from .suggest import suggest_group
 from .onboard import onboard_cmd
 from .upgrade import upgrade_cmd
 from .error_handler import handle_error
@@ -343,5 +344,6 @@ main.add_command(doctor_cmd)
 main.add_command(status_cmd)
 main.add_command(notes_group)
 main.add_command(workflow_group)
+main.add_command(suggest_group)
 main.add_command(onboard_cmd)
 main.add_command(upgrade_cmd)

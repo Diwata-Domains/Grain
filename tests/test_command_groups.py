@@ -16,6 +16,7 @@ GROUPS = [
     "phase",
     "prompt",
     "workflow",
+    "suggest",
 ]
 
 SUBCOMMANDS = {
@@ -30,6 +31,7 @@ SUBCOMMANDS = {
     "phase": ["next"],
     "prompt": ["show"],
     "workflow": ["next", "run", "explain", "loop"],
+    "suggest": ["list", "show", "accept", "dismiss"],
 }
 
 

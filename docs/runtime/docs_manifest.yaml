@@ -87,6 +87,15 @@ working:
       - canonical_conflict_detected
       - proposing_scope_or_architecture_changes
 
+  - id: proposals
+    path: docs/working/proposals/
+    purpose: Operator-approved change proposal documents
+    authority: advisory
+    editable_by_agents: false
+    read_when:
+      - canonical_conflict_detected
+      - proposing_scope_or_architecture_changes
+
   - id: workflow_metrics
     path: docs/working/workflow_metrics.md
     purpose: Per-phase execution metrics and workflow health observations

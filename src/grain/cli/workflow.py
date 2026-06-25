@@ -19,6 +19,11 @@ from grain.services.workflow_loop_service import run_workflow_loop
 from grain.services.workflow_service import evaluate_workflow_state, evaluation_to_dict
 from grain.services.workflow_run_service import run_workflow_step
 
+# Stop reasons that mean "no obvious next task" — surface a suggestion (P32-T05).
+_NO_NEXT_TASK_STOP_REASONS = frozenset(
+    {"task_planning_required", "phase_has_no_tasks", "phase_boundary_review_close_required"}
+)
+
 
 @click.group("workflow")
 def workflow_group():
@@ -46,10 +51,13 @@ def workflow_next(ctx):
                 click.echo(f"  error     {err}", err=True)
         raise click.ClickException("workflow evaluation failed")
 
+    suggestion = _surface_top_suggestion(root, evaluation)
+
     if fmt == "json":
         data = dataclasses.asdict(result)
         data["evaluation"] = evaluation_to_dict(evaluation)
         data["observability"] = _workflow_observability_payload(root, evaluation.active_task_id)
+        data["suggestion"] = suggestion
         click.echo(json.dumps(data, indent=2))
         return
 
@@ -96,6 +104,19 @@ def workflow_next(ctx):
             "  tip               completed ad-hoc work outside the workflow? "
             "`grain task create --simple` creates a lightweight audit record — say no to skip"
         )
+
+    if suggestion:
+        click.echo("  suggestion")
+        click.echo(f"    kind            {suggestion['kind']}")
+        if suggestion["kind"] == "pick-up":
+            click.echo(
+                f"    task            {suggestion['task_ref']}"
+                + (f" ({suggestion['task_id']})" if suggestion.get("task_id") else "")
+            )
+        else:
+            click.echo(f"    objective       {suggestion.get('objective') or suggestion['title']}")
+        click.echo(f"    signal          {suggestion['signal']}")
+        click.echo(f"    → run           grain suggest  (then `grain suggest accept ...`)")
 
 
 @workflow_group.command("guard")
@@ -338,6 +359,32 @@ def workflow_reconcile(ctx, fix, dry_run):
         click.echo("  nothing to fix")
     if not result.ok:
         raise SystemExit(1)
+
+
+def _surface_top_suggestion(root, evaluation):
+    """Read-only top suggestion for no-next-task states. Writes nothing (P32-T05).
+
+    Surface-only: degrades to None on any error so it never breaks `workflow next`.
+    """
+    if evaluation is None or evaluation.stop_reason not in _NO_NEXT_TASK_STOP_REASONS:
+        return None
+    try:
+        from grain.services.suggest_service import top_suggestion
+        proposal = top_suggestion(root)
+    except Exception:
+        return None
+    if proposal is None:
+        return None
+    return {
+        "kind": proposal.kind,
+        "title": proposal.title,
+        "signal": proposal.signal,
+        "signal_ref": proposal.signal_ref,
+        "task_ref": proposal.task_ref,
+        "task_id": proposal.task_id,
+        "objective": proposal.objective,
+        "rationale": proposal.rationale,
+    }
 
 
 def _workflow_observability_payload(root, task_id: str):

@@ -471,15 +471,32 @@ def move_working_proposals_to_archive(
         if not f.is_file() or f.name == ".gitkeep":
             continue
         mtime = datetime.fromtimestamp(f.stat().st_mtime, tz=timezone.utc)
-        text = f.read_text(encoding="utf-8")
-        is_dismissed = "dismissed" in text.lower() or "expired" in text.lower()
-        if is_dismissed and mtime < cutoff:
+        status = _parse_proposal_status(f.read_text(encoding="utf-8"))
+        # Lifecycle: expired proposals are always eligible; dismissed ones only
+        # once they have aged past the cutoff. Pending/accepted stay in place.
+        eligible = status == "expired" or (status == "dismissed" and mtime < cutoff)
+        if eligible:
             pruned.append(str(f.relative_to(root)))
             if not dry_run:
                 archive_proposals.mkdir(parents=True, exist_ok=True)
                 shutil.move(str(f), archive_proposals / f.name)
 
     return PruneResult(ok=True, pruned=pruned, dry_run=dry_run)
+
+
+_PROPOSAL_STATUS_RE = re.compile(r"^\**Status:\**\s*(\w+)", re.IGNORECASE)
+
+
+def _parse_proposal_status(text: str) -> str:
+    """Return the lowercased Status field from a proposal file ('' if absent).
+
+    Matches both '**Status:** dismissed' and plain 'Status: dismissed'.
+    """
+    for line in text.splitlines():
+        m = _PROPOSAL_STATUS_RE.match(line.strip())
+        if m:
+            return m.group(1).lower()
+    return ""
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
