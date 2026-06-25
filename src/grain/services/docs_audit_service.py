@@ -656,7 +656,41 @@ def _check_tooling_notes(root: Path, config: AuditConfig) -> list[AuditFinding]:
             message=f"{open_count} open entries (within threshold)",
         ))
 
+    # tooling_notes_open_friction — open bug/friction notes are low-severity
+    # findings so they stay visible until resolved via `grain notes resolve`.
+    open_actionable = _open_actionable_notes(path)
+    if open_actionable:
+        for note_id, note_type, body in open_actionable:
+            preview = body if len(body) <= 80 else body[:77] + "…"
+            findings.append(AuditFinding(
+                doc=doc, check_id="tooling_notes_open_friction", severity="warning",
+                message=f"open {note_type} note #{note_id}: {preview}",
+                remediation=f"grain notes resolve {note_id}",
+            ))
+    else:
+        findings.append(AuditFinding(
+            doc=doc, check_id="tooling_notes_open_friction", severity="pass",
+            message="no open bug/friction notes",
+        ))
+
     return findings
+
+
+def _open_actionable_notes(path: Path) -> list[tuple[int, str, str]]:
+    """Return (id, type, body) for open bug/friction notes in tooling_notes.md."""
+    from grain.domain.notes import ACTIONABLE_TYPES, OPEN_STATUSES, parse_note_line
+
+    result: list[tuple[int, str, str]] = []
+    synth = 1
+    for line in path.read_text(encoding="utf-8").splitlines():
+        note = parse_note_line(line, fallback_id=-1)
+        if note is None:
+            continue
+        note_id = note.id if note.id != -1 else synth
+        synth += 1
+        if note.type in ACTIONABLE_TYPES and note.status in OPEN_STATUSES:
+            result.append((note_id, note.type, note.body))
+    return result
 
 
 # ── change_proposals.md checks ────────────────────────────────────────────────

@@ -261,7 +261,8 @@ def test_notes_add_json_output(tmp_path):
     assert result.exit_code == 0
     data = json.loads(result.output)
     assert data["ok"] is True
-    assert "row" in data
+    assert data["note"]["body"] == "test"
+    assert data["note"]["status"] == "open"
 
 
 def test_notes_add_with_severity(tmp_path):
@@ -292,4 +293,4 @@ def test_notes_list_json(tmp_path):
     assert result.exit_code == 0
     data = json.loads(result.output)
     assert isinstance(data, list)
-    assert any("test entry" in e["observation"] for e in data)
+    assert any("test entry" in e["body"] for e in data)

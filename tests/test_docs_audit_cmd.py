@@ -425,6 +425,46 @@ def test_tooling_notes_triage_warn_over_threshold(tmp_path):
     assert warns
 
 
+# ── tooling_notes_open_friction ────────────────────────────────────────────────
+
+def test_tooling_notes_open_friction_warn_when_open_bug(tmp_path):
+    _base(tmp_path)
+    _write(tmp_path / "docs/working/tooling_notes.md",
+           "# Tooling Notes\n\n| ID | Date | Type | Command | Observation | Severity | Status |\n"
+           "|----|------|------|---------|-------------|----------|--------|\n"
+           "| 1 | 2026-06-01 | bug | grain x | a broken thing | low | open |\n")
+
+    result = run_audit(tmp_path, doc_filter="tooling_notes")
+    warns = [f for f in result.findings
+             if f.check_id == "tooling_notes_open_friction" and f.severity == "warning"]
+    assert warns
+    assert "a broken thing" in warns[0].message
+
+
+def test_tooling_notes_open_friction_pass_when_resolved(tmp_path):
+    _base(tmp_path)
+    _write(tmp_path / "docs/working/tooling_notes.md",
+           "# Tooling Notes\n\n| ID | Date | Type | Command | Observation | Severity | Status |\n"
+           "|----|------|------|---------|-------------|----------|--------|\n"
+           "| 1 | 2026-06-01 | bug | grain x | fixed thing | low | resolved |\n")
+
+    result = run_audit(tmp_path, doc_filter="tooling_notes")
+    findings = [f for f in result.findings if f.check_id == "tooling_notes_open_friction"]
+    assert any(f.severity == "pass" for f in findings)
+
+
+def test_tooling_notes_open_friction_ignores_observations(tmp_path):
+    _base(tmp_path)
+    _write(tmp_path / "docs/working/tooling_notes.md",
+           "# Tooling Notes\n\n| ID | Date | Type | Command | Observation | Severity | Status |\n"
+           "|----|------|------|---------|-------------|----------|--------|\n"
+           "| 1 | 2026-06-01 | observation | grain x | just noting | low | open |\n")
+
+    result = run_audit(tmp_path, doc_filter="tooling_notes")
+    findings = [f for f in result.findings if f.check_id == "tooling_notes_open_friction"]
+    assert any(f.severity == "pass" for f in findings)
+
+
 # ── proposal_aging ────────────────────────────────────────────────────────────
 
 def test_proposal_aging_pass_when_recent(tmp_path):

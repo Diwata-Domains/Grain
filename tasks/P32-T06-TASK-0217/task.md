@@ -2,7 +2,7 @@
 
 ## Metadata
 - **ID:** TASK-0217
-- **Status:** ready
+- **Status:** done
 - **Phase:** Phase 32 — v0.4.0 Proactive Assistance
 - **Backlog:** P32-T06
 - **Packet Path:** tasks/P32-T06-TASK-0217/
