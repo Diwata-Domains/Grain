@@ -3,9 +3,13 @@
 ## Current Phase
 Phase 32 — v0.4.0 Proactive Assistance
 
-> **Status:** ACTIVE (seeded — 10 tasks, P32-T01 through P32-T10)
+> **Status:** IMPLEMENTATION COMPLETE — all 10 tasks done on `feature/grain-v0.4.0`
+> (built + adversarially reviewed + fixed; 1411 tests passing). Pending: merge to
+> staging, then release on main.
 > **Milestone:** v0.4.0 (Theme: Proactive Assistance)
 > **Last shipped:** v0.3.1 (Phase 31 close, 2026-06-12)
+> **Release step (on main, at release):** `pnpm trace release minor` → bumps 0.3.1→0.4.0,
+> generates CHANGELOG, tags. Then `grain phase close` archives the Phase 32 packets.
 
 All execution phases through Phase 31 are CLOSED. The Closed-Phase Ledger below is the
 authoritative one-line status of every closed phase; full task detail lives in
@@ -13,13 +17,16 @@ authoritative one-line status of every closed phase; full task detail lives in
 focus; `docs/working/backlog.md` owns task state.
 
 ## Immediate Priorities
-1. P32-T02 — implement `grain suggest` engine (foundation; gates T05)
-2. P32-T06 — `grain notes` full implementation (gates T09 GitHub feedback)
-3. P32-T03/T04 — phase-close task archiving + `grain archive show` packet list
-4. P32-T10 — docs hygiene: `phase_status_consistency` check (founder-requested)
+1. Merge `feature/grain-v0.4.0` → `staging`.
+2. At release: `pnpm trace release minor` on main (version + CHANGELOG + tag); then
+   `grain phase close` to archive Phase 32 packets.
+3. Start the v0.5.0 planning pass — see `docs/working/v0.5.0_contract.md`
+   (general-purpose workspaces, recipes, signals, apply graduation, engine contract,
+   token-budget proxy, quick lane, package self-update).
 
-(P32-T01 — `grain suggest` spec — is satisfied by the canonical `suggest_spec.md` and is
-marked done. See `backlog.md` Phase 32 for the full task list and dependencies.)
+(All 10 Phase 32 tasks are done; see `backlog.md` Phase 32. Phase remains formally open
+until `grain phase close` is run at release — that is the only reason it is not yet in the
+Closed-Phase Ledger below.)
 
 ## Active Constraints
 - local filesystem only; no background services or hidden state

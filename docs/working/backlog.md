@@ -212,56 +212,56 @@ Key deliverables: `grain workflow guard`, `grain hooks install/list/remove`, `gr
 - **Dependencies:** none
 
 ### P32-T02 — Implement `grain suggest`
-- **Status:** draft
+- **Status:** done
 - **Description:** Implement `grain suggest` from the spec. Core logic: read workspace state, score candidate task types, generate ranked suggestions with draft context/plan seeds, write to `.grain/suggestions.json`. `grain suggest --accept <id>` creates a packet from the suggestion. `grain suggest --prune` clears stale entries. `--format json` output.
 - **Files:** `src/grain/services/suggest_service.py` (new), `src/grain/cli/suggest.py` (new), tests
 - **Model:** frontier_model
 - **Dependencies:** P32-T01
 
 ### P32-T03 — Extend `grain phase close` to auto-archive task packets
-- **Status:** ready
+- **Status:** done
 - **Description:** When a phase is closed, automatically move all `tasks/P{N}-*` packet directories to `tasks/archive/phase-{N}/` alongside the existing doc snapshot. Behavior: (1) detect all packet dirs matching the phase prefix in `tasks/`; (2) create `tasks/archive/phase-{N}/` if absent; (3) move packets; (4) update `docs/archive/phases/phase-{N}/metadata.json` with `tasks_done` count and `tasks_archive` path. Add `--keep-tasks` flag to skip the move when a packet is being carried forward to the next phase.
 - **Files:** `src/grain/services/phase_service.py`, `src/grain/services/archive_service.py`, `src/grain/cli/phase.py`, tests
 - **Model:** frontier_model
 - **Dependencies:** none
 
 ### P32-T04 — Extend `grain archive show` to surface packet list from task archive
-- **Status:** ready
+- **Status:** done
 - **Description:** `grain archive show --phase N` currently shows doc snapshot content. Extend it to also list the task packets in `tasks/archive/phase-{N}/` from the `tasks_archive` field in `metadata.json`. Output: phase metadata, doc snapshot files present, packet list with task ID and title (read from `task.md`). `--format json` output. If no task archive exists for a phase (pre-v0.4.0 close), surface the metadata note gracefully.
 - **Files:** `src/grain/cli/archive.py`, `src/grain/services/archive_service.py`, tests
 - **Model:** frontier_model
 - **Dependencies:** none
 
 ### P32-T05 — Integrate `grain suggest` into `grain workflow next`
-- **Status:** draft
+- **Status:** done
 - **Description:** When `grain workflow next` evaluates the workspace and finds no obvious next task (e.g. `stop_reason: no_ready_tasks` or `backlog_empty`), automatically run the suggest engine and surface the top candidate in the workflow next output. Text output: inline suggestion block. JSON output: `suggestion` field with candidate. Does not write anything — suggestion is surface-only until `grain suggest --accept <id>` is called.
 - **Files:** `src/grain/services/workflow_service.py`, `src/grain/services/suggest_service.py`, tests
 - **Model:** frontier_model
 - **Dependencies:** P32-T01, P32-T02
 
 ### P32-T06 — `grain notes` full implementation
-- **Status:** ready
+- **Status:** done
 - **Description:** Graduate `grain notes` from write-only stub to a queryable, actionable friction inbox. (1) Structured rows in `tooling_notes.md` with `id`, `type`, `status`, `created_at`, `body`; (2) `grain notes list` with `--type` and `--status` filters and `--format json`; (3) `grain notes show <id>` — full note detail; (4) `grain notes resolve <id>` — mark addressed with optional resolution note; (5) open notes with type `bug` or `friction` surface as `low`-severity findings in `grain docs audit`; (6) `grain notes add` improvements — auto-assign incremental ID, timestamp, default status `open`.
 - **Files:** `src/grain/services/notes_service.py` (new), `src/grain/cli/notes.py` (extend), `src/grain/services/docs_audit_service.py` (extend), tests
 - **Model:** frontier_model
 - **Dependencies:** none
 
 ### P32-T07 — Workflow metrics — `grain metrics` command
-- **Status:** ready
+- **Status:** done
 - **Description:** Implement `grain metrics` for per-phase velocity and cost tracking. Reads task archive and docs archive to compute: (1) phase duration (open → close dates from metadata); (2) task count per phase; (3) stop-reason frequency from `.grain/last_workflow_state.json` history; (4) `grain metrics --phase N` for single-phase detail; (5) `grain metrics export` dumps full history as JSON. Writes `.grain/metrics_cache.json` with a 1-hour TTL. `--format json` output on all subcommands.
 - **Files:** `src/grain/services/metrics_service.py` (new), `src/grain/cli/metrics.py` (new), tests
 - **Model:** frontier_model
 - **Dependencies:** none
 
 ### P32-T08 — Pulse telemetry foundation — opt-in event emission contract
-- **Status:** ready
+- **Status:** done
 - **Description:** Lay the Grain-side event emission contract for Pulse (the planned Diwata-wide telemetry layer). (1) Define a `TelemetryEvent` dataclass with `event_type`, `version`, `timestamp`, `payload` fields; (2) implement `telemetry_service.py` with a `emit(event)` method — fire-and-forget, never raises, logs to `.grain/telemetry_queue.jsonl` when endpoint is unreachable; (3) instrument key workflow moments: phase close, task close, `grain suggest --accept`, stop reason on `grain workflow next`; (4) opt-in via `telemetry.enabled: true` in `docs_manifest.yaml` or `GRAIN_TELEMETRY_ENDPOINT` env var; (5) no telemetry emitted unless explicitly enabled — default is off. Transport and aggregation are Pulse's responsibility; Grain only emits.
 - **Files:** `src/grain/services/telemetry_service.py` (new), `src/grain/domain/telemetry.py` (new), instrumentation in phase/task/workflow/suggest services, tests
 - **Model:** frontier_model
 - **Dependencies:** none
 
 ### P32-T09 — `grain notes publish` — GitHub issue submission from CLI
-- **Status:** draft
+- **Status:** done
 - **Description:** Extend `grain notes` with a `publish` subcommand that submits a note directly to GitHub Issues. (1) `grain notes publish <id>` — formats the note as a GitHub issue (title from note body first line, body from full note + metadata); (2) applies appropriate label from note type (`bug` → `bug`, `friction`/`feature` → `enhancement`); (3) GitHub repo configurable in `docs_manifest.yaml` under `github.repo`; (4) token via `GRAIN_GITHUB_TOKEN` env var — never stored in workspace files; (5) prints the created issue URL on success; (6) `grain issue create --title "..." --type bug|feature|friction` as a standalone path that skips the notes log and goes straight to GitHub.
 - **Files:** `src/grain/services/github_service.py` (new), `src/grain/cli/notes.py` (extend), `src/grain/cli/report.py` (new), `src/grain/cli/issue.py` (new), tests
 - **Model:** frontier_model
@@ -269,14 +269,13 @@ Key deliverables: `grain workflow guard`, `grain hooks install/list/remove`, `gr
 - **Note:** implements BOTH the canonical URL-based `grain report` (no token, browser-confirmed, upstream) and the API-based `grain notes publish` (token, headless, files into the user's own repo — the path a familiar/agent can drive without a browser).
 
 ### P32-T10 — Docs hygiene — phase_status_consistency audit check + current_focus rewrite
-- **Status:** ready
+- **Status:** done
 - **Description:** Founder-requested hygiene. (1) Rewrite `docs/working/current_focus.md` from 377 lines of self-contradicting per-phase prose to a single Current Phase block + Closed-Phase Ledger; (2) add a `phase_status_consistency` check to `grain docs audit` (error severity) that fires when a phase is described as both active and closed, or when the Current Phase appears in the closed ledger; (3) document the check in `docs_audit_spec.md`.
 - **Files:** `src/grain/services/docs_audit_service.py` (extend), `docs/working/current_focus.md` (rewrite), `docs/working/docs_audit_spec.md` (extend), tests
 - **Model:** frontier_model
 - **Dependencies:** none
 
 ---
-
 ## Backlog Maintenance Rules
 
 1. Backlog items must remain concrete and implementable
