@@ -65,9 +65,11 @@ def test_move_phase_packets_moves_dirs(tmp_path):
 
 
 def test_move_phase_packets_updates_metadata(tmp_path):
-    # archive_phase_docs has already written metadata.json at close.
+    # archive_phase_docs has already written the canonical backlog-derived
+    # tasks_done; move_phase_packets must record the archive location + packet
+    # count WITHOUT clobbering tasks_done.
     _write(tmp_path / "docs/archive/phases/phase-15/metadata.json",
-           json.dumps({"phase": 15, "closed_at": "2026-06-24", "tasks_done": 0}))
+           json.dumps({"phase": 15, "closed_at": "2026-06-24", "tasks_done": 2}))
     _seed_packets(tmp_path, "15")
 
     result = move_phase_packets(tmp_path, "15")
@@ -76,8 +78,10 @@ def test_move_phase_packets_updates_metadata(tmp_path):
     meta = json.loads(
         (tmp_path / "docs/archive/phases/phase-15/metadata.json").read_text()
     )
+    # Canonical completed-task count is preserved, not overwritten.
     assert meta["tasks_done"] == 2
     assert meta["tasks_archive"] == "tasks/archive/phase-15"
+    assert meta["packets_archived_count"] == 2
 
 
 def test_move_phase_packets_keep_tasks_skips(tmp_path):
@@ -123,6 +127,50 @@ def test_move_phase_packets_dry_run_does_not_move(tmp_path):
     assert len(result.moved) == 2
     assert (tmp_path / "tasks" / "P15-T01-TASK-0001").exists()
     assert not (tmp_path / "tasks" / "archive" / "phase-15").exists()
+
+
+def test_move_phase_packets_preserves_backlog_tasks_done(tmp_path):
+    # Regression (HIGH): backlog has 3 done tasks (archive_phase_docs wrote
+    # tasks_done=3) but only 1 packet dir on disk. move_phase_packets must NOT
+    # overwrite tasks_done with the packet count — metrics depends on it.
+    _write(tmp_path / "docs/archive/phases/phase-15/metadata.json",
+           json.dumps({"phase": 15, "closed_at": "2026-06-24", "tasks_done": 3}))
+    d = tmp_path / "tasks" / "P15-T01-TASK-0001"
+    _write(d / "task.md", "# Task: Only packet\n")
+
+    result = move_phase_packets(tmp_path, "15")
+    assert result.ok
+    assert result.packets_archived == 1
+
+    meta = json.loads(
+        (tmp_path / "docs/archive/phases/phase-15/metadata.json").read_text()
+    )
+    # Before the fix this was clobbered to 1; the canonical count must survive.
+    assert meta["tasks_done"] == 3
+    assert meta["packets_archived_count"] == 1
+    assert meta["tasks_archive"] == "tasks/archive/phase-15"
+
+
+def test_move_phase_packets_collision_reports_only_moved(tmp_path):
+    # Regression (LOW): on a mid-loop collision the moved list must contain only
+    # packets actually moved, not the unprocessed tail still sitting in tasks/.
+    _seed_packets(tmp_path, "15")  # T01, T02
+    third = tmp_path / "tasks" / "P15-T03-TASK-0003"
+    _write(third / "task.md", "# Task: Third\n")
+    # Pre-create a colliding archive entry for T02 (the second in sorted order).
+    _write(
+        tmp_path / "tasks" / "archive" / "phase-15" / "P15-T02-TASK-0002" / "task.md",
+        "# Task: Pre-existing\n",
+    )
+
+    result = move_phase_packets(tmp_path, "15")
+    assert not result.ok
+    assert result.errors
+    # T01 was moved before the T02 collision; T03 was never processed.
+    assert result.moved == ["tasks/P15-T01-TASK-0001"]
+    # T01 really moved out of tasks/; T03 untouched in tasks/.
+    assert not (tmp_path / "tasks" / "P15-T01-TASK-0001").exists()
+    assert (tmp_path / "tasks" / "P15-T03-TASK-0003").exists()
 
 
 # ── phase close integration ─────────────────────────────────────────────────────
@@ -187,3 +235,66 @@ def test_phase_close_json_includes_packets(tmp_path):
     assert payload["ok"] is True
     assert len(payload["packets_archived"]) == 2
     assert payload["packets_archive_path"] == "tasks/archive/phase-15"
+
+
+def test_phase_close_metadata_tasks_done_matches_backlog(tmp_path):
+    # Regression (HIGH): 3 done tasks in backlog but only 1 packet dir. After
+    # phase close, metadata tasks_done must be 3 (backlog-derived), not 1.
+    (tmp_path / "docs" / "working").mkdir(parents=True)
+    (tmp_path / "docs" / "working" / "current_focus.md").write_text(
+        "Phase 15 — Test Phase\n", encoding="utf-8"
+    )
+    (tmp_path / "docs" / "working" / "current_task.md").write_text(
+        "Task ID: none\nTask Path: none\nStatus: unset\n", encoding="utf-8"
+    )
+    (tmp_path / "docs" / "working" / "backlog.md").write_text(
+        "## 1. Phase 15 — Test Phase\n\n"
+        "### P15-T01 — Task one\n- **Status:** done\n\n"
+        "### P15-T02 — Task two\n- **Status:** done\n\n"
+        "### P15-T03 — Task three\n- **Status:** done\n\n",
+        encoding="utf-8",
+    )
+    # Only one packet dir on disk (the other two are doc-only / deleted packets).
+    d = tmp_path / "tasks" / "P15-T01-TASK-0001"
+    _write(d / "task.md", "# Task: Only packet\n")
+
+    result = _run(tmp_path, "phase", "close")
+    assert result.exit_code == 0, result.output
+
+    meta = json.loads(
+        (tmp_path / "docs/archive/phases/phase-15/metadata.json").read_text()
+    )
+    assert meta["tasks_done"] == 3
+    assert meta["packets_archived_count"] == 1
+
+
+def test_phase_close_surfaces_packet_move_failure(tmp_path):
+    # Regression (MEDIUM): an archive collision during the packet move must be
+    # surfaced as a failed close (exit 1) with the error propagated, not a
+    # silent 'phase close: ok' that hides a half-moved workspace.
+    _seed_repo(tmp_path, "15")
+    _seed_packets(tmp_path, "15")
+    # Pre-create a colliding archive entry for one of the packets.
+    _write(
+        tmp_path / "tasks" / "archive" / "phase-15" / "P15-T01-TASK-0001" / "task.md",
+        "# Task: Pre-existing\n",
+    )
+
+    result = _run(tmp_path, "phase", "close")
+    assert result.exit_code == 1, result.output
+    assert "already exists" in result.output
+
+
+def test_phase_close_packet_move_failure_json(tmp_path):
+    # Regression (MEDIUM): JSON form propagates the error and reports ok=False.
+    _seed_repo(tmp_path, "16")
+    _seed_packets(tmp_path, "16")
+    _write(
+        tmp_path / "tasks" / "archive" / "phase-16" / "P16-T01-TASK-0001" / "task.md",
+        "# Task: Pre-existing\n",
+    )
+    jresult = _run(tmp_path, "--format", "json", "phase", "close")
+    assert jresult.exit_code == 1, jresult.output
+    payload = json.loads(jresult.output)
+    assert payload["ok"] is False
+    assert any("already exists" in e for e in payload["errors"])

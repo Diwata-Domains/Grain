@@ -74,6 +74,7 @@ class PhasePacketsResult:
     archive_path: str = ""
     moved: list[str] = field(default_factory=list)
     tasks_done: int = 0
+    packets_archived: int = 0
     errors: list[str] = field(default_factory=list)
     dry_run: bool = False
     skipped: bool = False
@@ -176,12 +177,16 @@ def move_phase_packets(
 ) -> PhasePacketsResult:
     """Move active ``tasks/P{N}-*`` packets to ``tasks/archive/phase-{N}/``.
 
-    Records ``tasks_done`` (count of moved/archived packets) and
-    ``tasks_archive`` (repo-relative path) on the phase metadata.json that
-    ``archive_phase_docs`` writes. Moves (never copies) so the active
-    ``tasks/`` directory stays clean, and is idempotent: re-running after a
-    successful move is a no-op. ``keep_tasks=True`` leaves packets in place.
-    Degrades gracefully when no packets match (pre-v0.4.0 or empty phase).
+    Records the archive location (``tasks_archive``) and a count of archived
+    packet directories (``packets_archived_count``) on the phase metadata.json
+    that ``archive_phase_docs`` writes — it never touches the canonical
+    backlog-derived ``tasks_done`` that ``archive_phase_docs`` already set
+    (the two counts are independent: a done task may have no packet dir, and
+    stale/duplicate packet dirs may exist, so the packet count is a poor proxy
+    for completed tasks). Moves (never copies) so the active ``tasks/``
+    directory stays clean, and is idempotent: re-running after a successful
+    move is a no-op. ``keep_tasks=True`` leaves packets in place. Degrades
+    gracefully when no packets match (pre-v0.4.0 or empty phase).
     """
     phase_num = str(phase)
     tasks_dir = root / "tasks"
@@ -195,57 +200,64 @@ def move_phase_packets(
             archive_path=rel_archive,
             moved=[],
             tasks_done=0,
+            packets_archived=0,
             dry_run=dry_run,
             skipped=True,
         )
 
     packets = _find_phase_packets(tasks_dir, phase_num)
 
-    # Already-archived packets count toward tasks_done for idempotent re-runs.
+    # Already-archived packets count toward the archived-packet tally for
+    # idempotent re-runs.
     already_archived = _find_phase_packets(archive_dir, phase_num) if archive_dir.exists() else []
-    tasks_done = len(packets) + len(already_archived)
-
-    moved: list[str] = []
-    for packet_dir in sorted(packets):
-        moved.append(str(packet_dir.relative_to(root)))
+    packets_count = len(packets) + len(already_archived)
 
     if dry_run:
+        moved = [str(p.relative_to(root)) for p in sorted(packets)]
         return PhasePacketsResult(
             ok=True,
             phase=phase_num,
             archive_path=rel_archive,
             moved=moved,
-            tasks_done=tasks_done,
+            tasks_done=packets_count,
+            packets_archived=packets_count,
             dry_run=True,
         )
 
+    # Build the moved list incrementally so a mid-loop collision reports only
+    # the packets actually moved (the unprocessed tail still sits in tasks/).
+    moved: list[str] = []
     if packets:
         archive_dir.mkdir(parents=True, exist_ok=True)
         for packet_dir in sorted(packets):
             dest = archive_dir / packet_dir.name
+            rel_packet = str(packet_dir.relative_to(root))
             if dest.exists():
                 # Never lose a packet: refuse to clobber an existing archive entry.
                 return PhasePacketsResult(
                     ok=False,
                     phase=phase_num,
                     archive_path=rel_archive,
-                    moved=[m for m in moved if m != str(packet_dir.relative_to(root))],
-                    tasks_done=tasks_done,
+                    moved=moved,
+                    tasks_done=packets_count,
+                    packets_archived=len(moved) + len(already_archived),
                     errors=[
                         f"archive destination already exists: {dest.relative_to(root)} "
                         f"— refusing to overwrite {packet_dir.relative_to(root)}"
                     ],
                 )
             shutil.move(str(packet_dir), str(dest))
+            moved.append(rel_packet)
 
-    _update_phase_metadata_tasks(root, phase_num, tasks_done, rel_archive)
+    _update_phase_metadata_tasks(root, phase_num, packets_count, rel_archive)
 
     return PhasePacketsResult(
         ok=True,
         phase=phase_num,
         archive_path=rel_archive,
         moved=moved,
-        tasks_done=tasks_done,
+        tasks_done=packets_count,
+        packets_archived=packets_count,
     )
 
 
@@ -260,14 +272,20 @@ def _find_phase_packets(parent: Path, phase_num: str) -> list[Path]:
 def _update_phase_metadata_tasks(
     root: Path,
     phase_num: str,
-    tasks_done: int,
+    packets_archived: int,
     tasks_archive: str,
 ) -> None:
-    """Record tasks_done + tasks_archive on the phase metadata.json (best effort)."""
+    """Record tasks_archive + packets_archived_count on the phase metadata.json.
+
+    Best effort. Crucially this never overwrites the canonical, backlog-derived
+    ``tasks_done`` that ``archive_phase_docs`` wrote — that value drives the
+    metrics service's closure_rate and total_tasks_done. The packet-directory
+    tally is recorded under a distinct ``packets_archived_count`` field.
+    """
     meta_path = root / _PHASES_ROOT / f"phase-{phase_num}" / "metadata.json"
     meta = _read_metadata(meta_path.parent)
-    meta["tasks_done"] = tasks_done
     meta["tasks_archive"] = tasks_archive
+    meta["packets_archived_count"] = packets_archived
     meta_path.parent.mkdir(parents=True, exist_ok=True)
     meta_path.write_text(json.dumps(meta, indent=2), encoding="utf-8")
 

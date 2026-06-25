@@ -181,22 +181,29 @@ def close_phase(
     archive_path = archive_result.archive_path if archive_result.ok else ""
 
     # Archive task packets after the doc snapshot so metadata.json is updated
-    # in place with tasks_done + tasks_archive.
+    # in place with tasks_archive + packets_archived_count.
     packets_result = move_phase_packets(root, current_phase, keep_tasks=keep_tasks)
 
     # Side-band telemetry (opt-in, never raises, never alters control flow).
     from grain.services.telemetry_service import emit, make_phase_close_event
     emit(root, make_phase_close_event(current_phase, done_count))
 
+    # Surface (never swallow) a packet-move failure: on an archive collision the
+    # move can be partially applied (earlier packets archived, later ones left in
+    # tasks/, metadata's tasks_archive unwritten). The marker + doc snapshot are
+    # already on disk, so report the close as failed and propagate the errors so
+    # the operator knows the packet archive did not complete cleanly.
+    packets_failed = not keep_tasks and not packets_result.ok
     return PhaseCloseResult(
-        ok=True,
+        ok=not packets_failed,
         closed_phase=current_phase,
         tasks_done=done_count,
         dry_run=False,
         marker_written=_DEFAULT_PHASE_DOC,
         archive_path=archive_path,
-        packets_archived=packets_result.moved if packets_result.ok else [],
+        packets_archived=packets_result.moved,
         packets_archive_path=(
-            packets_result.archive_path if packets_result.ok and not keep_tasks else ""
+            packets_result.archive_path if not keep_tasks else ""
         ),
+        errors=list(packets_result.errors),
     )
