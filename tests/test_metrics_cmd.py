@@ -135,3 +135,25 @@ def test_metrics_export_json_flag(tmp_path):
     assert result.exit_code == 0, result.output
     data = json.loads(result.output)
     assert data["phase_count"] == 2
+
+
+# ── Docstring examples are valid invocations ─────────────────────────────────────
+
+def test_metrics_help_examples_use_global_format_flag(tmp_path):
+    # The help examples must put --format BEFORE the subcommand (it is a global
+    # option on `main`); the post-subcommand form click rejects must not appear.
+    runner = CliRunner()
+    for help_args in (["metrics", "--help"], ["metrics", "export", "--help"]):
+        out = runner.invoke(main, help_args).output
+        assert "grain --format json" in out
+        assert "metrics --format json" not in out
+        assert "metrics export --format json" not in out
+
+
+def test_metrics_post_subcommand_format_flag_is_rejected(tmp_path):
+    # Documents why the example form was fixed: --format after the subcommand
+    # is not a valid option and click rejects it.
+    runner = CliRunner()
+    result = runner.invoke(main, ["--repo", str(tmp_path), "metrics", "--format", "json"])
+    assert result.exit_code != 0
+    assert "No such option" in result.output

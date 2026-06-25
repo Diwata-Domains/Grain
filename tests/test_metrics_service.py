@@ -203,6 +203,71 @@ def test_use_cache_false_bypasses_fresh_cache(tmp_path):
     assert result.phase_count == 2
 
 
+# ── Corrupt / atomic cache ───────────────────────────────────────────────────────
+
+def test_corrupt_cache_is_recomputed_not_served_as_empty(tmp_path):
+    # One real archived phase on disk.
+    _phase_meta(tmp_path, 5, {"phase": 5, "closed_at": "2026-01-10", "tasks_done": 9, "grain_version": "0.4.0"})
+    cache = tmp_path / ".grain/metrics_cache.json"
+    # Truncated / invalid JSON with a FRESH mtime (within TTL).
+    _write(cache, '{"phases": [{"phase": 5, "closed')
+
+    result = compute_metrics(tmp_path, use_cache=True)
+    # Must recompute from archives, NOT serve the corrupt cache as an empty result.
+    assert result.cached is False
+    assert result.phase_count == 1
+    assert result.phases[0].phase == 5
+
+
+def test_empty_object_cache_is_recomputed(tmp_path):
+    # A bare "{}" (e.g. an interrupted write) is a dict but carries no phases;
+    # it must not be served as a valid empty metrics result.
+    _phase_meta(tmp_path, 5, {"phase": 5, "closed_at": "2026-01-10", "tasks_done": 9, "grain_version": "0.4.0"})
+    _write(tmp_path / ".grain/metrics_cache.json", "{}")
+
+    result = compute_metrics(tmp_path, use_cache=True)
+    assert result.cached is False
+    assert result.phase_count == 1
+
+
+def test_list_shaped_cache_is_recomputed(tmp_path):
+    _phase_meta(tmp_path, 5, {"phase": 5, "closed_at": "2026-01-10", "tasks_done": 9, "grain_version": "0.4.0"})
+    _write(tmp_path / ".grain/metrics_cache.json", "[1, 2, 3]")
+
+    result = compute_metrics(tmp_path, use_cache=True)
+    assert result.cached is False
+    assert result.phase_count == 1
+
+
+def test_cache_write_is_atomic_via_temp_then_replace(tmp_path, monkeypatch):
+    # The cache target must be populated by an atomic os.replace of a temp file,
+    # never by writing the final path in place (which can truncate on crash).
+    import grain.services.metrics_service as svc
+
+    cache = tmp_path / ".grain/metrics_cache.json"
+    replaced: list[tuple[str, str]] = []
+    real_replace = os.replace
+
+    def _spy_replace(src, dst):
+        replaced.append((str(src), str(dst)))
+        return real_replace(src, dst)
+
+    monkeypatch.setattr(svc.os, "replace", _spy_replace)
+
+    _phase_meta(tmp_path, 5, {"phase": 5, "closed_at": "2026-01-10", "tasks_done": 9, "grain_version": "0.4.0"})
+    compute_metrics(tmp_path, use_cache=True)
+
+    # Exactly one atomic replace, from a temp sibling onto the cache path.
+    assert any(dst == str(cache) and src.endswith(".tmp") for src, dst in replaced)
+    assert cache.exists()
+    # The temp file used for the atomic replace must not linger.
+    assert not (tmp_path / ".grain/metrics_cache.json.tmp").exists()
+    # And the written cache must be valid, fully-formed JSON (not truncated).
+    data = json.loads(cache.read_text(encoding="utf-8"))
+    assert data["phase_count"] == 1
+    assert "phases" in data
+
+
 # ── Export ──────────────────────────────────────────────────────────────────────
 
 def test_export_returns_full_history_dict(tmp_path):

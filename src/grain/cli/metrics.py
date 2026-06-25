@@ -53,7 +53,7 @@ def metrics_group(ctx, phase, no_cache):
       grain metrics --phase 31
       grain metrics --no-cache
       grain metrics export
-      grain metrics --format json
+      grain --format json metrics
     """
     if ctx.invoked_subcommand is not None:
         return
@@ -142,7 +142,7 @@ def metrics_export(ctx):
     \b
     Examples:
       grain metrics export
-      grain metrics export --format json
+      grain --format json metrics export
     """
     repo = ctx.obj.get("repo") if ctx.obj else None
     root = resolve_repo_root(repo)

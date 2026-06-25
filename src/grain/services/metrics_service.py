@@ -14,6 +14,7 @@ never mutates archives and never raises for expected absences.
 from __future__ import annotations
 
 import json
+import os
 import re
 from dataclasses import dataclass, field
 from datetime import date, datetime, timezone
@@ -292,8 +293,13 @@ def _read_cache(root: Path) -> MetricsResult | None:
         age = (datetime.now(tz=timezone.utc) - mtime).total_seconds()
         if age > _CACHE_TTL_SECONDS:
             return None
-        data = _read_json(cache)
-        if not isinstance(data, dict):
+        # Parse directly (not via _read_json) so a corrupt/truncated cache raises
+        # JSONDecodeError → falls through to recompute instead of being served as
+        # an empty-but-valid {} result for the full TTL.
+        data = json.loads(cache.read_text(encoding="utf-8"))
+        # A valid cache is always a dict carrying a "phases" key; anything else
+        # (list payload, partially-written object) is treated as corrupt.
+        if not isinstance(data, dict) or "phases" not in data:
             return None
         return _dict_to_result(data, cached=True)
     except Exception:
@@ -301,12 +307,19 @@ def _read_cache(root: Path) -> MetricsResult | None:
 
 
 def _write_cache(root: Path, result: MetricsResult) -> None:
-    """Persist the computed result to .grain/metrics_cache.json (best effort)."""
+    """Persist the computed result to .grain/metrics_cache.json (best effort).
+
+    Writes to a sibling temp file then atomically ``os.replace``s it onto the
+    cache path so a crash/kill/disk-full mid-write can never leave a truncated
+    cache for the read path to misinterpret.
+    """
     try:
         grain_dir = root / _GRAIN_DIR
         grain_dir.mkdir(exist_ok=True)
         cache = grain_dir / _CACHE_FILE
-        cache.write_text(json.dumps(_result_to_dict(result), indent=2), encoding="utf-8")
+        tmp = cache.with_suffix(".json.tmp")
+        tmp.write_text(json.dumps(_result_to_dict(result), indent=2), encoding="utf-8")
+        os.replace(tmp, cache)
     except Exception:
         # Caching is best-effort; never fail the read path on a write error.
         pass
