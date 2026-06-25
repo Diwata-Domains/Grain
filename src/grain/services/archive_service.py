@@ -12,6 +12,8 @@ from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
+from grain.domain.packets import TASK_ID_PATTERN
+
 # ── Archive directory roots ───────────────────────────────────────────────────
 
 _ARCHIVE_ROOT = "docs/archive"
@@ -27,6 +29,12 @@ _PHASE_SNAPSHOT_DOCS = [
     "docs/working/open_questions.md",
     "docs/working/tooling_notes.md",
 ]
+
+# Where archived task packets live, relative to the repo root.
+_TASKS_ARCHIVE_ROOT = "tasks/archive"
+
+# task.md packet title line, e.g. "# Task: Add foo".
+_TASK_TITLE_RE = re.compile(r"^# Task:\s*(.+)$", re.MULTILINE)
 
 
 # ── Result types ──────────────────────────────────────────────────────────────
@@ -60,6 +68,25 @@ class MilestoneResult:
 
 
 @dataclass
+class PhasePacketsResult:
+    ok: bool
+    phase: str = ""
+    archive_path: str = ""
+    moved: list[str] = field(default_factory=list)
+    tasks_done: int = 0
+    errors: list[str] = field(default_factory=list)
+    dry_run: bool = False
+    skipped: bool = False
+
+
+@dataclass
+class ArchivedPacket:
+    task_id: str
+    title: str
+    path: str
+
+
+@dataclass
 class ArchiveEntry:
     type: str       # "phase" | "milestone" | "snapshot" | "proposals"
     name: str
@@ -75,6 +102,8 @@ class ArchiveShowResult:
     archive_type: str = ""
     files: list[str] = field(default_factory=list)
     metadata: dict = field(default_factory=dict)
+    packets: list[ArchivedPacket] = field(default_factory=list)
+    packets_note: str = ""
     errors: list[str] = field(default_factory=list)
 
 
@@ -134,6 +163,113 @@ def archive_phase_docs(
         archive_path=rel_archive,
         files_written=files_written,
     )
+
+
+# ── Phase close packet archive ─────────────────────────────────────────────────
+
+def move_phase_packets(
+    root: Path,
+    phase: str,
+    *,
+    keep_tasks: bool = False,
+    dry_run: bool = False,
+) -> PhasePacketsResult:
+    """Move active ``tasks/P{N}-*`` packets to ``tasks/archive/phase-{N}/``.
+
+    Records ``tasks_done`` (count of moved/archived packets) and
+    ``tasks_archive`` (repo-relative path) on the phase metadata.json that
+    ``archive_phase_docs`` writes. Moves (never copies) so the active
+    ``tasks/`` directory stays clean, and is idempotent: re-running after a
+    successful move is a no-op. ``keep_tasks=True`` leaves packets in place.
+    Degrades gracefully when no packets match (pre-v0.4.0 or empty phase).
+    """
+    phase_num = str(phase)
+    tasks_dir = root / "tasks"
+    archive_dir = root / _TASKS_ARCHIVE_ROOT / f"phase-{phase_num}"
+    rel_archive = str(archive_dir.relative_to(root))
+
+    if keep_tasks:
+        return PhasePacketsResult(
+            ok=True,
+            phase=phase_num,
+            archive_path=rel_archive,
+            moved=[],
+            tasks_done=0,
+            dry_run=dry_run,
+            skipped=True,
+        )
+
+    packets = _find_phase_packets(tasks_dir, phase_num)
+
+    # Already-archived packets count toward tasks_done for idempotent re-runs.
+    already_archived = _find_phase_packets(archive_dir, phase_num) if archive_dir.exists() else []
+    tasks_done = len(packets) + len(already_archived)
+
+    moved: list[str] = []
+    for packet_dir in sorted(packets):
+        moved.append(str(packet_dir.relative_to(root)))
+
+    if dry_run:
+        return PhasePacketsResult(
+            ok=True,
+            phase=phase_num,
+            archive_path=rel_archive,
+            moved=moved,
+            tasks_done=tasks_done,
+            dry_run=True,
+        )
+
+    if packets:
+        archive_dir.mkdir(parents=True, exist_ok=True)
+        for packet_dir in sorted(packets):
+            dest = archive_dir / packet_dir.name
+            if dest.exists():
+                # Never lose a packet: refuse to clobber an existing archive entry.
+                return PhasePacketsResult(
+                    ok=False,
+                    phase=phase_num,
+                    archive_path=rel_archive,
+                    moved=[m for m in moved if m != str(packet_dir.relative_to(root))],
+                    tasks_done=tasks_done,
+                    errors=[
+                        f"archive destination already exists: {dest.relative_to(root)} "
+                        f"— refusing to overwrite {packet_dir.relative_to(root)}"
+                    ],
+                )
+            shutil.move(str(packet_dir), str(dest))
+
+    _update_phase_metadata_tasks(root, phase_num, tasks_done, rel_archive)
+
+    return PhasePacketsResult(
+        ok=True,
+        phase=phase_num,
+        archive_path=rel_archive,
+        moved=moved,
+        tasks_done=tasks_done,
+    )
+
+
+def _find_phase_packets(parent: Path, phase_num: str) -> list[Path]:
+    """Return ``P{N}-T*`` packet directories that are immediate children of parent."""
+    if not parent.exists():
+        return []
+    prefix = f"P{phase_num}-T"
+    return [p for p in parent.iterdir() if p.is_dir() and p.name.startswith(prefix)]
+
+
+def _update_phase_metadata_tasks(
+    root: Path,
+    phase_num: str,
+    tasks_done: int,
+    tasks_archive: str,
+) -> None:
+    """Record tasks_done + tasks_archive on the phase metadata.json (best effort)."""
+    meta_path = root / _PHASES_ROOT / f"phase-{phase_num}" / "metadata.json"
+    meta = _read_metadata(meta_path.parent)
+    meta["tasks_done"] = tasks_done
+    meta["tasks_archive"] = tasks_archive
+    meta_path.parent.mkdir(parents=True, exist_ok=True)
+    meta_path.write_text(json.dumps(meta, indent=2), encoding="utf-8")
 
 
 # ── Snapshot ──────────────────────────────────────────────────────────────────
@@ -396,13 +532,58 @@ def show_archive(root: Path, target: str) -> ArchiveShowResult:
     files = [str(p.relative_to(archive_dir)) for p in sorted(archive_dir.rglob("*")) if p.is_file()]
     metadata = _read_metadata(archive_dir)
 
+    packets: list[ArchivedPacket] = []
+    packets_note = ""
+    if archive_type == "phase":
+        packets, packets_note = _read_archived_packets(root, metadata)
+
     return ArchiveShowResult(
         ok=True,
         name=archive_dir.name,
         archive_type=archive_type,
         files=files,
         metadata=metadata,
+        packets=packets,
+        packets_note=packets_note,
     )
+
+
+def _read_archived_packets(root: Path, metadata: dict) -> tuple[list[ArchivedPacket], str]:
+    """Enumerate archived task packets for a phase from its tasks_archive path.
+
+    Returns (packets, note). Degrades gracefully for phases closed before
+    v0.4.0 (no ``tasks_archive`` in metadata, or the directory is absent),
+    returning an empty list plus an explanatory note rather than erroring.
+    """
+    tasks_archive = metadata.get("tasks_archive")
+    if not tasks_archive:
+        return [], "no task archive (phase closed before packet archiving)"
+
+    archive_dir = root / tasks_archive
+    if not archive_dir.exists():
+        return [], f"task archive not found: {tasks_archive}"
+
+    packets: list[ArchivedPacket] = []
+    for packet_dir in sorted(archive_dir.iterdir()):
+        if not packet_dir.is_dir():
+            continue
+        m = TASK_ID_PATTERN.search(packet_dir.name)
+        task_id = f"TASK-{m.group(1)}" if m else packet_dir.name
+        title = _read_task_title(packet_dir / "task.md")
+        packets.append(ArchivedPacket(
+            task_id=task_id,
+            title=title,
+            path=str(packet_dir.relative_to(root)),
+        ))
+    return packets, ""
+
+
+def _read_task_title(task_md: Path) -> str:
+    """Return the ``# Task: <title>`` heading from a task.md ('' if absent)."""
+    if not task_md.exists():
+        return ""
+    m = _TASK_TITLE_RE.search(task_md.read_text(encoding="utf-8"))
+    return m.group(1).strip() if m else ""
 
 
 def _resolve_archive_target(root: Path, target: str) -> tuple[Path | None, str]:

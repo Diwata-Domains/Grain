@@ -164,6 +164,11 @@ def archive_show(ctx, target):
             "type": result.archive_type,
             "files": result.files,
             "metadata": result.metadata,
+            "packets": [
+                {"task_id": p.task_id, "title": p.title, "path": p.path}
+                for p in result.packets
+            ],
+            "packets_note": result.packets_note,
             "errors": result.errors,
         }, indent=2))
         return
@@ -181,6 +186,14 @@ def archive_show(ctx, target):
     click.echo(f"  files  ({len(result.files)})")
     for f in result.files:
         click.echo(f"    {f}")
+    if result.archive_type == "phase":
+        if result.packets:
+            click.echo(f"  packets  ({len(result.packets)})")
+            for p in result.packets:
+                title = f" — {p.title}" if p.title else ""
+                click.echo(f"    {p.task_id}{title}")
+        elif result.packets_note:
+            click.echo(f"  packets  {result.packets_note}")
 
 
 @archive_group.command("prune")

@@ -78,11 +78,13 @@ def phase_next(ctx):
 @phase_group.command("close")
 @click.option("--dry-run", is_flag=True, default=False, help="Validate without writing anything.")
 @click.option("--phase", "-p", "phase_override", default=None, metavar="N", help="Phase number to close (must match active phase).")
+@click.option("--keep-tasks", is_flag=True, default=False, help="Leave task packets in tasks/ instead of archiving them.")
 @click.pass_context
-def phase_close(ctx, dry_run, phase_override):
+def phase_close(ctx, dry_run, phase_override, keep_tasks):
     """Validate and seal the current phase.
 
-    Writes a grain-verified closed marker to current_focus.md.
+    Writes a grain-verified closed marker to current_focus.md and moves the
+    phase's task packets into tasks/archive/phase-N/.
     The workflow engine requires this marker before routing to the next phase.
     After running this command, update '## Current Phase' in
     docs/working/current_focus.md to begin the next phase.
@@ -91,7 +93,9 @@ def phase_close(ctx, dry_run, phase_override):
     fmt = ctx.obj.get("fmt", "text") if ctx.obj else "text"
     root = resolve_repo_root(repo)
 
-    result = close_phase(root, dry_run=dry_run, phase_override=phase_override)
+    result = close_phase(
+        root, dry_run=dry_run, phase_override=phase_override, keep_tasks=keep_tasks
+    )
 
     if fmt == "json":
         click.echo(
@@ -102,6 +106,8 @@ def phase_close(ctx, dry_run, phase_override):
                     "tasks_done": result.tasks_done,
                     "dry_run": result.dry_run,
                     "marker_written": result.marker_written,
+                    "packets_archived": result.packets_archived,
+                    "packets_archive_path": result.packets_archive_path,
                     "errors": result.errors,
                 },
                 indent=2,
@@ -123,6 +129,15 @@ def phase_close(ctx, dry_run, phase_override):
     click.echo(f"  tasks_done      {result.tasks_done}")
     if result.marker_written:
         click.echo(f"  marker_written  {result.marker_written}")
+    if keep_tasks:
+        click.echo("  packets         kept in tasks/ (--keep-tasks)")
+    else:
+        verb = "would move" if dry_run else "moved"
+        click.echo(f"  packets {verb}  {len(result.packets_archived)}")
+        if result.packets_archive_path:
+            click.echo(f"  packets_archive {result.packets_archive_path}")
+        for p in result.packets_archived:
+            click.echo(f"    - {p}")
     if dry_run:
         click.echo("  (no changes written)")
     else:

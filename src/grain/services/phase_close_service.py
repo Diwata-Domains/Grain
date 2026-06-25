@@ -32,9 +32,17 @@ class PhaseCloseResult:
     dry_run: bool = False
     marker_written: str = ""
     archive_path: str = ""
+    packets_archived: list[str] = field(default_factory=list)
+    packets_archive_path: str = ""
 
 
-def close_phase(root: Path, dry_run: bool = False, phase_override: str | None = None) -> PhaseCloseResult:
+def close_phase(
+    root: Path,
+    dry_run: bool = False,
+    phase_override: str | None = None,
+    *,
+    keep_tasks: bool = False,
+) -> PhaseCloseResult:
     """Validate and seal the current phase.
 
     Writes a ``Phase N closed:`` marker to ``current_focus.md`` that the
@@ -146,11 +154,17 @@ def close_phase(root: Path, dry_run: bool = False, phase_override: str | None = 
     done_count = len(tasks)
 
     if dry_run:
+        from grain.services.archive_service import move_phase_packets
+        packets_result = move_phase_packets(
+            root, current_phase, keep_tasks=keep_tasks, dry_run=True
+        )
         return PhaseCloseResult(
             ok=True,
             closed_phase=current_phase,
             tasks_done=done_count,
             dry_run=True,
+            packets_archived=packets_result.moved,
+            packets_archive_path=packets_result.archive_path if not keep_tasks else "",
         )
 
     today = date.today().isoformat()
@@ -162,9 +176,13 @@ def close_phase(root: Path, dry_run: bool = False, phase_override: str | None = 
     text = text.rstrip("\n") + f"\n\n{marker_line}\n"
     current_focus_path.write_text(text, encoding="utf-8")
 
-    from grain.services.archive_service import archive_phase_docs
+    from grain.services.archive_service import archive_phase_docs, move_phase_packets
     archive_result = archive_phase_docs(root, current_phase, done_count, dry_run=False)
     archive_path = archive_result.archive_path if archive_result.ok else ""
+
+    # Archive task packets after the doc snapshot so metadata.json is updated
+    # in place with tasks_done + tasks_archive.
+    packets_result = move_phase_packets(root, current_phase, keep_tasks=keep_tasks)
 
     return PhaseCloseResult(
         ok=True,
@@ -173,4 +191,8 @@ def close_phase(root: Path, dry_run: bool = False, phase_override: str | None = 
         dry_run=False,
         marker_written=_DEFAULT_PHASE_DOC,
         archive_path=archive_path,
+        packets_archived=packets_result.moved if packets_result.ok else [],
+        packets_archive_path=(
+            packets_result.archive_path if packets_result.ok and not keep_tasks else ""
+        ),
     )
