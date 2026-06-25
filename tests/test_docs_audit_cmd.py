@@ -329,6 +329,81 @@ def test_phase_status_consistency_error_when_current_phase_in_ledger(tmp_path):
     assert errors[0].doc == "docs/working/current_focus.md"
 
 
+def test_phase_status_consistency_error_when_current_phase_is_only_a_ledger_table_row(tmp_path):
+    # Regression: the Current Phase appears ONLY as an authoritative ledger
+    # table row — no "Phase" word and no "closed" word on that row. The check
+    # must still flag it (Contradiction B / A); keyword-only parsing missed it.
+    _base(tmp_path)
+    _write(tmp_path / "docs/working/current_focus.md",
+           "# Current Focus\n\n## Current Phase\nPhase 31 — DX Hardening\n\n"
+           "## Closed-Phase Ledger\n"
+           "| Phase | Title | Closed | Tasks | Milestone |\n"
+           "|-------|-------|--------|-------|-----------|\n"
+           "| 30 | v0.4.0 Planning | 2026-06-11 | 14 | v0.4.0 |\n"
+           "| 31 | DX Hardening | 2026-06-12 | 8 | v0.3.1 |\n")
+
+    result = run_audit(tmp_path, doc_filter="current_focus")
+    errors = [f for f in result.findings
+              if f.check_id == "phase_status_consistency" and f.severity == "error"]
+    assert errors, "Current Phase as a ledger table row must be flagged"
+    assert "31" in errors[0].message
+    assert result.overall == "error"
+
+
+def test_phase_status_consistency_error_when_current_phase_in_ledger_range_row(tmp_path):
+    # Range rows like "| 1–5 |" must expand to every phase in the span.
+    _base(tmp_path)
+    _write(tmp_path / "docs/working/current_focus.md",
+           "# Current Focus\n\n## Current Phase\nPhase 3 — Early Work\n\n"
+           "## Closed-Phase Ledger\n"
+           "| Phase | Title | Closed | Tasks | Milestone |\n"
+           "|-------|-------|--------|-------|-----------|\n"
+           "| 1–5   | v1 core | v1 close | 53 | v1 |\n")
+
+    result = run_audit(tmp_path, doc_filter="current_focus")
+    errors = [f for f in result.findings
+              if f.check_id == "phase_status_consistency" and f.severity == "error"]
+    assert errors, "Phase 3 inside the closed range 1-5 must be flagged"
+    assert result.overall == "error"
+
+
+def test_phase_status_consistency_pass_when_current_phase_not_in_ledger_table(tmp_path):
+    # The realistic healthy state: Current Phase 32 is active; the ledger lists
+    # only closed phases 30 and 31 as table rows. No contradiction.
+    _base(tmp_path)
+    _write(tmp_path / "docs/working/current_focus.md",
+           "# Current Focus\n\n## Current Phase\nPhase 32 — v0.4.0\n\n"
+           "## Closed-Phase Ledger\n"
+           "| Phase | Title | Closed | Tasks | Milestone |\n"
+           "|-------|-------|--------|-------|-----------|\n"
+           "| 30 | v0.4.0 Planning | 2026-06-11 | 14 | v0.4.0 |\n"
+           "| 31 | DX Hardening | 2026-06-12 | 8 | v0.3.1 |\n")
+
+    result = run_audit(tmp_path, doc_filter="current_focus")
+    findings = [f for f in result.findings if f.check_id == "phase_status_consistency"]
+    assert findings
+    assert all(f.severity == "pass" for f in findings)
+
+
+def test_phase_status_consistency_detects_titlecase_active(tmp_path):
+    # _ACTIVE_RE is case-insensitive: "Active" (title case) must register so a
+    # phase written that way is not silently exempt from Contradiction A.
+    _base(tmp_path)
+    _write(tmp_path / "docs/working/current_focus.md",
+           "# Current Focus\n\n## Current Phase\nPhase 7 — Misc\n\n"
+           "> **Status:** Phase 31 is Active\n\n"
+           "## Closed-Phase Ledger\n"
+           "| Phase | Title | Closed |\n"
+           "|-------|-------|--------|\n"
+           "| 31 | DX Hardening | 2026-06-12 |\n")
+
+    result = run_audit(tmp_path, doc_filter="current_focus")
+    errors = [f for f in result.findings
+              if f.check_id == "phase_status_consistency" and f.severity == "error"]
+    assert errors, "title-case 'Active' must be detected"
+    assert "31" in errors[0].message
+
+
 # ── current_focus_stale ───────────────────────────────────────────────────────
 
 def test_current_focus_stale_pass_when_recent(tmp_path):

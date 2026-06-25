@@ -23,8 +23,14 @@ _MANIFEST_PATH = "docs/runtime/docs_manifest.yaml"
 
 _TASK_REF_RE = re.compile(r"P\d+-T\d+")
 _DATE_RE = re.compile(r"\d{4}-\d{2}-\d{2}")
-_ACTIVE_RE = re.compile(r"Phase\s+(\d+)\b[^\n]*?\b(?:ACTIVE|active)\b")
+_ACTIVE_RE = re.compile(r"Phase\s+(\d+)\b[^\n]*?\bactive\b", re.IGNORECASE)
 _CLOSED_LINE_RE = re.compile(r"Phase\s+(\d+)\b[^\n]*?\b(?:CLOSED|closed)\b", re.IGNORECASE)
+# A Closed-Phase Ledger table row: "| 31 | Title | date | tasks | milestone |"
+# whose first cell is a phase number or a range like "1–5" / "1-5". These rows
+# carry NEITHER the word "Phase" NOR a closed-status word, so they are invisible
+# to _CLOSED_LINE_RE; the ledger section parser below recovers them explicitly.
+_LEDGER_HEADING_RE = re.compile(r"^#{1,6}\s.*\bClosed-Phase Ledger\b", re.IGNORECASE)
+_LEDGER_ROW_RE = re.compile(r"^\|\s*(\d+)\s*(?:[–\-]\s*(\d+)\s*)?\|")
 
 
 # ── Domain objects ─────────────────────────────────────────────────────────────
@@ -512,12 +518,15 @@ def _check_phase_status_consistency(text: str) -> list[AuditFinding]:
     findings: list[AuditFinding] = []
 
     # 1. Collect every phase number marked closed anywhere in the file
-    #    (ledger rows, log lines, "Phase N ... CLOSED/closed").
+    #    (prose/log lines via "Phase N ... CLOSED/closed") AND, authoritatively,
+    #    the Closed-Phase Ledger table rows — which carry no "Phase"/"closed"
+    #    keywords and so are invisible to _CLOSED_LINE_RE.
     closed_phases: set[str] = set()
     for line in text.splitlines():
         m = _CLOSED_LINE_RE.search(line)
         if m:
             closed_phases.add(m.group(1))
+    closed_phases |= _ledger_closed_phases(text)
 
     # 2. Collect every phase number explicitly marked active.
     active_phases: set[str] = set()
@@ -569,6 +578,38 @@ def _check_phase_status_consistency(text: str) -> list[AuditFinding]:
         message="no phase is marked both active and closed",
     ))
     return findings
+
+
+def _ledger_closed_phases(text: str) -> set[str]:
+    """Return phase numbers listed as rows of the Closed-Phase Ledger table.
+
+    The ledger is the authoritative closed-phase list. Its rows look like
+    ``| 31 | Title | date | tasks | milestone |`` (or a range ``| 1–5 | ... |``)
+    and contain neither the word "Phase" nor a closed-status word, so they are
+    parsed structurally here rather than by keyword. Range rows expand to every
+    phase number in the inclusive span. Parsing is scoped to the ledger section
+    (from its heading until the next heading) so unrelated tables are ignored.
+    """
+    closed: set[str] = set()
+    in_ledger = False
+    for line in text.splitlines():
+        if _LEDGER_HEADING_RE.match(line):
+            in_ledger = True
+            continue
+        if in_ledger and line.startswith("#"):
+            break  # left the ledger section
+        if not in_ledger:
+            continue
+        m = _LEDGER_ROW_RE.match(line.strip())
+        if not m:
+            continue
+        start = int(m.group(1))
+        end = int(m.group(2)) if m.group(2) else start
+        if end < start:
+            start, end = end, start
+        for n in range(start, end + 1):
+            closed.add(str(n))
+    return closed
 
 
 # ── open_questions.md checks ──────────────────────────────────────────────────
