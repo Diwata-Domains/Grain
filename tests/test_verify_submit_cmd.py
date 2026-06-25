@@ -230,6 +230,52 @@ def test_verify_ingest_persists_result_and_updates_request_and_results(tmp_path)
     assert "Focused verification failed on a packet-level assertion." in results_text
 
 
+def test_verify_ingest_accepts_code_review_issue_type(tmp_path):
+    _base_repo(tmp_path)
+    runner = CliRunner()
+    submit = runner.invoke(main, ["--repo", str(tmp_path), "verify", "submit", "--id", "TASK-0179"])
+    assert submit.exit_code == 0, submit.output
+
+    payload_path = tmp_path / "payload.json"
+    payload_path.write_text(
+        json.dumps(
+            {
+                "verification_id": "VERIFY-0179-001",
+                "task_id": "TASK-0179",
+                "issue_type": "code_review",
+                "severity": "error",
+                "outcome": "fail",
+                "summary": "Adversarial code review flagged a null deref.",
+                "artifact_refs": ["artifacts/findings.json"],
+                "followup_candidates": [],
+                "verified_at": "2026-06-25T16:00:00Z",
+                "review": {
+                    "verdict": "fail",
+                    "findings": [
+                        {"file": "app.py", "line": 3, "severity": "error", "message": "null deref"}
+                    ],
+                    "reviewers": ["proposer", "critic", "judge"],
+                    "confidence": 0.9,
+                },
+            },
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+
+    result = runner.invoke(
+        main,
+        ["--repo", str(tmp_path), "verify", "ingest", "--verification-id", "VERIFY-0179-001", "--payload", str(payload_path)],
+    )
+
+    assert result.exit_code == 0, result.output
+    result_payload = json.loads(
+        (tmp_path / "tasks" / "P28-T01-TASK-0179" / "verification_result.json").read_text(encoding="utf-8")
+    )
+    assert result_payload["issue_type"] == "code_review"
+    assert result_payload["outcome"] == "fail"
+
+
 def test_verify_ingest_rejects_invalid_payload(tmp_path):
     _base_repo(tmp_path)
     runner = CliRunner()

@@ -327,8 +327,9 @@ def _validate_ingest_payload(payload: object, verification_id: str) -> list[str]
         "screenshot_evidence",
         "trace_capture",
         "human_annotation",
+        "code_review",
     }:
-        errors.append("payload issue_type must be one of: test_failure, bug_finding, screenshot_evidence, trace_capture, human_annotation")
+        errors.append("payload issue_type must be one of: test_failure, bug_finding, screenshot_evidence, trace_capture, human_annotation, code_review")
 
     if payload.get("severity") not in {"info", "warning", "error", "critical"}:
         errors.append("payload severity must be one of: info, warning, error, critical")
