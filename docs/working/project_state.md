@@ -1,7 +1,9 @@
 # Grain — Project State
 
-**Produced:** 2026-06-02
-**Phase:** 30 (planning not started)
+> STALE SNAPSHOT (produced 2026-06-02, Phase-30 era). `docs/working/current_focus.md`
+> is the source of truth for the active phase/version. Kept for historical context only.
+
+**Phase:** 33 (v0.5.0 planning — authoritative value lives in current_focus.md)
 **Source:** Diwata-Infra Phase 17 audit (P17-T01)
 
 ---
@@ -21,11 +23,10 @@
 
 ## Current State
 
-**Version:** v0.3.0 — complete  
-**Active phase:** Phase 30 — v0.4.0 planning (not started, no task packets yet)  
-**Branch state:** `main` is release state; `dev` is the execution branch; `hotfix` for v0.3.x patches
-
-**What Phase 30 is:** The v0.4.0 milestone contract phase. Same structure as Phase 21 (v0.3.0 planning): lock the theme and core deliverables, define scope boundaries, seed execution phases. No implementation in Phase 30.
+> **`docs/working/current_focus.md` is the single source of truth for the active phase
+> and version.** This file does not declare its own active phase (it drifted before —
+> the `cross_doc_phase_agreement` audit check now guards against that). As of this writing
+> v0.4.0 has shipped and v0.5.0 planning (Phase 33) is the active focus; see current_focus.
 
 ---
 

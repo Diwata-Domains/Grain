@@ -69,6 +69,27 @@
 | `registered_doc_empty` | A registered doc has no content beyond the template headings | warning | File contains only heading lines (lines starting with `#`) |
 | `required_section_missing` | A doc is missing a required section heading (if declared in manifest) | warning | Required heading absent |
 
+### Cross-document / structural drift checks (`cross_doc` group)
+
+These catch *doc drift* — the recurring failure mode where the contradiction
+only exists **between** documents (or between a document and on-disk state), so
+the single-doc checks above cannot see it. They run by default and can be
+isolated with `grain docs audit --doc cross_doc`.
+
+| Check ID | Description | Severity | Fail condition |
+|----------|-------------|----------|----------------|
+| `cross_doc_phase_agreement` | `current_focus.md`, `current_task.md`, and `project_state.md` disagree on which phase is active | error | Two or more of these docs declare *different* active/current phase numbers. Degrades to **pass** when fewer than two docs declare a phase. |
+| `archive_claim_missing` | A doc claims a phase was archived to a `tasks/archive/phase-N/` directory that does not exist | warning | A literal `tasks/archive/phase-N` claim in `backlog.md` or the `current_focus.md` ledger has no matching directory under the repo root. Passes (n/a) when no concrete claim exists. |
+| `task_id_counter_drift` | A registered/runtime doc declares a "highest/next task ID" as `TASK-####` that no longer matches the real maximum on disk | warning | The declared `TASK-####` differs from the actual max `TASK-####` across `tasks/` and `tasks/archive/`. Passes (n/a) when no such declaration exists. |
+
+The phase declarations are parsed from each doc with the same
+`_extract_current_phase`-style logic used by the single-doc checks, plus the
+bullet forms (`**Active phase:** Phase N`, `**Phase:** N`) that
+`project_state.md` uses. `task_id_counter_drift` only fires on a counter
+declaration (a `highest`/`next`/`last`/`latest`/`max` "task ID" keyword
+immediately followed by a `TASK-####`); an ordinary `TASK-####` reference in
+prose is ignored.
+
 ---
 
 ## 3. Command Interface
@@ -77,6 +98,7 @@
 grain docs audit
 grain docs audit --doc current_task       Run only current_task.md checks
 grain docs audit --doc backlog            Run only backlog.md checks
+grain docs audit --doc cross_doc          Run only cross-document drift checks
 grain docs audit --severity high          Show only error-level findings
 grain docs audit --severity medium        Show warnings and errors
 grain docs audit --format json
@@ -109,7 +131,13 @@ Structural
   ✓  registered_doc_missing         all 14 registered docs present
   ⚠  registered_doc_empty           docs/canonical/decisions.md has no content beyond headings
 
-Checks: 8 pass, 4 warnings, 1 error
+cross_doc
+  ✗  cross_doc_phase_agreement      working docs disagree on the active phase: current_focus.md=Phase 33, project_state.md=Phase 30
+     → reconcile the active phase across current_focus.md, current_task.md, and project_state.md so they name one phase
+  ⚠  archive_claim_missing          archive claim points to a missing directory: tasks/archive/phase-7/
+  ⚠  task_id_counter_drift          CLAUDE.md declares highest/next task ID TASK-0031 but the real maximum on disk is TASK-0076
+
+Checks: 8 pass, 6 warnings, 2 errors
 Run 'grain docs audit --format json' for machine-readable output.
 ```
 
