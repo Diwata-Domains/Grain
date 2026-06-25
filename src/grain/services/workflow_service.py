@@ -40,7 +40,7 @@ STOP_WRONG_BRANCH = "wrong_branch"                         # current branch does
 
 _CURRENT_TASK_REQUIRED = ("Task ID:", "Task Path:", "Status:")
 _TASK_HEADING = re.compile(r"^###\s+(P(\d+)-T(\d+))\s+—\s+(.+)$")
-_PHASE_HEADING = re.compile(r"^##\s+\d+\.\s+Phase\s+(\d+)\s+—")
+_PHASE_HEADING = re.compile(r"^##\s+(?:\d+\.\s+)?Phase\s+(\d+)\s+—")
 _SECTION_HEADING = re.compile(r"^##\s+")
 _BACKLOG_STATUS = re.compile(r"^- \*\*Status:\*\*\s*(\S+)")
 _CURRENT_PHASE_LINE = re.compile(r"^Phase\s+(\d+)\s+—")

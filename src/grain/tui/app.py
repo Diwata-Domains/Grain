@@ -17,7 +17,7 @@ from grain.services.workflow_service import evaluate_workflow_state
 from grain.services.workflow_run_service import run_workflow_step
 
 _TASK_HEADING = re.compile(r"^###\s+(P(\d+)-T(\d+))\s+—\s+(.+)$")
-_PHASE_HEADING = re.compile(r"^##\s+\d+\.\s+Phase\s+(\d+)\s+—")
+_PHASE_HEADING = re.compile(r"^##\s+(?:\d+\.\s+)?Phase\s+(\d+)\s+—")
 _BACKLOG_STATUS = re.compile(r"^- \*\*Status:\*\*\s*(\S+)")
 
 

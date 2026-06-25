@@ -17,7 +17,7 @@ from grain.services.workflow_service import _read_current_phase
 
 _BACKLOG_DOC = "docs/working/backlog.md"
 _CURRENT_FOCUS_DOC = "docs/working/current_focus.md"
-_PHASE_HEADING = re.compile(r"^##\s+\d+\.\s+Phase\s+(\d+)\s+—")
+_PHASE_HEADING = re.compile(r"^##\s+(?:\d+\.\s+)?Phase\s+(\d+)\s+—")
 _TASK_HEADING = re.compile(r"^###\s+(P(\d+)-T(\d+))\s+—\s+(.+)$")
 _BACKLOG_STATUS = re.compile(r"^- \*\*Status:\*\*\s*(\S+)")
 

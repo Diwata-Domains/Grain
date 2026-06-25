@@ -11,7 +11,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 _PHASE_CLOSED_MARKER_RE = re.compile(r"^Phase\s+(\d+)\s+closed:")
-_BACKLOG_PHASE_HEADING = re.compile(r"^(##\s+\d+\.\s+Phase\s+(\d+)\s+—\s+.*?)(\s*✓?\s*CLOSED.*)?$")
+_BACKLOG_PHASE_HEADING = re.compile(r"^(##\s+(?:\d+\.\s+)?Phase\s+(\d+)\s+—\s+.*?)(\s*✓?\s*CLOSED.*)?$")
 _TASK_DIR_RE = re.compile(r"^P(\d+)-T\d+")
 
 
