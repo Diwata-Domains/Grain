@@ -41,6 +41,13 @@ upgrade_policy:
   enforce_after_days: 0        # days from min_version_set_at before enforcement activates
   message: ""                  # optional custom message shown when blocked or warned
 
+# Pulse telemetry — opt-in, fire-and-forget event emission. Default off: nothing
+# is emitted unless enabled here or GRAIN_TELEMETRY_ENDPOINT is set. When enabled
+# without a reachable endpoint, events queue to .grain/telemetry_queue.jsonl.
+telemetry:
+  enabled: false                    # true to opt in to Pulse event emission
+  endpoint: ""                      # optional Pulse ingest URL (env var overrides)
+
 canonical:
   - id: product_scope
     path: docs/canonical/product_scope.md

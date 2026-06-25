@@ -184,6 +184,10 @@ def close_phase(
     # in place with tasks_done + tasks_archive.
     packets_result = move_phase_packets(root, current_phase, keep_tasks=keep_tasks)
 
+    # Side-band telemetry (opt-in, never raises, never alters control flow).
+    from grain.services.telemetry_service import emit, make_phase_close_event
+    emit(root, make_phase_close_event(current_phase, done_count))
+
     return PhaseCloseResult(
         ok=True,
         closed_phase=current_phase,

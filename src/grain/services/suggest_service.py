@@ -807,11 +807,21 @@ def accept(root: Path, proposal_id: str, *, confirmed: bool = False) -> AcceptRe
         )
 
     if proposal.kind == KIND_PICK_UP:
-        return _accept_pickup(root, proposal)
-    if proposal.kind == KIND_NEW_TASK:
-        return _accept_new_task(root, proposal, confirmed=confirmed)
+        result = _accept_pickup(root, proposal)
+    elif proposal.kind == KIND_NEW_TASK:
+        result = _accept_new_task(root, proposal, confirmed=confirmed)
+    else:
+        return AcceptResult(
+            ok=False, proposal_id=proposal_id, errors=[f"unknown kind: {proposal.kind}"]
+        )
 
-    return AcceptResult(ok=False, proposal_id=proposal_id, errors=[f"unknown kind: {proposal.kind}"])
+    # Side-band telemetry (opt-in, never raises, never alters control flow).
+    # Only emit on a real accept — not the new-task confirmation prompt.
+    if result.ok:
+        from grain.services.telemetry_service import emit, make_suggest_accept_event
+        emit(root, make_suggest_accept_event(proposal_id, proposal.kind))
+
+    return result
 
 
 def _accept_pickup(root: Path, proposal: SuggestionProposal) -> AcceptResult:

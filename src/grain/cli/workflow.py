@@ -52,6 +52,7 @@ def workflow_next(ctx):
         raise click.ClickException("workflow evaluation failed")
 
     suggestion = _surface_top_suggestion(root, evaluation)
+    _emit_stop_reason_telemetry(root, evaluation)
 
     if fmt == "json":
         data = dataclasses.asdict(result)
@@ -385,6 +386,29 @@ def _surface_top_suggestion(root, evaluation):
         "objective": proposal.objective,
         "rationale": proposal.rationale,
     }
+
+
+def _emit_stop_reason_telemetry(root, evaluation):
+    """Side-band: emit the workflow-next stop reason when telemetry is enabled.
+
+    Opt-in and fire-and-forget — never raises, never alters `workflow next`
+    control flow. No-op when the evaluation produced no stop reason.
+    """
+    if evaluation is None or not evaluation.stop_reason:
+        return
+    try:
+        from grain.services.telemetry_service import (
+            emit,
+            make_workflow_next_stop_event,
+        )
+        emit(
+            root,
+            make_workflow_next_stop_event(
+                evaluation.stop_reason, evaluation.active_phase or ""
+            ),
+        )
+    except Exception:
+        return
 
 
 def _workflow_observability_payload(root, task_id: str):

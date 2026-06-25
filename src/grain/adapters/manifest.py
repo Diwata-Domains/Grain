@@ -244,6 +244,49 @@ def load_github_config(root: Path) -> GithubConfig:
     )
 
 
+@dataclass
+class TelemetryConfig:
+    """telemetry block from docs_manifest.yaml — the opt-in Pulse emission gate.
+
+    ``enabled`` defaults to ``False`` (telemetry is off unless explicitly turned
+    on or ``GRAIN_TELEMETRY_ENDPOINT`` is set). ``endpoint`` is an optional
+    manifest-level override for the Pulse ingest URL.
+    """
+
+    enabled: bool = False
+    endpoint: str = ""
+
+
+def load_telemetry_config(root: Path) -> TelemetryConfig:
+    """Read the optional ``telemetry:`` block from docs_manifest.yaml.
+
+    Returns a :class:`TelemetryConfig` with defaults (enabled: false) for any
+    field not present. Never raises — if the manifest is missing or the block is
+    absent, telemetry is off.
+    """
+    try:
+        manifest = load_manifest(root)
+    except Exception:
+        return TelemetryConfig()
+
+    raw = manifest.get("telemetry")
+    if not isinstance(raw, dict):
+        return TelemetryConfig()
+
+    def _bool_val(key: str) -> bool:
+        val = raw.get(key, False)
+        return val if isinstance(val, bool) else False
+
+    def _str(key: str, default: str = "") -> str:
+        val = raw.get(key, default)
+        return str(val).strip() if val is not None else default
+
+    return TelemetryConfig(
+        enabled=_bool_val("enabled"),
+        endpoint=_str("endpoint"),
+    )
+
+
 def load_completion_policy(root: Path) -> CompletionPolicy:
     try:
         manifest = load_manifest(root)

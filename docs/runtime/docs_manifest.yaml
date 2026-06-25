@@ -23,6 +23,13 @@ github:
   repo: ""                          # owner/name to file issues into via the API
   report_repo: Diwata-Domains/grain # upstream repo for the URL-based grain report
 
+# Pulse telemetry — opt-in, fire-and-forget event emission. Default off: nothing
+# is emitted unless enabled here or GRAIN_TELEMETRY_ENDPOINT is set. When enabled
+# without a reachable endpoint, events queue to .grain/telemetry_queue.jsonl.
+telemetry:
+  enabled: false                    # true to opt in to Pulse event emission
+  endpoint: ""                      # optional Pulse ingest URL (env var overrides)
+
 canonical:
   - id: product_scope
     path: docs/canonical/product_scope.md
