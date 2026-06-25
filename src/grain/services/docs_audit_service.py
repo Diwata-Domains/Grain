@@ -23,6 +23,8 @@ _MANIFEST_PATH = "docs/runtime/docs_manifest.yaml"
 
 _TASK_REF_RE = re.compile(r"P\d+-T\d+")
 _DATE_RE = re.compile(r"\d{4}-\d{2}-\d{2}")
+_ACTIVE_RE = re.compile(r"Phase\s+(\d+)\b[^\n]*?\b(?:ACTIVE|active)\b")
+_CLOSED_LINE_RE = re.compile(r"Phase\s+(\d+)\b[^\n]*?\b(?:CLOSED|closed)\b", re.IGNORECASE)
 
 
 # ── Domain objects ─────────────────────────────────────────────────────────────
@@ -422,7 +424,7 @@ def _check_current_focus(root: Path, config: AuditConfig) -> list[AuditFinding]:
             phase_num_match = re.search(r"Phase\s+(\d+)", phase_line)
             if phase_num_match:
                 phase_num = phase_num_match.group(1)
-                backlog_phase_re = re.compile(rf"##\s+\d+\.\s+Phase\s+{re.escape(phase_num)}\s+—")
+                backlog_phase_re = re.compile(rf"##\s+(?:\d+\.\s+)?Phase\s+{re.escape(phase_num)}\b")
                 if backlog_phase_re.search(backlog_text):
                     findings.append(AuditFinding(
                         doc=doc, check_id="current_focus_phase_mismatch", severity="pass",
@@ -497,6 +499,75 @@ def _check_current_focus(root: Path, config: AuditConfig) -> list[AuditFinding]:
             message="no task references in Immediate Priorities",
         ))
 
+    # phase_status_consistency
+    findings.extend(_check_phase_status_consistency(text))
+
+    return findings
+
+
+def _check_phase_status_consistency(text: str) -> list[AuditFinding]:
+    """Flag a phase that current_focus.md describes as BOTH active and closed,
+    or a 'Current Phase' value that contradicts the closed-phase ledger."""
+    doc = _CURRENT_FOCUS_PATH
+    findings: list[AuditFinding] = []
+
+    # 1. Collect every phase number marked closed anywhere in the file
+    #    (ledger rows, log lines, "Phase N ... CLOSED/closed").
+    closed_phases: set[str] = set()
+    for line in text.splitlines():
+        m = _CLOSED_LINE_RE.search(line)
+        if m:
+            closed_phases.add(m.group(1))
+
+    # 2. Collect every phase number explicitly marked active.
+    active_phases: set[str] = set()
+    for line in text.splitlines():
+        m = _ACTIVE_RE.search(line)
+        if m:
+            active_phases.add(m.group(1))
+
+    # 3. The declared "Current Phase" pointer is treated as active too.
+    current_phase_line = _extract_current_phase(text)
+    current_phase_num = ""
+    if current_phase_line:
+        cm = re.search(r"Phase\s+(\d+)", current_phase_line)
+        if cm:
+            current_phase_num = cm.group(1)
+            active_phases.add(current_phase_num)
+
+    # Contradiction A: same phase number is described as both active and closed.
+    contradictions = sorted(active_phases & closed_phases, key=int)
+    if contradictions:
+        for num in contradictions:
+            findings.append(AuditFinding(
+                doc=doc, check_id="phase_status_consistency", severity="error",
+                message=(
+                    f"Phase {num} is described as both active and closed in "
+                    f"current_focus.md"
+                ),
+                remediation=(
+                    "remove the stale status; a phase is either the active "
+                    "Current Phase or a closed-ledger row, never both"
+                ),
+            ))
+        return findings
+
+    # Contradiction B: the Current Phase pointer is itself in the closed ledger.
+    if current_phase_num and current_phase_num in closed_phases:
+        findings.append(AuditFinding(
+            doc=doc, check_id="phase_status_consistency", severity="error",
+            message=(
+                f"Current Phase is Phase {current_phase_num} but Phase "
+                f"{current_phase_num} appears as closed in the ledger"
+            ),
+            remediation="advance Current Phase to the next open phase",
+        ))
+        return findings
+
+    findings.append(AuditFinding(
+        doc=doc, check_id="phase_status_consistency", severity="pass",
+        message="no phase is marked both active and closed",
+    ))
     return findings
 
 

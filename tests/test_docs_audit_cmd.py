@@ -265,6 +265,70 @@ def test_current_focus_phase_mismatch_warn_when_not_found(tmp_path):
     assert warns
 
 
+def test_current_focus_phase_mismatch_pass_for_unnumbered_heading(tmp_path):
+    # Regression: backlog headings are "## Phase N — Title" (no leading "N.")
+    _base(tmp_path)
+    _write(tmp_path / "docs/working/backlog.md",
+           "# Backlog\n\n## Purpose\n\nTest backlog.\n\n"
+           "## Phase 32 — v0.4.0 Proactive Assistance\n\n"
+           "### P32-T01 — A task\n- **Status:** ready\n")
+    _write(tmp_path / "docs/working/current_focus.md",
+           "# Current Focus\n\n## Current Phase\nPhase 32 — v0.4.0 Proactive Assistance\n")
+
+    result = run_audit(tmp_path, doc_filter="current_focus")
+    findings = [f for f in result.findings if f.check_id == "current_focus_phase_mismatch"]
+    assert findings
+    assert all(f.severity == "pass" for f in findings)
+
+
+# ── phase_status_consistency ──────────────────────────────────────────────────
+
+def test_phase_status_consistency_pass_when_distinct(tmp_path):
+    _base(tmp_path)
+    _write(tmp_path / "docs/working/current_focus.md",
+           "# Current Focus\n\n## Current Phase\nPhase 32 — v0.4.0\n\n"
+           "> **Status:** ACTIVE\n\n"
+           "## Closed-Phase Ledger\n"
+           "| Phase | Title | Closed |\n"
+           "|-------|-------|--------|\n"
+           "| 31 | DX Hardening | 2026-06-12 |\n"
+           "All phases through Phase 31 are CLOSED.\n")
+
+    result = run_audit(tmp_path, doc_filter="current_focus")
+    findings = [f for f in result.findings if f.check_id == "phase_status_consistency"]
+    assert findings
+    assert all(f.severity == "pass" for f in findings)
+
+
+def test_phase_status_consistency_error_when_same_phase_active_and_closed(tmp_path):
+    _base(tmp_path)
+    _write(tmp_path / "docs/working/current_focus.md",
+           "# Current Focus\n\n## Current Phase\nPhase 31 — DX Hardening\n\n"
+           "> **Status:** Phase 31 ACTIVE\n\n"
+           "## Closed-Phase Ledger\n"
+           "Phase 31 closed 2026-06-12\n")
+
+    result = run_audit(tmp_path, doc_filter="current_focus")
+    errors = [f for f in result.findings
+              if f.check_id == "phase_status_consistency" and f.severity == "error"]
+    assert errors
+    assert result.overall == "error"
+
+
+def test_phase_status_consistency_error_when_current_phase_in_ledger(tmp_path):
+    _base(tmp_path)
+    _write(tmp_path / "docs/working/current_focus.md",
+           "# Current Focus\n\n## Current Phase\nPhase 31 — DX Hardening\n\n"
+           "## Closed-Phase Ledger\n"
+           "Phase 31 — DX Hardening closed 2026-06-12\n")
+
+    result = run_audit(tmp_path, doc_filter="current_focus")
+    errors = [f for f in result.findings
+              if f.check_id == "phase_status_consistency" and f.severity == "error"]
+    assert errors
+    assert errors[0].doc == "docs/working/current_focus.md"
+
+
 # ── current_focus_stale ───────────────────────────────────────────────────────
 
 def test_current_focus_stale_pass_when_recent(tmp_path):

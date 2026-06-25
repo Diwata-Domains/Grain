@@ -39,6 +39,7 @@
 | `current_focus_phase_mismatch` | "Current Phase" heading doesn't match any phase in `backlog.md` | warning | Phase name not found in backlog |
 | `current_focus_stale` | File last modified more than N days ago (default N=30) | warning | mtime > N days |
 | `current_focus_priorities_done` | "Immediate Priorities" list items reference tasks/phases that are all done | warning | All referenced tasks have `done` status |
+| `phase_status_consistency` | A phase is described as both active and closed, or the "Current Phase" value appears in the closed-phase ledger | error | A phase number is marked both active and closed in the file, OR the Current Phase value appears as a closed-phase ledger row |
 
 ### open_questions.md checks
 
@@ -184,3 +185,5 @@ Some checks are safely auto-fixable by `grain docs audit --fix`:
 | `registered_doc_missing` | Does not auto-create — suggests `grain upgrade --add-missing` |
 
 No check silently modifies files without `--fix`. With `--fix`, Grain prompts per finding before applying. `--fix --no-confirm` applies all safe fixes without prompting — intended for agent use only.
+
+`phase_status_consistency` is **not** auto-fixable: resolving an active/closed contradiction requires a human (or agent) to author the correct active phase and the correct closed-phase ledger, so the check only reports the drift.
