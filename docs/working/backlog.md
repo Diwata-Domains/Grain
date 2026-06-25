@@ -193,17 +193,19 @@ Key deliverables: `grain workflow guard`, `grain hooks install/list/remove`, `gr
 
 ## Phase 32 — v0.4.0 Proactive Assistance
 
-> **Status:** planned — 9 tasks. v0.4.0 feature phase. Scope finalized.
+> **Status:** ACTIVE — 10 tasks (P32-T01–P32-T10). v0.4.0 feature phase; scope reframed 2026-06-24 to a focused Proactive Assistance release (toolkit/recipe/apply moved to v0.5.0 — see `v0.5.0_contract.md`).
 
 ### P32 Notes
-- v0.4.0 scope finalized: grain suggest, phase close archiving, archive show, workflow next integration, grain notes full, workflow metrics, Pulse telemetry foundation, GitHub issue submission
-- T01 (spec) must complete before T02 (implement) and T05 (workflow next integration)
-- T03, T06, T07, T08 are independent and can run in parallel
+- v0.4.0 scope: grain suggest, phase close archiving, archive show, workflow next integration, grain notes full, workflow metrics, Pulse telemetry foundation, GitHub feedback (report + publish), docs hygiene
+- T01 (spec) is satisfied by the canonical `docs/canonical/suggest_spec.md` → **done**
+- T02 (implement) and T05 (workflow next integration) build on the locked spec
+- T03, T06, T07, T08, T10 are independent and can run in parallel
 - T09 depends on T06 (grain notes full implementation)
+- T10 (docs hygiene) is founder-requested; fixes current_focus drift + adds an audit check
 - Phase 31 is fully closed; no DX blockers remain
 
 ### P32-T01 — Write `grain suggest` spec
-- **Status:** ready
+- **Status:** done (satisfied by canonical `docs/canonical/suggest_spec.md`)
 - **Description:** Define the `grain suggest` command contract. Inputs: workspace state (open questions, doc gaps, backlog shape, recent closures). Outputs: ranked candidate tasks with draft context and plan seeds. Human approval gate: `grain suggest --accept <id>` promotes to a real packet; `grain suggest --prune` clears stale suggestions. Spec should cover output format, storage location, approval flow, and integration with `grain workflow next`.
 - **Files:** `docs/working/suggest_spec.md` (new)
 - **Model:** frontier_model
@@ -261,9 +263,17 @@ Key deliverables: `grain workflow guard`, `grain hooks install/list/remove`, `gr
 ### P32-T09 — `grain notes publish` — GitHub issue submission from CLI
 - **Status:** draft
 - **Description:** Extend `grain notes` with a `publish` subcommand that submits a note directly to GitHub Issues. (1) `grain notes publish <id>` — formats the note as a GitHub issue (title from note body first line, body from full note + metadata); (2) applies appropriate label from note type (`bug` → `bug`, `friction`/`feature` → `enhancement`); (3) GitHub repo configurable in `docs_manifest.yaml` under `github.repo`; (4) token via `GRAIN_GITHUB_TOKEN` env var — never stored in workspace files; (5) prints the created issue URL on success; (6) `grain issue create --title "..." --type bug|feature|friction` as a standalone path that skips the notes log and goes straight to GitHub.
-- **Files:** `src/grain/services/github_service.py` (new), `src/grain/cli/notes.py` (extend), `src/grain/cli/issue.py` (new), tests
+- **Files:** `src/grain/services/github_service.py` (new), `src/grain/cli/notes.py` (extend), `src/grain/cli/report.py` (new), `src/grain/cli/issue.py` (new), tests
 - **Model:** frontier_model
 - **Dependencies:** P32-T06
+- **Note:** implements BOTH the canonical URL-based `grain report` (no token, browser-confirmed, upstream) and the API-based `grain notes publish` (token, headless, files into the user's own repo — the path a familiar/agent can drive without a browser).
+
+### P32-T10 — Docs hygiene — phase_status_consistency audit check + current_focus rewrite
+- **Status:** ready
+- **Description:** Founder-requested hygiene. (1) Rewrite `docs/working/current_focus.md` from 377 lines of self-contradicting per-phase prose to a single Current Phase block + Closed-Phase Ledger; (2) add a `phase_status_consistency` check to `grain docs audit` (error severity) that fires when a phase is described as both active and closed, or when the Current Phase appears in the closed ledger; (3) document the check in `docs_audit_spec.md`.
+- **Files:** `src/grain/services/docs_audit_service.py` (extend), `docs/working/current_focus.md` (rewrite), `docs/working/docs_audit_spec.md` (extend), tests
+- **Model:** frontier_model
+- **Dependencies:** none
 
 ---
 
