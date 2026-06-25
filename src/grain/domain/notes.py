@@ -35,16 +35,31 @@ ACTIONABLE_TYPES: frozenset[str] = frozenset({"bug", "friction"})
 # A note is "open" (not yet triaged away) when its status is one of these.
 OPEN_STATUSES: frozenset[str] = frozenset({"open"})
 
+# A cell is everything up to an UNESCAPED pipe: any run of (escaped-pipe | non-pipe).
+# This lets free-text body/command cells safely contain ``\|`` without the regex
+# treating it as a column boundary, so a literal pipe never corrupts the row.
+_CELL = r"(?:\\\||[^|])*"
+
 # Structured row with a leading numeric ID (7 cells).
 _ROW_WITH_ID_RE = re.compile(
-    r"^\|\s*(\d+)\s*\|\s*([^|]*)\|\s*([^|]*)\|\s*([^|]*)\|"
-    r"\s*([^|]*)\|\s*([^|]*)\|\s*([^|]*)\|"
+    rf"^\|\s*(\d+)\s*\|\s*({_CELL})\|\s*({_CELL})\|\s*({_CELL})\|"
+    rf"\s*({_CELL})\|\s*({_CELL})\|\s*({_CELL})\|"
 )
 # Legacy row without an ID (6 cells), e.g. rows written by the old stub.
 _ROW_LEGACY_RE = re.compile(
-    r"^\|\s*(\d{4}-\d{2}-\d{2})\s*\|\s*([^|]*)\|\s*([^|]*)\|"
-    r"\s*([^|]*)\|\s*([^|]*)\|\s*([^|]*)\|"
+    rf"^\|\s*(\d{{4}}-\d{{2}}-\d{{2}})\s*\|\s*({_CELL})\|\s*({_CELL})\|"
+    rf"\s*({_CELL})\|\s*({_CELL})\|\s*({_CELL})\|"
 )
+
+
+def escape_cell(value: str) -> str:
+    """Escape a free-text cell so a literal ``|`` cannot split the table row."""
+    return value.replace("|", "\\|")
+
+
+def unescape_cell(value: str) -> str:
+    """Reverse :func:`escape_cell` for display/round-trip."""
+    return value.replace("\\|", "|")
 
 
 @dataclass
@@ -60,10 +75,16 @@ class Note:
     status: str
 
     def to_row(self) -> str:
-        """Render this note as a human-readable markdown table row."""
+        """Render this note as a human-readable markdown table row.
+
+        Free-text cells (command, body) are pipe-escaped so a literal ``|`` in a
+        note (common when capturing CLI invocations or markdown) cannot split the
+        row and silently corrupt the trailing severity/status columns.
+        """
+        command = escape_cell(self.command) if self.command else "—"
         return (
             f"| {self.id} | {self.created_at} | {self.type} | "
-            f"{self.command or '—'} | {self.body} | {self.severity} | {self.status} |"
+            f"{command} | {escape_cell(self.body)} | {self.severity} | {self.status} |"
         )
 
     def to_dict(self) -> dict:
@@ -99,8 +120,8 @@ def parse_note_line(line: str, fallback_id: int) -> Note | None:
             id=int(cells[0]),
             created_at=cells[1],
             type=cells[2].lower(),
-            command="" if cells[3] in ("", "—") else cells[3],
-            body=cells[4],
+            command="" if cells[3] in ("", "—") else unescape_cell(cells[3]),
+            body=unescape_cell(cells[4]),
             severity=cells[5].lower(),
             status=cells[6].lower(),
         )
@@ -112,8 +133,8 @@ def parse_note_line(line: str, fallback_id: int) -> Note | None:
             id=fallback_id,
             created_at=cells[0],
             type=cells[1].lower(),
-            command="" if cells[2] in ("", "—") else cells[2],
-            body=cells[3],
+            command="" if cells[2] in ("", "—") else unescape_cell(cells[2]),
+            body=unescape_cell(cells[3]),
             severity=cells[4].lower(),
             status=cells[5].lower(),
         )

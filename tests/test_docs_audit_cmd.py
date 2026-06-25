@@ -529,6 +529,73 @@ def test_tooling_notes_open_friction_ignores_observations(tmp_path):
     assert any(f.severity == "pass" for f in findings)
 
 
+# ── F1: aging/overdue checks understand the ID-first 7-col schema ──────────────
+
+def test_tooling_notes_aging_warns_on_id_first_schema(tmp_path):
+    """Before the fix the aging check used a Date-FIRST regex and silently
+    ignored every ID-first row that `grain notes add` now writes."""
+    _base(tmp_path)
+    _write(tmp_path / "docs/working/tooling_notes.md",
+           "# Tooling Notes\n\n"
+           "| ID | Date | Type | Command | Observation | Severity | Status |\n"
+           "|----|------|------|---------|-------------|----------|--------|\n"
+           f"| 1 | {_days_ago(30)} | bug | grain | Old issue | high | open |\n")
+
+    result = run_audit(tmp_path, doc_filter="tooling_notes")
+    warns = [f for f in result.findings
+             if f.check_id == "tooling_notes_high_severity_aging" and f.severity == "warning"]
+    assert warns
+
+
+def test_tooling_notes_overdue_warns_on_id_first_schema(tmp_path):
+    """Overdue-triage must count ID-first rows; before the fix it saw 0."""
+    _base(tmp_path)
+    _write(tmp_path / "docs/working/tooling_notes.md",
+           "# Tooling Notes\n\n"
+           "| ID | Date | Type | Command | Observation | Severity | Status |\n"
+           "|----|------|------|---------|-------------|----------|--------|\n"
+           + "".join(
+               f"| {i} | 2026-01-{i:02d} | bug | grain | Note {i} | low | open |\n"
+               for i in range(1, 10)))
+
+    result = run_audit(tmp_path, doc_filter="tooling_notes")
+    warns = [f for f in result.findings
+             if f.check_id == "tooling_notes_overdue_triage" and f.severity == "warning"]
+    assert warns
+    assert "9 open entries" in warns[0].message
+
+
+# ── F2: remediation IDs match the IDs resolve/show accept for legacy rows ──────
+
+def test_tooling_notes_remediation_id_matches_service_id(tmp_path):
+    """The `grain notes resolve <id>` remediation must target an ID the notes
+    service actually exposes for the same legacy row."""
+    from grain.services.notes_service import _read_notes, resolve_note
+
+    notes_path = tmp_path / "docs/working/tooling_notes.md"
+    _base(tmp_path)
+    _write(notes_path,
+           "# Tooling Notes\n\n"
+           "| ID | Date | Type | Command | Observation | Severity | Status |\n"
+           "|----|------|------|---------|-------------|----------|--------|\n"
+           "| 5 | 2026-06-01 | bug | grain | explicit five | low | open |\n"
+           "| 2026-06-02 | bug | grain | legacy a | low | open |\n"
+           "| 2026-06-03 | bug | grain | legacy b | low | open |\n")
+
+    result = run_audit(tmp_path, doc_filter="tooling_notes")
+    fric = [f for f in result.findings
+            if f.check_id == "tooling_notes_open_friction" and f.severity == "warning"]
+    assert fric
+
+    service_ids = {n.id for n in _read_notes(notes_path)}
+    for finding in fric:
+        # remediation looks like "grain notes resolve <id>"
+        rem_id = int(finding.remediation.rsplit(" ", 1)[1])
+        assert rem_id in service_ids, finding.remediation
+        # and resolving by that ID actually succeeds (not "note N not found")
+        assert resolve_note(tmp_path, rem_id).ok
+
+
 # ── proposal_aging ────────────────────────────────────────────────────────────
 
 def test_proposal_aging_pass_when_recent(tmp_path):

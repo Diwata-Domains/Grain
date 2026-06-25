@@ -200,3 +200,92 @@ def test_resolve_legacy_row_normalizes_table(tmp_path):
     assert TABLE_HEADER in text  # collapsed into canonical schema
     assert "resolved" in text
     assert "legacy observation" in text  # data preserved
+
+
+# ── F3: legacy-row IDs stay stable across adds ───────────────────────────────
+
+_EXPLICIT_PLUS_LEGACY = (
+    "# Tooling Notes\n\n"
+    "| ID | Date | Type | Command | Observation | Severity | Status |\n"
+    "|----|------|------|---------|-------------|----------|--------|\n"
+    "| 1 | 2026-06-01 | bug | grain | explicit one | low | open |\n"
+    "| 2026-06-02 | bug | grain | legacy row | low | open |\n"
+)
+
+
+def test_legacy_row_id_is_stable_across_adds(tmp_path):
+    """A legacy row's synthesized ID must not float when a new note is added.
+
+    Before the fix the legacy row was id 2, then floated to id 4 after an add
+    (because add appended id 3 and the next read recomputed max(explicit)+1),
+    so ``show_note(2)`` started failing.
+    """
+    _write(tmp_path / _NOTES, _EXPLICIT_PLUS_LEGACY)
+    before = list_notes(tmp_path, status_filter="all").notes
+    legacy = next(n for n in before if n.body == "legacy row")
+    legacy_id = legacy.id
+
+    add_note(tmp_path, "brand new note")
+
+    # The very same legacy row is still addressable under the same ID.
+    shown = show_note(tmp_path, legacy_id)
+    assert shown.ok, shown.errors
+    assert shown.note.body == "legacy row"
+
+
+# ── F4: a pipe in the body survives round-trip ───────────────────────────────
+
+def test_pipe_in_body_round_trips_without_corruption(tmp_path):
+    """A literal ``|`` in the body must not leak into severity/status cells."""
+    added = add_note(
+        tmp_path, "init | flag broke", note_type="bug", severity="high",
+    )
+    assert added.ok
+    assert added.note.severity == "high"
+    assert added.note.status == "open"
+
+    back = show_note(tmp_path, added.note.id)
+    assert back.ok, back.errors
+    assert back.note.body == "init | flag broke"
+    assert back.note.severity == "high"
+    assert back.note.status == "open"  # not clobbered by the pipe
+
+    # And the note is still visible in the default (open-only) list.
+    listed = [n.body for n in list_notes(tmp_path).notes]
+    assert "init | flag broke" in listed
+
+
+def test_pipe_in_command_round_trips(tmp_path):
+    added = add_note(
+        tmp_path, "noted", note_type="bug", command="grep a | wc -l",
+    )
+    back = show_note(tmp_path, added.note.id)
+    assert back.ok, back.errors
+    assert back.note.command == "grep a | wc -l"
+    assert back.note.status == "open"
+
+
+# ── F5: resolve preserves original row order ─────────────────────────────────
+
+def test_resolve_preserves_row_order(tmp_path):
+    """A resolve must not relocate legacy rows below explicit-ID rows."""
+    _write(
+        tmp_path / _NOTES,
+        "# Tooling Notes\n\n"
+        "| ID | Date | Type | Command | Observation | Severity | Status |\n"
+        "|----|------|------|---------|-------------|----------|--------|\n"
+        "| 2026-06-01 | bug | grain | legacy first | low | open |\n"
+        "| 5 | 2026-06-02 | bug | grain | explicit five | low | open |\n"
+        "| 2026-06-03 | bug | grain | legacy third | low | open |\n",
+    )
+    before = [n.body for n in list_notes(tmp_path, status_filter="all").notes]
+    assert before == ["legacy first", "explicit five", "legacy third"]
+
+    target = next(
+        n.id for n in list_notes(tmp_path, status_filter="all").notes
+        if n.body == "explicit five"
+    )
+    resolve_note(tmp_path, target)
+
+    after = [n.body for n in list_notes(tmp_path, status_filter="all").notes]
+    assert after == ["legacy first", "explicit five", "legacy third"]

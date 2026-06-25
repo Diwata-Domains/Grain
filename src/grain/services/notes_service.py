@@ -105,8 +105,15 @@ def add_note(
         status="open",
     )
 
-    _ensure_table(path)
-    _append_row(path, note.to_row())
+    # Persist the new row alongside the normalized existing rows. Rewriting (vs a
+    # blind append) gives any legacy rows the synthesized IDs they were already
+    # being shown under, so a row's ID stays stable across subsequent adds and
+    # remains addressable via show/resolve. Original row order is preserved.
+    if existing:
+        _rewrite_notes(path, existing + [note])
+    else:
+        _ensure_table(path)
+        _append_row(path, note.to_row())
     return NoteAddResult(ok=True, note=note, path=rel)
 
 
@@ -203,33 +210,34 @@ def set_note_status(root: Path, note_id: int, status: str) -> NoteStatusResult:
 def _read_notes(path: Path) -> list[Note]:
     """Parse every data row from the notes file, normalizing legacy rows.
 
-    Legacy (un-IDed) rows are assigned synthesized IDs that do not collide with
+    Rows are returned in their ORIGINAL file order so the human-readable inbox
+    is never silently reordered (e.g. by a resolve). Legacy (un-IDed) rows are
+    assigned synthesized IDs above the explicit max so they do not collide with
     explicit IDs already present in the file.
     """
     if not path.exists():
         return []
 
-    explicit: list[Note] = []
-    legacy_lines: list[str] = []
+    parsed: list[Note] = []
+    legacy_idx: list[int] = []
     for line in path.read_text(encoding="utf-8").splitlines():
         note = parse_note_line(line, fallback_id=-1)
         if note is None:
             continue
         if note.id == -1:
-            legacy_lines.append(line)
-        else:
-            explicit.append(note)
+            legacy_idx.append(len(parsed))
+        parsed.append(note)
 
-    # Allocate synthesized IDs for legacy rows above the explicit max.
-    next_synth = (max((n.id for n in explicit), default=0)) + 1
-    legacy: list[Note] = []
-    for line in legacy_lines:
-        note = parse_note_line(line, fallback_id=next_synth)
-        if note is not None:
-            legacy.append(note)
-            next_synth += 1
+    # Allocate synthesized IDs for legacy rows above the explicit max, in file
+    # order, without moving any row out of its original position.
+    next_synth = (
+        max((n.id for n in parsed if n.id != -1), default=0)
+    ) + 1
+    for idx in legacy_idx:
+        parsed[idx].id = next_synth
+        next_synth += 1
 
-    return explicit + legacy
+    return parsed
 
 
 def _ensure_table(path: Path) -> None:

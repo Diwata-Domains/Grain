@@ -672,21 +672,18 @@ def _check_tooling_notes(root: Path, config: AuditConfig) -> list[AuditFinding]:
                              severity="pass", message=f"{doc} absent — skipped")]
 
     findings: list[AuditFinding] = []
-    text = path.read_text(encoding="utf-8")
     now = datetime.now(tz=timezone.utc)
 
-    # Parse table rows: | Date | Type | Command | Observation | Severity | Status |
-    table_re = re.compile(
-        r"^\|\s*(\d{4}-\d{2}-\d{2})\s*\|\s*[^|]*\|\s*[^|]*\|\s*[^|]*\|\s*(\w+)\s*\|\s*(\w+)\s*\|"
-    )
-    open_entries: list[tuple[str, str]] = []  # (date, severity)
+    # Parse via the shared notes reader so both legacy six-column (Date-first)
+    # rows and the canonical seven-column (ID-first) rows that `grain notes add`
+    # now writes are understood. A schema change in the table must never silently
+    # blind the aging/overdue checks.
+    from grain.services.notes_service import _read_notes
 
-    for line in text.splitlines():
-        m = table_re.match(line)
-        if m:
-            date_str, severity, status = m.group(1), m.group(2).lower(), m.group(3).lower()
-            if status == "open":
-                open_entries.append((date_str, severity))
+    notes = _read_notes(path)
+    open_entries: list[tuple[str, str]] = [  # (date, severity)
+        (n.created_at, n.severity.lower()) for n in notes if n.status == "open"
+    ]
 
     # tooling_notes_high_severity_aging
     aging_high: list[int] = []
@@ -748,19 +745,19 @@ def _check_tooling_notes(root: Path, config: AuditConfig) -> list[AuditFinding]:
 
 
 def _open_actionable_notes(path: Path) -> list[tuple[int, str, str]]:
-    """Return (id, type, body) for open bug/friction notes in tooling_notes.md."""
-    from grain.domain.notes import ACTIONABLE_TYPES, OPEN_STATUSES, parse_note_line
+    """Return (id, type, body) for open bug/friction notes in tooling_notes.md.
+
+    IDs come from the same reader the notes service uses, so the remediation it
+    emits (``grain notes resolve <id>``) always targets an ID that show/resolve
+    actually accept — including synthesized IDs for legacy rows.
+    """
+    from grain.domain.notes import ACTIONABLE_TYPES, OPEN_STATUSES
+    from grain.services.notes_service import _read_notes
 
     result: list[tuple[int, str, str]] = []
-    synth = 1
-    for line in path.read_text(encoding="utf-8").splitlines():
-        note = parse_note_line(line, fallback_id=-1)
-        if note is None:
-            continue
-        note_id = note.id if note.id != -1 else synth
-        synth += 1
+    for note in _read_notes(path):
         if note.type in ACTIONABLE_TYPES and note.status in OPEN_STATUSES:
-            result.append((note_id, note.type, note.body))
+            result.append((note.id, note.type, note.body))
     return result
 
 
