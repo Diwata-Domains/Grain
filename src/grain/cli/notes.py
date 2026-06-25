@@ -75,7 +75,9 @@ def notes_add(ctx, message, note_type, command, severity):
               type=click.Choice(["friction", "bug", "observation"]),
               help="Filter by note type.")
 @click.option("--status", "status_filter", default=None,
-              type=click.Choice(["open", "closed", "resolved", "all"]),
+              type=click.Choice(
+                  ["open", "closed", "resolved", "reported", "published", "all"]
+              ),
               help="Filter by status (default: open).")
 @click.pass_context
 def notes_list(ctx, type_filter, status_filter):
@@ -201,6 +203,7 @@ def notes_publish(ctx, note_id):
     from grain.adapters.manifest import load_github_config
     from grain.services.github_service import (
         build_issue_body,
+        build_issue_title,
         create_issue,
         label_for_type,
     )
@@ -220,7 +223,7 @@ def notes_publish(ctx, note_id):
     note = note_result.note
     gh = load_github_config(root)
     label = label_for_type(note.type)
-    title = f"[{note.type}] {note.command or 'grain'} — {note.body}"
+    title = build_issue_title(note.type, note.command, note.body)
     body = build_issue_body(note.body, severity=note.severity)
 
     result = create_issue(gh.repo, title, body, [label])
@@ -250,5 +253,6 @@ def notes_publish(ctx, note_id):
     click.echo("notes publish: ok")
     click.echo(f"  id      {note_id}")
     click.echo(f"  label   {', '.join(result.labels)}")
-    click.echo(f"  status  published")
+    if marked:
+        click.echo("  status  published")
     click.echo(f"  → {result.issue_url}")

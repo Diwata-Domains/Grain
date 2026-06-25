@@ -97,6 +97,81 @@ def test_publish_friction_maps_to_enhancement(tmp_path, monkeypatch, mock_post):
     assert mock_post[0]["payload"]["labels"] == ["enhancement"]
 
 
+# ── title length cap ──────────────────────────────────────────────────────────
+
+def test_publish_caps_long_title(tmp_path, monkeypatch, mock_post):
+    """A long note body must not blow past GitHub's title limit (422).
+
+    Regression: publish previously built the title inline from the full,
+    untruncated body. It must reuse build_issue_title (observation ≤ 80 chars),
+    matching the report/URL path.
+    """
+    monkeypatch.setenv("GRAIN_GITHUB_TOKEN", "tok")
+    _write_github_manifest(tmp_path)
+    long_body = "x" * 400
+    _seed_note(tmp_path, long_body, "bug")
+
+    result = _run(tmp_path, "notes", "publish", "1")
+    assert result.exit_code == 0, result.output
+
+    title = mock_post[0]["payload"]["title"]
+    # Observation is truncated to 77 chars + "..."; whole title stays well under
+    # GitHub's 256-char title limit.
+    assert len(title) < 256
+    assert title.endswith("...")
+    assert "x" * 400 not in title
+
+
+# ── local mark failure ────────────────────────────────────────────────────────
+
+def test_publish_omits_status_line_when_mark_fails(tmp_path, monkeypatch, mock_post):
+    """If the issue is filed but the local row mark fails, don't claim published.
+
+    Regression: text output hardcoded "status  published" even when
+    set_note_status returned ok=False.
+    """
+    monkeypatch.setenv("GRAIN_GITHUB_TOKEN", "tok")
+    _write_github_manifest(tmp_path)
+    _seed_note(tmp_path, "grain init crashes", "bug")
+
+    from grain.services import notes_service
+
+    class _Failed:
+        ok = False
+
+    monkeypatch.setattr(
+        notes_service, "set_note_status", lambda *a, **k: _Failed(),
+    )
+
+    result = _run(tmp_path, "notes", "publish", "1")
+    assert result.exit_code == 0, result.output
+    assert "notes publish: ok" in result.output
+    assert "issues/42" in result.output
+    # The issue was created, but the local mark failed: no "published" claim.
+    assert "status  published" not in result.output
+
+
+def test_publish_json_published_false_when_mark_fails(tmp_path, monkeypatch, mock_post):
+    monkeypatch.setenv("GRAIN_GITHUB_TOKEN", "tok")
+    _write_github_manifest(tmp_path)
+    _seed_note(tmp_path, "grain init crashes", "bug")
+
+    from grain.services import notes_service
+
+    class _Failed:
+        ok = False
+
+    monkeypatch.setattr(
+        notes_service, "set_note_status", lambda *a, **k: _Failed(),
+    )
+
+    result = _run(tmp_path, "notes", "publish", "1", fmt="json")
+    assert result.exit_code == 0, result.output
+    data = json.loads(result.output)
+    assert data["ok"] is True
+    assert data["published"] is False
+
+
 # ── missing token ─────────────────────────────────────────────────────────────
 
 def test_publish_missing_token_clean_error(tmp_path, monkeypatch):

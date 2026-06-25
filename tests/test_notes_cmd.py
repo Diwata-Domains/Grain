@@ -85,6 +85,33 @@ def test_list_status_filter_all(tmp_path):
     assert len(data) == 2
 
 
+def test_list_status_filter_reported(tmp_path):
+    """The newly reachable 'reported' status must be a valid --status filter.
+
+    Regression: the --status Choice omitted 'reported'/'published', so notes
+    escalated via `grain report`/`grain notes publish` could be created but not
+    filtered for (Click rejected the value).
+    """
+    _run(tmp_path, "notes", "add", "grain friction note", "--type", "friction")
+    # `grain report` marks the row 'reported' without touching the network/browser.
+    reported = _run(tmp_path, "report", "--id", "1", "--no-browser")
+    assert reported.exit_code == 0, reported.output
+
+    result = _run(tmp_path, "notes", "list", "--status", "reported", fmt="json")
+    assert result.exit_code == 0, result.output
+    data = json.loads(result.output)
+    assert len(data) == 1
+    assert data[0]["status"] == "reported"
+
+
+def test_list_status_filter_published_is_valid_choice(tmp_path):
+    """'published' is accepted by --status (no Click 'Invalid value')."""
+    _run(tmp_path, "notes", "add", "one")
+    result = _run(tmp_path, "notes", "list", "--status", "published", fmt="json")
+    assert result.exit_code == 0, result.output
+    assert json.loads(result.output) == []
+
+
 # ── show ────────────────────────────────────────────────────────────────────
 
 def test_show_text(tmp_path):
