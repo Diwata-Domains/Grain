@@ -41,9 +41,12 @@ from grain.services import recipe_store
 from grain.services.recipe_service import (
     RECIPES_DIR,
     RUNS_DIR,
+    GateStateError,
     MissingParamError,
+    RecipeEngineError,
     RecipeNotFoundError,
     RecipeService,
+    RunNotFoundError,
     resolve_recipe_agent,
 )
 
@@ -62,6 +65,43 @@ def _fail(exc: ForgeError) -> None:
     """Print via handle_error and exit non-zero (no traceback)."""
     code = handle_error(exc)
     raise SystemExit(code)
+
+
+def _drive(fn, *args, **kwargs):
+    """Run an engine call, mapping its TYPED errors to ForgeError exit codes.
+
+    The engine raises its own typed exceptions (recipe-not-found, run desync,
+    undeclared/unknown tokens, non-UTF8 artifacts, ...). Without translation
+    these would fall through to the CLI catch-all as a bare ``Error: ...`` exit 1.
+    This routes each to the right :mod:`grain.domain.errors` type (and thus the
+    spec exit code), so no raw ``KeyError`` / ``UnicodeDecodeError`` ever escapes.
+
+    A handful of engine errors map to a more specific exit code (missing path /
+    usage); the rest are validation failures. The final
+    ``except RecipeEngineError`` is the catch-all (F14): because EVERY engine
+    error subclasses :class:`RecipeEngineError`, no typed engine error — present
+    or added later — can leak past this to the CLI catch-all as exit 1.
+    """
+    try:
+        return fn(*args, **kwargs)
+    except ForgeError as exc:
+        # Already typed (e.g. a bad agent config from resume's auto path).
+        _fail(exc)
+    except RecipeNotFoundError as exc:
+        _fail(MissingPathError("unknown recipe", str(exc)))
+    except RunNotFoundError as exc:
+        _fail(MissingPathError("unknown run", str(exc)))
+    except MissingParamError as exc:
+        _fail(UsageError("missing required recipe param", str(exc)))
+    except GateStateError as exc:
+        _fail(UsageError("invalid gate decision", str(exc)))
+    except RecipeSchemaError as exc:
+        _fail(ValidationError("malformed recipe", str(exc)))
+    except RecipeEngineError as exc:
+        # Catch-all for the WHOLE engine-error family (F14): definition-changed,
+        # undeclared/unknown tokens, input-not-ready, artifact decode, and any
+        # future typed error all land here as a clean ValidationError exit.
+        _fail(ValidationError("recipe engine error", str(exc)))
 
 
 def _step_to_dict(step) -> dict:
@@ -333,22 +373,51 @@ def _load_run_or_fail(root, run_id: str):
         return recipe_store.load_run(root, run_id)
     except FileNotFoundError as exc:
         _fail(MissingPathError(f"unknown run {run_id!r}", str(exc)))
-    except ValueError as exc:  # unsupported apiVersion / malformed run.json
+    except (ValueError, KeyError) as exc:
+        # unsupported apiVersion / malformed run.json / a missing required key
+        # surfaced as a raw KeyError from RecipeRun.from_dict (F15) — surface a
+        # clean "unreadable run" ValidationError, never a cryptic Error: 'cursor'.
         _fail(ValidationError(f"unreadable run {run_id!r}", str(exc)))
 
 
+# Statuses that mean a run is genuinely IN PROGRESS (still being driven). A
+# ``failed`` run is parked (resume/start fresh) and a ``done`` run is finished —
+# neither blocks starting a new run (F6).
+_IN_PROGRESS_STATUSES = frozenset(
+    {"pending", "running", "awaiting_input", "awaiting_gate"}
+)
+
+
 def _open_runs(root) -> list:
-    """Return loaded runs that are not yet ``done`` (i.e. still drivable)."""
+    """Return loaded runs that are not yet ``done`` (i.e. still drivable).
+
+    An UNREADABLE run is NOT silently skipped (F9). Swallowing it (the old
+    ``except Exception: continue``) let "no open recipe run" be reported falsely
+    and allowed a conflicting second run to start over a broken one. Instead we
+    surface it as a clean ``ValidationError`` (non-zero exit) so the operator
+    fixes/removes it — targeting a readable run explicitly with ``--run`` bypasses
+    this scan entirely.
+    """
     runs = []
     for run_id in recipe_store.list_runs(root):
         try:
             run = recipe_store.load_run(root, run_id)
-        except Exception:
-            # A malformed run must not break run resolution for the rest.
-            continue
+        except (ValueError, KeyError, OSError) as exc:
+            _fail(
+                ValidationError(
+                    f"unreadable recipe run {run_id!r}",
+                    f"{exc}; fix or remove its run.json, or target a readable "
+                    f"run with --run",
+                )
+            )
         if run.status != "done":
             runs.append(run)
     return runs
+
+
+def _in_progress_runs(root) -> list:
+    """Open runs that are genuinely in progress (excludes ``failed``), for F6."""
+    return [r for r in _open_runs(root) if r.status in _IN_PROGRESS_STATUSES]
 
 
 def _ambiguous(open_runs) -> UsageError:
@@ -357,6 +426,23 @@ def _ambiguous(open_runs) -> UsageError:
         "ambiguous: multiple open recipe runs",
         f"pass --run <run-id> to choose one; open runs: {ids}",
     )
+
+
+def _new_run_blocked(in_progress) -> UsageError:
+    """Accurate refusal when starting a new run while one is in progress (F6).
+
+    Distinguishes the single-run case (the common one) — which must NOT claim
+    "ambiguous: multiple open recipe runs" — from the genuinely ambiguous
+    multi-run case, which keeps the accurate "ambiguous" wording.
+    """
+    if len(in_progress) == 1:
+        run = in_progress[0]
+        return UsageError(
+            f"a recipe run is already in progress: {run.run_id}",
+            "advance it with `grain recipe next` / `resume`, or pass --run to "
+            "drive a specific run",
+        )
+    return _ambiguous(in_progress)
 
 
 def _resolve_run(root, run_opt: str | None) -> str:
@@ -403,15 +489,6 @@ def _parse_params(pairs: tuple[str, ...]) -> dict[str, str]:
             )
         params[key] = value
     return params
-
-
-def _next_step_id(definition, step_id: str) -> str | None:
-    """Return the id of the step following ``step_id`` (None if it is last)."""
-    ids = [s.id for s in definition.steps]
-    idx = ids.index(step_id)
-    if idx + 1 < len(definition.steps):
-        return definition.steps[idx + 1].id
-    return None
 
 
 def _advance_to_pause(service: RecipeService, run_id: str):
@@ -486,11 +563,13 @@ def recipe_run(ctx, recipe_id, params, run_opt, auto):
     parsed = _parse_params(params)
 
     if run_opt is None:
-        # A new run is refused while any open run exists (spec §4) — disambiguate
-        # with --run to advance a specific run instead.
-        existing = _open_runs(root)
+        # A new run is refused only while a genuinely IN-PROGRESS run exists
+        # (spec §4) — a failed or done run does NOT block one (F6). Disambiguate
+        # with --run to drive a specific run instead. (_open_runs/_in_progress_runs
+        # also surfaces an unreadable run rather than silently ignoring it, F9.)
+        existing = _in_progress_runs(root)
         if existing:
-            _fail(_ambiguous(existing))
+            _fail(_new_run_blocked(existing))
         # Resolve the definition first so 'autonomous' supervision can imply --auto.
         try:
             definition = service.resolve(recipe_id)
@@ -522,9 +601,9 @@ def recipe_run(ctx, recipe_id, params, run_opt, auto):
             agent = resolve_recipe_agent(root)
         except ForgeError as exc:
             _fail(exc)
-        service.run_auto(run_id, agent=agent)
+        _drive(service.run_auto, run_id, agent=agent)
     else:
-        _advance_to_pause(service, run_id)
+        _drive(_advance_to_pause, service, run_id)
 
     run = _load_run_or_fail(root, run_id)
     _emit_run(ctx, run, "run")
@@ -541,7 +620,7 @@ def recipe_next(ctx, run_opt):
     """Advance EXACTLY one step (operator mode)."""
     service, root = _service(ctx)
     run_id = _resolve_run(root, run_opt)
-    service.next(run_id)
+    _drive(service.next, run_id)
     run = _load_run_or_fail(root, run_id)
     _emit_run(ctx, run, "next")
 
@@ -570,11 +649,9 @@ def recipe_resume(ctx, target):
     service, root = _service(ctx)
     run_id = _resolve_resume_target(root, target)
     # resume re-enters in the run's recorded mode (operator or auto). For an auto
-    # run this resolves the agent (typed ForgeError on a bad/missing config).
-    try:
-        service.resume(run_id)
-    except ForgeError as exc:
-        _fail(exc)
+    # run this resolves the agent (typed ForgeError on a bad/missing config);
+    # engine typed errors (desync, decode, ...) map through _drive.
+    _drive(service.resume, run_id)
     run = _load_run_or_fail(root, run_id)
     _emit_run(ctx, run, "resume")
     if run.status == "failed":
@@ -624,23 +701,12 @@ def recipe_gate(ctx, decision, run_opt):
         )
 
     if decision == "reject":
-        # Leave the run stopped at the gate (no state mutation).
-        _emit_run(ctx, run, "gate")
-        return
-
-    # approve: advance PAST the gated step without re-running it.
-    record = run.step(run.cursor)
-    record.status = "done"
-    record.ended = recipe_store._utc_now()
-
-    definition = service.resolve(run.recipe)
-    next_id = _next_step_id(definition, run.cursor)
-    if next_id is None:
-        run.status = "done"  # cursor stays on the final step id (run.json §2.2)
+        # reject -> rework (F7): reset the gated step so `next`/`resume` re-render
+        # it, instead of freezing the run at a dead-end gate.
+        _drive(service.reject_gate, run_id)
     else:
-        run.cursor = next_id
-        run.status = "running"
+        # approve: advance PAST the gated step without re-running it.
+        _drive(service.approve_gate, run_id)
 
-    recipe_store.save_run(root, run)
     run = _load_run_or_fail(root, run_id)
     _emit_run(ctx, run, "gate")

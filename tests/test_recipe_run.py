@@ -182,3 +182,26 @@ def test_from_dict_rejects_missing_api_version() -> None:
     del payload["apiVersion"]
     with pytest.raises(ValueError):
         RecipeRun.from_dict(payload)
+
+
+# --- F15: a missing REQUIRED key is a clean ValueError, never a raw KeyError ----
+@pytest.mark.parametrize(
+    "missing",
+    ["run_id", "recipe", "recipe_apiVersion", "mode", "supervision", "status", "cursor"],
+)
+def test_from_dict_missing_required_key_raises_valueerror_not_keyerror(missing) -> None:
+    payload = _run().to_dict()
+    del payload[missing]
+    with pytest.raises(ValueError) as exc:
+        RecipeRun.from_dict(payload)
+    # The cryptic raw KeyError must not escape — the key name is named in a
+    # clean ValueError instead.
+    assert not isinstance(exc.value, KeyError)
+    assert missing in str(exc.value)
+
+
+def test_step_record_from_dict_missing_id_raises_valueerror() -> None:
+    with pytest.raises(ValueError) as exc:
+        RecipeStepRecord.from_dict({"status": "pending"})
+    assert not isinstance(exc.value, KeyError)
+    assert "id" in str(exc.value)

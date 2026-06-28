@@ -28,7 +28,11 @@ import re
 from datetime import datetime, timezone
 from pathlib import Path
 
-from grain.domain.recipe import RECIPE_API_VERSION, RecipeDefinition
+from grain.domain.recipe import (
+    RECIPE_API_VERSION,
+    RecipeDefinition,
+    ensure_output_within,
+)
 from grain.domain.recipe_run import (
     RecipeRun,
     RecipeStepRecord,
@@ -191,8 +195,14 @@ def write_step_artifact(
     directory = run_dir(workspace, run.run_id)
     directory.mkdir(parents=True, exist_ok=True)
 
+    # Defensive path-traversal guard (F1): the artifact name must resolve to a
+    # path strictly inside the run dir. The parser already rejects unsafe step
+    # outputs, so this never fires for a parsed recipe — belt-and-suspenders at
+    # the join site.
+    target = ensure_output_within(directory, artifact_name, label="step")
+
     # 1. Artifact lands first — durably on disk before run.json references it.
-    _atomic_write_text(directory / artifact_name, content)
+    _atomic_write_text(target, content)
 
     # 2. Point the step record at the now-persisted artifact.
     record.artifact = artifact_name

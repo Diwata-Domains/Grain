@@ -227,7 +227,9 @@ def test_gate_approve_advances_past_gated_step(tmp_path):
     assert run.step("review").attempts == attempts_before
 
 
-def test_gate_reject_keeps_run_at_gate(tmp_path):
+def test_gate_reject_sends_step_back_for_rework(tmp_path):
+    # F7: reject is NOT a dead-end. It resets the gated step for rework so the
+    # run can move forward again, instead of freezing at the gate.
     runner = CliRunner()
     _write_recipe(tmp_path, _gated_recipe())
     _invoke(runner, tmp_path, "run", "gated", "-p", "topic=x")
@@ -235,12 +237,29 @@ def test_gate_reject_keeps_run_at_gate(tmp_path):
     _write_output(tmp_path, run_id, "01-intake.md")
     _write_output(tmp_path, run_id, "02-review.md")
     _invoke(runner, tmp_path, "run", "gated", "--run", run_id)
+    assert recipe_store.load_run(tmp_path, run_id).status == "awaiting_gate"
 
     r = _invoke(runner, tmp_path, "gate", "reject", "--run", run_id)
     assert r.exit_code == 0, r.output
     run = recipe_store.load_run(tmp_path, run_id)
-    assert run.status == "awaiting_gate"
+    # The run is back to running, cursor still on the gated step, which is reset
+    # to a re-runnable state and its rejected artifact discarded.
+    assert run.status == "running"
     assert run.cursor == "review"
+    review = run.step("review")
+    assert review.status == "pending"
+    assert review.artifact is None
+    assert not (recipe_store.run_dir(tmp_path, run_id) / "02-review.md").exists()
+
+    # `next` re-renders the rejected step (operator pause), proving it is not a
+    # dead-end: re-author -> back to the gate.
+    r2 = _invoke(runner, tmp_path, "next")
+    assert r2.exit_code == 0, r2.output
+    assert recipe_store.load_run(tmp_path, run_id).status == "awaiting_input"
+    _write_output(tmp_path, run_id, "02-review.md")
+    r3 = _invoke(runner, tmp_path, "next")
+    assert r3.exit_code == 0, r3.output
+    assert recipe_store.load_run(tmp_path, run_id).status == "awaiting_gate"
 
 
 def test_resume_does_not_pass_gate(tmp_path):
@@ -377,11 +396,185 @@ def test_resume_failed_run_increments_attempts(tmp_path):
     assert after.step("draft").artifact is None
 
 
+def test_missing_prompt_file_run_fails_cleanly(tmp_path):
+    # F11: a step prompt path that does not exist fails fast on `run` with a
+    # clean non-zero exit (typed ValidationError), never a traceback.
+    runner = CliRunner()
+    recipe = _nogate_recipe()
+    recipe_dir = tmp_path / "docs" / "recipes" / recipe["id"]
+    (recipe_dir / "steps").mkdir(parents=True, exist_ok=True)
+    (recipe_dir / "recipe.yaml").write_text(
+        yaml.safe_dump(recipe, sort_keys=False), encoding="utf-8"
+    )
+    # Deliberately do NOT write the steps/*.md prompt files.
+    r = _invoke(runner, tmp_path, "run", "nogate", "-p", "topic=x")
+    assert r.exit_code != 0
+    assert "Traceback" not in r.output
+    assert r.exception is None or isinstance(r.exception, SystemExit)
+    # No run advanced into an awaiting_input state on a broken definition.
+    assert not (tmp_path / "docs" / "recipes" / "runs").exists() or not recipe_store.list_runs(tmp_path)
+
+
+def test_non_utf8_artifact_next_fails_cleanly(tmp_path):
+    # F12: a non-UTF8 prior artifact surfaces as a clean non-zero exit on `next`,
+    # never a raw UnicodeDecodeError / traceback.
+    runner = CliRunner()
+    recipe = _nogate_recipe()
+    # Make draft depend on intake's artifact so it is read on render.
+    recipe["steps"][1]["inputs"] = ["params", "intake"]
+    _write_recipe(tmp_path, recipe)
+    _invoke(runner, tmp_path, "run", "nogate", "-p", "topic=x")
+    run_id = _only_run_id(tmp_path)
+    # Author intake's artifact as binary (non-empty -> completes), then advance.
+    (recipe_store.run_dir(tmp_path, run_id) / "01-intake.md").write_bytes(
+        b"\xff\xfe binary not utf-8"
+    )
+    _invoke(runner, tmp_path, "next")  # intake done -> cursor draft
+    r = _invoke(runner, tmp_path, "next")  # draft render reads binary intake
+    assert r.exit_code != 0
+    assert "Traceback" not in r.output
+    assert r.exception is None or isinstance(r.exception, SystemExit)
+
+
 def test_unknown_run_id_fails_cleanly(tmp_path):
     runner = CliRunner()
     _write_recipe(tmp_path, _nogate_recipe())
     r = _invoke(runner, tmp_path, "status", "--run", "nogate-9999")
     assert r.exit_code != 0
+
+
+# ===========================================================================
+# C3 error-contract & CLI-robustness regressions (F14 / F10 / F15 / F9 / F6)
+# ===========================================================================
+
+
+def _corrupt_run_missing_cursor(root: Path, run_id: str) -> None:
+    """Rewrite a run's run.json with the required ``cursor`` key removed."""
+    path = recipe_store.run_dir(root, run_id) / "run.json"
+    data = json.loads(path.read_text(encoding="utf-8"))
+    del data["cursor"]
+    path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+
+
+# --- F14: a run verb translates EVERY engine error (shared base) to exit 3 -----
+def test_run_verb_translates_unlisted_engine_error(tmp_path, monkeypatch):
+    # An engine error that the OLD hardcoded except-tuple did not list must STILL
+    # translate to the spec ValidationError (exit 3), not leak to the CLI
+    # catch-all as a raw exception / exit 1. The shared RecipeEngineError base
+    # makes this hold for any error, present or future.
+    from grain.services.recipe_service import RecipeEngineError
+
+    class _BrandNewEngineError(RecipeEngineError):
+        pass
+
+    runner = CliRunner()
+    _write_recipe(tmp_path, _nogate_recipe())
+    _invoke(runner, tmp_path, "run", "nogate", "-p", "topic=x")
+    run_id = _only_run_id(tmp_path)
+
+    def _boom(self, rid):
+        raise _BrandNewEngineError("a brand new engine error")
+
+    monkeypatch.setattr(RecipeService, "next", _boom)
+    r = _invoke(runner, tmp_path, "next", "--run", run_id)
+    assert r.exit_code == 3, (r.exit_code, r.output)  # ValidationError, not exit 1
+    assert "Traceback" not in r.output
+    assert r.exception is None or isinstance(r.exception, SystemExit)
+
+
+# --- F10: {{steps.params}} through the CLI is a clean non-zero exit ------------
+def test_steps_params_reference_next_fails_cleanly(tmp_path):
+    runner = CliRunner()
+    recipe = _nogate_recipe()
+    recipe["id"] = "stepsparams"
+    # First step references {{steps.params}} (params is an inputs entry, not a step).
+    recipe["steps"][0]["prompt"] = "inline:bad {{steps.params}}"
+    recipe["steps"][0]["inputs"] = ["params"]
+    _write_recipe(tmp_path, recipe)
+    # The render fires on `run` (which advances toward the first pause).
+    r = _invoke(runner, tmp_path, "run", "stepsparams", "-p", "topic=x")
+    assert r.exit_code != 0
+    assert "Traceback" not in r.output
+    assert r.exception is None or isinstance(r.exception, SystemExit)
+
+
+# --- F15: a run.json missing a required key surfaces as "unreadable run" -------
+def test_run_json_missing_cursor_is_unreadable_not_keyerror(tmp_path):
+    runner = CliRunner()
+    _write_recipe(tmp_path, _nogate_recipe())
+    _invoke(runner, tmp_path, "run", "nogate", "-p", "topic=x")
+    run_id = _only_run_id(tmp_path)
+    _corrupt_run_missing_cursor(tmp_path, run_id)
+
+    r = _invoke(runner, tmp_path, "status", "--run", run_id)
+    # Old code: raw KeyError('cursor') -> catch-all exit 1. Now: ValidationError.
+    assert r.exit_code == 3, (r.exit_code, r.output)
+    assert "unreadable" in r.output.lower()
+    assert "Traceback" not in r.output
+
+
+# --- F9: an unreadable run is surfaced, not silently swallowed -----------------
+def test_unreadable_run_surfaced_not_reported_as_no_open_run(tmp_path):
+    runner = CliRunner()
+    _write_recipe(tmp_path, _nogate_recipe())
+    _invoke(runner, tmp_path, "run", "nogate", "-p", "topic=x")
+    run_id = _only_run_id(tmp_path)
+    _corrupt_run_missing_cursor(tmp_path, run_id)
+
+    # No --run: the open-run scan must NOT swallow the broken run and falsely
+    # claim "no open recipe run".
+    r = _invoke(runner, tmp_path, "status")
+    assert r.exit_code != 0
+    combined = (r.output + (str(r.exception) or "")).lower()
+    assert "unreadable" in combined
+    assert "no open recipe run" not in combined
+
+
+def test_unreadable_run_blocks_conflicting_new_run(tmp_path):
+    runner = CliRunner()
+    _write_recipe(tmp_path, _nogate_recipe())
+    _invoke(runner, tmp_path, "run", "nogate", "-p", "topic=x")
+    run_id = _only_run_id(tmp_path)
+    _corrupt_run_missing_cursor(tmp_path, run_id)
+
+    # Old code swallowed the broken run and allowed a SECOND run to start.
+    r = _invoke(runner, tmp_path, "run", "nogate", "-p", "topic=y")
+    assert r.exit_code != 0
+    assert "unreadable" in r.output.lower()
+    # No conflicting second run was created.
+    assert recipe_store.list_runs(tmp_path) == [run_id]
+
+
+# --- F6: a FAILED run does not block a new run; single-run msg is accurate -----
+def test_failed_run_does_not_block_new_run(tmp_path):
+    runner = CliRunner()
+    _write_recipe(tmp_path, _nogate_recipe())
+    service = RecipeService(tmp_path)
+    failed_id = service.start_run("nogate", {"topic": "x"}, mode="operator").run_id
+    run = recipe_store.load_run(tmp_path, failed_id)
+    run.status = "failed"
+    run.step("intake").status = "failed"
+    run.step("intake").error = "boom"
+    recipe_store.save_run(tmp_path, run)
+
+    # A new run must START (a failed run is parked, not in progress).
+    r = _invoke(runner, tmp_path, "run", "nogate", "-p", "topic=y")
+    assert r.exit_code == 0, r.output
+    assert len(recipe_store.list_runs(tmp_path)) == 2  # the failed one + the new one
+
+
+def test_single_in_progress_run_message_is_accurate(tmp_path):
+    runner = CliRunner()
+    _write_recipe(tmp_path, _nogate_recipe())
+    service = RecipeService(tmp_path)
+    service.start_run("nogate", {"topic": "x"}, mode="operator")  # one pending run
+
+    r = _invoke(runner, tmp_path, "run", "nogate", "-p", "topic=y")
+    assert r.exit_code != 0
+    out = r.output.lower()
+    # Accurate single-run message, NOT the false "ambiguous: multiple…".
+    assert "in progress" in out
+    assert "ambiguous" not in out
 
 
 # ===========================================================================

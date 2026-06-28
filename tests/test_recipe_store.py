@@ -172,6 +172,21 @@ def test_write_step_artifact_unknown_step_raises(tmp_path: Path) -> None:
         recipe_store.write_step_artifact(tmp_path, run, "nope", "x", "x.md")
 
 
+@pytest.mark.parametrize("evil", ["../escape.md", "/etc/passwd", "a/../../escape.md"])
+def test_write_step_artifact_rejects_path_traversal(tmp_path: Path, evil) -> None:
+    # F1: the defensive join-site guard refuses an artifact name that escapes the
+    # run dir, and writes nothing outside it.
+    from grain.domain.recipe import RecipeSchemaError
+
+    run = recipe_store.create_run(tmp_path, _definition(), {"topic": "a"})
+    run.step("intake").status = "done"
+    with pytest.raises(RecipeSchemaError):
+        recipe_store.write_step_artifact(tmp_path, run, "intake", "x", evil)
+    # nothing was written outside the run dir.
+    assert not (tmp_path / "escape.md").exists()
+    assert not (tmp_path.parent / "escape.md").exists()
+
+
 def test_run_json_write_failure_leaves_prior_intact(
     tmp_path: Path, monkeypatch
 ) -> None:

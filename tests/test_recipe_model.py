@@ -280,6 +280,41 @@ def test_duplicate_step_id_rejected():
     assert "intake" in str(exc.value)
 
 
+@pytest.mark.parametrize(
+    "bad_output",
+    [
+        "/etc/passwd",            # absolute
+        "../escape.md",           # parent traversal
+        "sub/../../escape.md",    # traversal via subdir
+        "..",                     # bare parent
+        "nested\\win.md",         # backslash separator
+    ],
+)
+def test_unsafe_step_output_rejected(bad_output):
+    # F1: a step `output` must be a safe relative filename inside the run dir.
+    data = _research_brief()
+    data["steps"][0]["output"] = bad_output
+    with pytest.raises(RecipeSchemaError) as exc:
+        parse_recipe(data)
+    assert "output" in str(exc.value)
+
+
+def test_safe_nested_step_output_accepted():
+    # A relative name in a subdir (no traversal) is allowed.
+    data = _research_brief()
+    data["steps"][0]["output"] = "sub/01-intake.md"
+    assert parse_recipe(data).steps[0].output == "sub/01-intake.md"
+
+
+def test_duplicate_step_output_rejected():
+    # F3: two steps declaring the same `output:` filename is rejected, like ids.
+    data = _research_brief()
+    data["steps"][1]["output"] = data["steps"][0]["output"]
+    with pytest.raises(RecipeSchemaError) as exc:
+        parse_recipe(data)
+    assert data["steps"][0]["output"] in str(exc.value)
+
+
 def test_missing_required_step_key_rejected():
     data = _research_brief()
     del data["steps"][0]["output"]

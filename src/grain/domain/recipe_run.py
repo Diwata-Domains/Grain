@@ -99,11 +99,20 @@ class RecipeStepRecord:
 
     @classmethod
     def from_dict(cls, data: dict) -> RecipeStepRecord:
-        """Reconstruct a step record; absent keys fall back to their defaults."""
+        """Reconstruct a step record; absent keys fall back to their defaults.
+
+        A missing *required* key (``id``) is surfaced as a clean ``ValueError``
+        (F15) rather than a raw ``KeyError`` so an unreadable run.json never
+        crashes the engine with a cryptic ``KeyError: 'id'``.
+        """
         if not isinstance(data, dict):
             raise ValueError("step record payload must be a mapping")
+        try:
+            step_id = data["id"]
+        except KeyError as exc:
+            raise ValueError("step record payload missing required key 'id'") from exc
         return cls(
-            id=data["id"],
+            id=step_id,
             status=data.get("status", "pending"),
             artifact=data.get("artifact"),
             gate=data.get("gate", "none"),
@@ -202,17 +211,25 @@ class RecipeRun:
                 f"expected major {_RUN_API_MAJOR} ({RUN_API_VERSION})"
             )
         steps = [RecipeStepRecord.from_dict(s) for s in data.get("steps", [])]
-        return cls(
-            run_id=data["run_id"],
-            recipe=data["recipe"],
-            recipe_api_version=data["recipe_apiVersion"],
-            params=dict(data.get("params", {})),
-            mode=data["mode"],
-            supervision=data["supervision"],
-            status=data["status"],
-            cursor=data["cursor"],
-            steps=steps,
-            api_version=api_version,
-            created=data.get("created"),
-            updated=data.get("updated"),
-        )
+        # F15: a run.json missing a required key (e.g. ``cursor``) must surface a
+        # clean ``ValueError`` ("unreadable run") rather than a cryptic raw
+        # ``KeyError: 'cursor'`` escaping to the CLI catch-all as exit 1.
+        try:
+            return cls(
+                run_id=data["run_id"],
+                recipe=data["recipe"],
+                recipe_api_version=data["recipe_apiVersion"],
+                params=dict(data.get("params", {})),
+                mode=data["mode"],
+                supervision=data["supervision"],
+                status=data["status"],
+                cursor=data["cursor"],
+                steps=steps,
+                api_version=api_version,
+                created=data.get("created"),
+                updated=data.get("updated"),
+            )
+        except KeyError as exc:
+            raise ValueError(
+                f"run payload missing required key {exc.args[0]!r}"
+            ) from exc

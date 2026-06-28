@@ -113,6 +113,13 @@ final: brief.md                      # the deliverable artifact
 Per-step optional keys: `adapter` (tune context selection via `adapter_profiles`), `model`
 (model-class bias). Unknown keys are rejected under strict schema validation.
 
+**`output` constraints (write-safety + uniqueness).** Each step's `output` must be a **safe
+relative filename** that resolves *inside* the run dir: absolute paths, `..` traversal, and
+backslash separators are rejected by the parser (and re-checked defensively at the join site, so a
+malformed name can never write outside `docs/recipes/runs/<run-id>/`). Two steps must **not** declare
+the same `output:` filename — output names are unique within a recipe, like step ids — so no step can
+clobber another's artifact.
+
 ### 2.2 `run.json` — `apiVersion: grain.recipe-run/v1`
 
 A run is a directory `docs/recipes/runs/<run-id>/` containing `run.json` plus the step artifacts.
@@ -173,9 +180,12 @@ Two modes, mirroring the existing `grain workflow next` vs `grain workflow loop`
   to completion or the next gate. This is the risky path (auth/network/can-hang); **pre-record for
   the demo.**
 
-A step "completes" when its declared `output` artifact exists and (if applicable) passes
-validation. Gates: when a step declares `gate: review` (or supervision is `supervised`), the run
-enters `awaiting_gate`; `grain recipe gate approve|reject` resumes or stops it.
+A step "completes" when its declared `output` artifact **exists, is non-empty, and the step is not
+`failed`** (and the run is not `failed`) — bare existence is *not* completion (a zero-byte artifact is
+treated as not-yet-done). Gates: when a step declares `gate: review` (or supervision is
+`supervised`), the run enters `awaiting_gate`. `grain recipe gate approve` advances **past** the
+gated step without re-running it (its artifact stands); `grain recipe gate reject` sends the step
+**back for rework** — it is not a dead-end (see §5).
 
 ### 3.1 Engine operation outcomes
 
@@ -187,9 +197,11 @@ is a run/step *status*, not an outcome — `next` returns `prompt_ready` with th
 - **`start_run`** creates the run (status `pending`, `cursor` = first step) and returns `started`. It
   does **not** auto-advance.
 - **`next`** acts on the current step: renders + surfaces its prompt, returning `prompt_ready` with
-  the run/step in `awaiting_input` when the `output` is not yet written (operator mode); marks the
-  step `done` and advances when its `output` exists, returning `advanced` (or `run_complete` at the
-  end); returns `awaiting_gate` at a gated step; `noop` if already paused at a gate.
+  the run/step in `awaiting_input` when the `output` is not yet written, is empty, or the step is
+  re-entered after a failure (operator mode); marks the step `done` and advances when its `output`
+  exists **and is non-empty** (and neither the step nor the run is `failed`), returning `advanced`
+  (or `run_complete` at the end); returns `awaiting_gate` at a gated step; `noop` if already paused at
+  a gate.
 - **`resume`** re-reads `run.json` and continues from the cursor in the run's recorded `mode`.
 
 `supervision` (`supervised | gated | autonomous`) is **parsed into `RecipeDefinition`** (not
@@ -210,22 +222,81 @@ grain recipe run <id> --auto             # auto mode (shell to agent per step)
 grain recipe next [--run <id>]           # advance ONE step (operator mode)
 grain recipe status [--run <id>]         # run state: cursor, per-step status, artifacts
 grain recipe resume <id|run-id>          # resume a failed/paused run from the cursor
-grain recipe gate approve|reject [--run] # pass/stop a review gate
+grain recipe gate approve|reject [--run] # approve (advance past) or reject (send back for rework)
 ```
 
-`run` with no open run starts one; with an open run, refuses unless `--run` disambiguates.
+`run` with no in-progress run starts one. A new run is refused **only** while a genuinely
+**in-progress** run exists (status `pending | running | awaiting_input | awaiting_gate`); a
+`failed` run (park it / `resume` it / start fresh) and a `done` run do **not** block a new run.
+The refusal is **accurate**: with a single in-progress run it reports "a recipe run is already in
+progress: <run-id>" (not "ambiguous: multiple…"); with more than one it reports the genuinely
+ambiguous case and lists them. Pass `--run` to drive a specific run instead.
 Text output for humans, JSON for familiars (same data).
 
 ---
 
 ## 5. Failure & resume
 
-Failure depends on mode. In **operator mode** a missing `output` is *not* a failure — it is the
-normal `awaiting_input` pause (the engine re-surfaces the prompt on the next `next`). A run reaches
-`status: failed` only on an **auto-mode** agent error or an explicit validation failure; the cursor
-stays on the failed step and the error is recorded in `run.json`. `grain recipe resume` retries from
-the cursor in the recorded `mode`. Steps are idempotent: re-running overwrites the step's artifact
-and increments `attempts`. No step ever mutates a prior step's artifact.
+Failure depends on mode. In **operator mode** a missing *or empty* `output` is *not* a failure — it
+is the normal `awaiting_input` pause (the engine re-surfaces the prompt on the next `next`). A run
+reaches `status: failed` only on an **auto-mode** agent error (non-zero exit, timeout, or a
+missing/empty `output` artifact) or an explicit validation failure; the cursor stays on the failed
+step and the error is recorded in `run.json`. `grain recipe resume` retries from the cursor in the
+recorded `mode`.
+
+**Failed runs never auto-complete from a left-behind output.** When the run or the cursor step is
+`failed`, `next` does **not** treat any artifact already on disk as completion — it takes the
+explicit re-run path instead (operator: re-render + re-author the artifact, incrementing `attempts`;
+auto: re-invoke the agent, which overwrites the artifact). Only after a fresh, non-empty artifact is
+produced does the step advance.
+
+**Atomic writes are live in both modes.** Operator mode never writes a step artifact (the human/agent
+authors it). Auto mode writes each artifact through the atomic temp-file + rename protocol
+(`recipe_store.write_step_artifact`): the artifact lands first, then `run.json` is rewritten — so a
+crash never leaves `run.json` referencing a missing artifact.
+
+Steps are idempotent: re-running overwrites the step's artifact and increments `attempts`. No step
+ever mutates a prior step's artifact.
+
+**Gate reject → rework (not a dead-end).** `grain recipe gate reject` on an `awaiting_gate` run
+sends the gated step back for rework rather than freezing the run: the gated step is reset to a
+re-runnable state (status back to `pending`, its artifact reference cleared and the rejected output
+discarded from disk), the run returns to `running`, and the cursor stays on the gated step. The next
+`grain recipe next` (operator) re-renders the step's prompt to be re-authored — or `grain recipe
+resume` (auto) re-invokes the agent — after which the step re-enters its gate. `gate approve`, by
+contrast, marks the gated step `done` without re-running it and advances the cursor.
+
+**Definition / run robustness (typed errors, no strand).** The engine never lets a raw
+`KeyError` / `FileNotFoundError` / `UnicodeDecodeError` escape:
+
+- A recipe's `id` MUST equal its `docs/recipes/<id>/` directory name; resolution keys on the
+  directory while persistence keys on `id`, so requiring them equal means a started run can always
+  be re-resolved (no orphaned-run class). A mismatch is rejected at resolve/start time.
+- Each path-based step `prompt:` is validated to **exist at parse/start** (fail-fast typed error),
+  not discovered missing mid-run via an unguarded read.
+- A `recipe.yaml` edited mid-run (its step set/order, or the run's captured `recipe_apiVersion`
+  major, diverging from the run's persisted steps) raises a **typed** definition-changed error
+  instead of stranding the run; the captured `recipe_apiVersion` is actually checked on every
+  re-resolve.
+- A non-UTF8 / binary prior artifact (or auto-mode step output) yields a **typed** decode error
+  (operator: a clean failure surfaced at the CLI; auto: the step is marked `failed`), never a raw
+  `UnicodeDecodeError`.
+- A `{{steps.<id>}}` token whose id is a **legal `inputs` entry but not a step** (notably
+  `{{steps.params}}` — `params` is an inputs keyword, not a step) raises a **typed** token error
+  (`UnknownTokenError`), never a raw `KeyError` from a `run.step('params')` lookup.
+
+**Typed errors translate at the CLI (no leak to the catch-all).** Every engine error subclasses a
+single base `RecipeEngineError`, and **all** the run verbs (`run` / `next` / `resume` / `gate`)
+translate that whole family to the spec `ValidationError`/exit code (a few map to the more specific
+missing-path / usage codes) — exactly as `show`/`run` already translate schema errors. No typed
+engine error, present or added later, leaks to the CLI catch-all as a bare `Error: …` exit 1.
+
+**Unreadable runs are surfaced, not swallowed.** A `run.json` that is malformed, carries an
+unsupported `apiVersion` major, or is **missing a required key** (e.g. `cursor`) is surfaced as a
+clean "unreadable run" `ValidationError` — at the single-run load site (`status` / `next` / `gate`
+with `--run`) **and** in the open-run scan. The scan must **not** silently skip an unreadable run:
+swallowing it would let "no open recipe run" be reported falsely and would let a conflicting second
+run start over a broken one. Targeting a readable run explicitly with `--run` bypasses the scan.
 
 ---
 
@@ -275,9 +346,17 @@ domain" demo ships instead; the engine lands a week later, designed right rather
    inspectable.
 2. **`recipe run` default mode:** ✅ operator (deterministic, offline); `--auto` is opt-in.
 3. **Input scoping:** ✅ declared `inputs:` only (params + named prior artifacts); no auto-include.
+   This applies to **params too**: a `{{param}}` token renders only when the step lists `params` in
+   its `inputs:` — otherwise it is an `UndeclaredInputError`, exactly like an out-of-scope
+   `{{steps.<id>}}` reference. The surfaced `ScopedInput` list reflects only what is declared.
 4. **Naming:** ✅ `grain recipe` (matches the existing contract surface).
-5. **Validation hooks:** ✅ MVP does output-artifact existence-check only; per-step structural
-   validators deferred.
+5. **Validation hooks:** ✅ MVP completion check = output artifact **exists + is non-empty + the step
+   is not `failed`** (and the run is not `failed`); per-step structural validators deferred. A step
+   `output` is additionally constrained to a safe relative filename (no absolute paths / `..`
+   traversal) that stays inside the run dir, and output names are unique within a recipe. At
+   parse/start the engine also validates that every path-based step `prompt:` exists and that the
+   recipe `id` equals its directory name, so a run cannot start against a broken or mis-located
+   definition (see §5).
 
 ---
 

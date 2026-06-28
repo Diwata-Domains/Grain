@@ -13,7 +13,7 @@ loop and does not touch packet lifecycle code.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 import yaml
 
@@ -64,6 +64,52 @@ class RecipeSchemaError(ValueError):
     """Raised when a recipe.yaml violates the grain.recipe/v2 schema."""
 
 
+def is_safe_output_name(name: str) -> bool:
+    """True iff ``name`` is a safe RELATIVE artifact filename for a run dir.
+
+    A step ``output`` is written under ``docs/recipes/runs/<run-id>/``; it must
+    therefore be a relative path that cannot escape that directory. This rejects
+    absolute paths, Windows drive/UNC and backslash separators, and any
+    parent-traversal (``..``) component. Path-traversal hardening (F1).
+    """
+    if not isinstance(name, str) or not name.strip():
+        return False
+    if "\\" in name:  # backslash separators / Windows-style escapes
+        return False
+    pure = PurePosixPath(name)
+    if pure.is_absolute():
+        return False
+    parts = pure.parts
+    if not parts:  # e.g. "." resolves to no concrete file
+        return False
+    if any(part == ".." for part in parts):
+        return False
+    return True
+
+
+def ensure_output_within(base: Path, output: str, *, label: str = "step") -> Path:
+    """Defensive join-site guard for a step ``output`` under ``base`` (F1).
+
+    Validates ``output`` is a safe relative name AND that the resolved
+    ``base / output`` stays strictly inside ``base`` (catches symlink/escape
+    cases the lexical check alone would miss). Returns the joined (un-resolved)
+    path for the caller to use. Raises :class:`RecipeSchemaError` on any escape.
+    """
+    if not is_safe_output_name(output):
+        raise RecipeSchemaError(
+            f"{label} output {output!r} is not a safe relative filename "
+            f"(no absolute paths, no '..' traversal, no '\\' separators)"
+        )
+    joined = base / output
+    base_resolved = base.resolve()
+    candidate = joined.resolve()
+    if base_resolved != candidate and base_resolved not in candidate.parents:
+        raise RecipeSchemaError(
+            f"{label} output {output!r} escapes the run directory {str(base)!r}"
+        )
+    return joined
+
+
 @dataclass
 class RecipeParam:
     """A single declared recipe parameter."""
@@ -107,6 +153,12 @@ class RecipeStep:
         if not isinstance(self.output, str) or not self.output.strip():
             raise RecipeSchemaError(
                 f"recipe step {self.id!r} requires a non-empty 'output'"
+            )
+        if not is_safe_output_name(self.output):
+            raise RecipeSchemaError(
+                f"recipe step {self.id!r} has unsafe output {self.output!r}; "
+                f"output must be a relative filename inside the run dir "
+                f"(no absolute paths, no '..' traversal, no '\\' separators)"
             )
         if not isinstance(self.inputs, list) or not all(
             isinstance(item, str) for item in self.inputs
@@ -168,6 +220,18 @@ class RecipeDefinition:
                     f"recipe {self.id!r} has duplicate step id {step.id!r}"
                 )
             seen.add(step.id)
+
+        # Unique output filenames (two steps must never write the same artifact,
+        # which would let one step clobber another's output). Uniqueness like
+        # step ids (F3).
+        seen_outputs: set[str] = set()
+        for step in self.steps:
+            if step.output in seen_outputs:
+                raise RecipeSchemaError(
+                    f"recipe {self.id!r} has duplicate step output "
+                    f"{step.output!r}; each step must declare a unique output"
+                )
+            seen_outputs.add(step.output)
 
         # Inputs reference integrity: each entry is "params" or the id of a
         # step appearing EARLIER in the list (no forward/self/unknown refs).

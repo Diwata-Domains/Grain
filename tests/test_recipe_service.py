@@ -20,13 +20,18 @@ import pytest
 import yaml
 
 from grain.domain.errors import ConfigError, MissingPathError
+from grain.domain.recipe import RecipeSchemaError
 from grain.domain.workflow_loop import WorkflowLoopAgentConfig
 from grain.services import recipe_store
 from grain.services.recipe_service import (
+    ArtifactDecodeError,
     AutoStepOutcome,
+    GateStateError,
     InputNotReadyError,
     MissingParamError,
     NextResult,
+    RecipeDefinitionChangedError,
+    RecipeEngineError,
     RecipeNotFoundError,
     RecipeService,
     RecipeSummary,
@@ -137,6 +142,33 @@ def _undeclared_recipe() -> dict:
                 # s1 is done by the time s2 renders, but is NOT in s2 inputs.
                 "prompt": "inline:ref {{steps.s1}}",
                 "inputs": ["params"],
+                "output": "02.md",
+            },
+        ],
+        "final": "02.md",
+    }
+
+
+def _param_unscoped_recipe() -> dict:
+    """2-step recipe whose step 2 uses {{topic}} WITHOUT declaring 'params'."""
+    return {
+        "apiVersion": "grain.recipe/v2",
+        "id": "paramscope",
+        "name": "Param Scope",
+        "supervision": "autonomous",
+        "params": [{"id": "topic", "required": True, "type": "string"}],
+        "steps": [
+            {
+                "id": "s1",
+                "prompt": "inline:first {{topic}}",
+                "inputs": ["params"],
+                "output": "01.md",
+            },
+            {
+                "id": "s2",
+                # uses {{topic}} but inputs does NOT include 'params'.
+                "prompt": "inline:ref {{topic}}",
+                "inputs": ["s1"],
                 "output": "02.md",
             },
         ],
@@ -266,6 +298,36 @@ def test_input_not_ready_distinct_from_undeclared(
         service.next(run.run_id)
 
 
+# --- 6b. params scoping: {{param}} requires declared 'params' (F13) ----------
+def test_param_token_requires_declared_params_input(
+    service: RecipeService, tmp_path: Path
+) -> None:
+    _scaffold(tmp_path, _param_unscoped_recipe())
+    service.start_run("paramscope", {"topic": "T"})
+    service.next("paramscope-0001")  # s1 -> awaiting_input
+    _write_artifact(tmp_path, "paramscope-0001", "01.md", "s1 body")
+    service.next("paramscope-0001")  # advance to s2
+    # s2 renders {{topic}} but does not declare 'params' -> undeclared (F13).
+    with pytest.raises(UndeclaredInputError):
+        service.next("paramscope-0001")
+
+
+def test_param_token_in_scope_when_params_declared(
+    service: RecipeService, tmp_path: Path
+) -> None:
+    # control: the SAME token resolves when the step declares 'params'.
+    recipe = _param_unscoped_recipe()
+    recipe["steps"][1]["inputs"] = ["params", "s1"]
+    _scaffold(tmp_path, recipe)
+    service.start_run("paramscope", {"topic": "GLP-1"})
+    service.next("paramscope-0001")
+    _write_artifact(tmp_path, "paramscope-0001", "01.md", "s1 body")
+    service.next("paramscope-0001")  # advance to s2
+    result = service.next("paramscope-0001")  # renders s2
+    assert "GLP-1" in result.prompt
+    assert {i.id for i in result.inputs} == {"params", "s1"}
+
+
 # --- 7. fulfil artifact -> advanced -----------------------------------------
 def test_next_advances(service: RecipeService, tmp_path: Path) -> None:
     _scaffold(tmp_path, _linear_recipe(), prompt_files={"steps/s1.md": "Do {{topic}}"})
@@ -281,6 +343,59 @@ def test_next_advances(service: RecipeService, tmp_path: Path) -> None:
     assert data["cursor"] == "s2"
     assert data["steps"][0]["status"] == "done"
     assert data["steps"][0]["artifact"] == "01.md"
+
+
+# --- 7b. completion is exists + non-empty (operator, F2) ---------------------
+def test_operator_empty_artifact_does_not_complete(
+    service: RecipeService, tmp_path: Path
+) -> None:
+    _scaffold(tmp_path, _linear_recipe(), prompt_files={"steps/s1.md": "Do {{topic}}"})
+    service.start_run("linear", {"topic": "T"})
+    service.next("linear-0001")  # s1 awaiting_input
+    # author an EMPTY artifact: must NOT count as done (F2) -> still paused.
+    _write_artifact(tmp_path, "linear-0001", "01.md", "")
+    result = service.next("linear-0001")
+    assert result.outcome == "prompt_ready"
+    assert result.run_status == "awaiting_input"
+    assert result.cursor == "s1"
+    data = _read_run_json(tmp_path, "linear-0001")
+    assert data["cursor"] == "s1"
+    assert data["steps"][0]["status"] == "awaiting_input"
+
+    # filling it with content now completes the step.
+    _write_artifact(tmp_path, "linear-0001", "01.md", "s1 body")
+    advanced = service.next("linear-0001")
+    assert advanced.outcome == "advanced"
+    assert advanced.cursor == "s2"
+
+
+# --- 7c. failed run does not reuse a left-behind output (F4) ------------------
+def test_failed_run_does_not_treat_leftover_output_as_done(
+    service: RecipeService, tmp_path: Path
+) -> None:
+    _scaffold(tmp_path, _linear_recipe(), prompt_files={"steps/s1.md": "Do {{topic}}"})
+    service.start_run("linear", {"topic": "T"})
+    service.next("linear-0001")  # s1 awaiting_input
+    # a non-empty output is on disk, but the step/run are FAILED.
+    _write_artifact(tmp_path, "linear-0001", "01.md", "leftover body")
+    run = recipe_store.load_run(tmp_path, "linear-0001")
+    run.status = "failed"
+    rec = run.step("s1")
+    rec.status = "failed"
+    rec.attempts = 1
+    rec.error = "boom"
+    recipe_store.save_run(tmp_path, run)
+
+    # next() must NOT silently complete the step from the leftover output; it
+    # re-renders (explicit re-run path) instead of advancing.
+    result = service.next("linear-0001")
+    assert result.outcome == "prompt_ready"
+    assert result.run_status == "awaiting_input"
+    assert result.cursor == "s1"
+    data = _read_run_json(tmp_path, "linear-0001")
+    assert data["cursor"] == "s1"
+    assert data["steps"][0]["status"] == "awaiting_input"
+    assert data["steps"][0]["attempts"] == 2  # re-entering the failed step
 
 
 # --- 8. gate handling -------------------------------------------------------
@@ -435,6 +550,13 @@ _EMPTY_OUTPUT_AGENT = (
     "import os\n"
     "open(os.environ['GRAIN_RECIPE_OUTPUT'], 'w').close()\n"  # present but empty
 )
+# Writes a non-empty BINARY (non-UTF8) artifact: passes exists+non-empty but is
+# not decodable text -> F12 auto-mode decode failure.
+_BINARY_OUTPUT_AGENT = (
+    "import os\n"
+    "with open(os.environ['GRAIN_RECIPE_OUTPUT'], 'wb') as f:\n"
+    "    f.write(b'\\xff\\xfe\\x00\\x01 not utf-8')\n"
+)
 # Succeeds on the 1st invocation, fails on the 2nd+ (counter in the run dir).
 _FAIL_ON_SECOND_AGENT = (
     "import os, sys\n"
@@ -524,18 +646,44 @@ def test_run_auto_fails_on_missing_output(
     assert "no output artifact" in (run.step("s1").error or "")
 
 
-def test_run_auto_empty_artifact_counts_as_produced(
+def test_run_auto_empty_artifact_fails_not_done(
     service: RecipeService, tmp_path: Path
 ) -> None:
-    # Completion is the existence check ONLY: a present-but-empty artifact passes.
+    # F2: completion is exists + NON-EMPTY (+ not-failed). A present-but-empty
+    # artifact is NOT a completion — the step fails (it did not produce content).
     _scaffold(tmp_path, _linear_recipe(), prompt_files={"steps/s1.md": "Do {{topic}}"})
     agent = _agent(tmp_path, "empty_agent.py", _EMPTY_OUTPUT_AGENT)
     started = service.start_run("linear", {"topic": "T"}, mode="auto")
 
     run = service.run_auto(started.run_id, agent=agent)
-    assert run.status == "done"
+    assert run.status == "failed"
+    assert run.step("s1").status == "failed"
+    assert "empty" in (run.step("s1").error or "")
     directory = recipe_store.run_dir(tmp_path, started.run_id)
+    # the empty file is on disk but was never accepted as the step artifact.
     assert (directory / "01.md").read_text(encoding="utf-8") == ""
+    assert run.step("s1").artifact is None
+
+
+def test_run_auto_non_utf8_output_fails_typed_not_crash(
+    service: RecipeService, tmp_path: Path
+) -> None:
+    # F12 (auto branch): an agent that writes a NON-EMPTY but binary/non-UTF8
+    # output passes the exists+non-empty gate, but reading it for the atomic
+    # write raises a typed ArtifactDecodeError -> the step is marked FAILED
+    # (spec §5), never a raw UnicodeDecodeError crash.
+    _scaffold(tmp_path, _linear_recipe(), prompt_files={"steps/s1.md": "Do {{topic}}"})
+    agent = _agent(tmp_path, "binary_agent.py", _BINARY_OUTPUT_AGENT)
+    started = service.start_run("linear", {"topic": "T"}, mode="auto")
+
+    run = service.run_auto(started.run_id, agent=agent)
+    assert run.status == "failed"
+    assert run.step("s1").status == "failed"
+    assert "UTF-8" in (run.step("s1").error or "")
+    # the binary file is on disk but was never accepted as the step artifact
+    # (write_step_artifact never ran, so the record reference stays unset).
+    assert run.step("s1").artifact is None
+    assert run.step("s2").status == "pending"  # never advanced past the failure
 
 
 def test_run_auto_resume_increments_attempts_without_mutating_prior(
@@ -614,6 +762,192 @@ def test_auto_step_outcome_validation() -> None:
         AutoStepOutcome(step_id="s1", status="bogus")
     with pytest.raises(ValueError):
         AutoStepOutcome(step_id="s1", status="done", attempts=-1)
+
+
+# ===========================================================================
+# C2 run-lifecycle robustness regressions (F5 / F8 / F11 / F12 / F7)
+# ===========================================================================
+
+
+def _write_recipe_yaml(workspace: Path, dir_name: str, recipe: dict) -> None:
+    """Write docs/recipes/<dir_name>/recipe.yaml with arbitrary id (for F5/F8)."""
+    recipe_dir = workspace / "docs" / "recipes" / dir_name
+    recipe_dir.mkdir(parents=True, exist_ok=True)
+    (recipe_dir / "recipe.yaml").write_text(yaml.safe_dump(recipe), encoding="utf-8")
+
+
+# --- F5: a recipe whose id != its directory is rejected (no orphaned run) -----
+def test_resolve_rejects_dir_id_mismatch(service: RecipeService, tmp_path: Path) -> None:
+    recipe = _gated_recipe()
+    recipe["id"] = "other"  # yaml id diverges from the directory name "mydir"
+    _write_recipe_yaml(tmp_path, "mydir", recipe)
+
+    # Old behaviour: resolve-by-dir returned id "other", so a run persisted under
+    # "other" could never be re-resolved (its dir is "mydir") -> orphaned run.
+    with pytest.raises(RecipeSchemaError):
+        service.resolve("mydir")
+    # And it is not advertised as runnable either.
+    assert "other" not in {s.id for s in service.list_recipes()}
+    assert "mydir" not in {s.id for s in service.list_recipes()}
+
+
+# --- F8: a mid-run definition edit raises a TYPED error, not a raw KeyError ----
+def test_mid_run_definition_desync_raises_typed(
+    service: RecipeService, tmp_path: Path
+) -> None:
+    recipe = {
+        "apiVersion": "grain.recipe/v2",
+        "id": "desync",
+        "name": "Desync",
+        "supervision": "autonomous",
+        "params": [{"id": "topic", "required": True, "type": "string"}],
+        "steps": [
+            {"id": "s1", "prompt": "inline:first {{topic}}", "inputs": ["params"], "output": "01.md"},
+            {"id": "s2", "prompt": "inline:use {{steps.s1}}", "inputs": ["s1"], "output": "02.md"},
+        ],
+        "final": "02.md",
+    }
+    _write_recipe_yaml(tmp_path, "desync", recipe)
+    service.start_run("desync", {"topic": "T"})
+    service.next("desync-0001")  # s1 awaiting_input
+    _write_artifact(tmp_path, "desync-0001", "01.md", "s1 body")
+    service.next("desync-0001")  # advance to s2
+
+    # Insert a NEW step the running run never recorded; s2 now references it.
+    recipe["steps"] = [
+        {"id": "s1", "prompt": "inline:first {{topic}}", "inputs": ["params"], "output": "01.md"},
+        {"id": "sx", "prompt": "inline:mid {{topic}}", "inputs": ["params"], "output": "0x.md"},
+        {"id": "s2", "prompt": "inline:use {{steps.s1}} {{steps.sx}}", "inputs": ["s1", "sx"], "output": "02.md"},
+    ]
+    _write_recipe_yaml(tmp_path, "desync", recipe)
+
+    # Old code raised a raw KeyError from run.step('sx'); now it is typed.
+    with pytest.raises(RecipeDefinitionChangedError):
+        service.next("desync-0001")
+
+
+def test_mid_run_recipe_api_version_mismatch_raises_typed(
+    service: RecipeService, tmp_path: Path
+) -> None:
+    _scaffold(tmp_path, _gated_recipe())
+    service.start_run("demo", {"topic": "T"})
+    # Tamper the captured recipe apiVersion to an incompatible major.
+    run = recipe_store.load_run(tmp_path, "demo-0001")
+    run.recipe_api_version = "grain.recipe/v3"
+    recipe_store.save_run(tmp_path, run)
+    with pytest.raises(RecipeDefinitionChangedError):
+        service.next("demo-0001")
+
+
+# --- F11: a missing step prompt file fails fast at start (typed) --------------
+def test_missing_prompt_file_fails_fast_at_start(
+    service: RecipeService, tmp_path: Path
+) -> None:
+    # _linear_recipe step s1 uses a prompt FILE; do NOT create it.
+    _scaffold(tmp_path, _linear_recipe())  # no prompt_files
+    with pytest.raises(RecipeSchemaError) as exc:
+        service.start_run("linear", {"topic": "T"})
+    assert "s1.md" in str(exc.value)
+    # No run dir was created (failed before persistence).
+    assert not (tmp_path / "docs" / "recipes" / "runs" / "linear-0001").exists()
+
+
+# --- F12: a non-UTF8 prior artifact yields a typed error, not a crash ---------
+def test_non_utf8_prior_artifact_raises_typed(
+    service: RecipeService, tmp_path: Path
+) -> None:
+    _scaffold(tmp_path, _linear_recipe(), prompt_files={"steps/s1.md": "Do {{topic}}"})
+    service.start_run("linear", {"topic": "T"})
+    service.next("linear-0001")  # s1 awaiting_input
+    # Author s1's artifact as BINARY / non-UTF8 bytes (non-empty -> completes).
+    target = recipe_store.run_dir(tmp_path, "linear-0001") / "01.md"
+    target.write_bytes(b"\xff\xfe\x00\x01 not utf-8")
+    service.next("linear-0001")  # s1 done -> advance to s2
+
+    # s2 declares s1 as an input; reading the binary artifact must be typed.
+    with pytest.raises(ArtifactDecodeError):
+        service.next("linear-0001")
+
+
+# --- F7: reject_gate resets the gated step for rework (service-level) ---------
+def test_reject_gate_resets_step_for_rework(
+    service: RecipeService, tmp_path: Path
+) -> None:
+    _scaffold(tmp_path, _gated_recipe())
+    service.start_run("demo", {"topic": "T"})
+    service.next("demo-0001")  # intake awaiting
+    _write_artifact(tmp_path, "demo-0001", "01-intake.md")
+    service.next("demo-0001")  # advance to review
+    service.next("demo-0001")  # review awaiting
+    _write_artifact(tmp_path, "demo-0001", "02-review.md")
+    service.next("demo-0001")  # review done -> awaiting_gate
+
+    run = service.reject_gate("demo-0001")
+    assert run.status == "running"
+    assert run.cursor == "review"
+    assert run.step("review").status == "pending"
+    assert run.step("review").artifact is None
+    # rejected artifact discarded so `next` does not re-complete from it.
+    assert not (recipe_store.run_dir(tmp_path, "demo-0001") / "02-review.md").exists()
+
+    # next re-renders the rejected step (proves it is not a dead-end).
+    result = service.next("demo-0001")
+    assert result.outcome == "prompt_ready"
+    assert result.step_id == "review"
+
+
+# --- F10: {{steps.params}} is a typed token error, never a raw KeyError --------
+def _steps_params_recipe() -> dict:
+    """1-step recipe whose prompt references {{steps.params}} (params is NOT a step)."""
+    return {
+        "apiVersion": "grain.recipe/v2",
+        "id": "stepsparams",
+        "name": "Steps Params",
+        "supervision": "autonomous",
+        "params": [{"id": "topic", "required": True, "type": "string"}],
+        "steps": [
+            {
+                "id": "s1",
+                # 'params' is a legal inputs entry, so it IS in declared inputs —
+                # but it is not a step, so {{steps.params}} must not hit run.step().
+                "prompt": "inline:bad {{steps.params}}",
+                "inputs": ["params"],
+                "output": "01.md",
+            },
+        ],
+        "final": "01.md",
+    }
+
+
+def test_steps_params_reference_raises_typed_not_keyerror(
+    service: RecipeService, tmp_path: Path
+) -> None:
+    _scaffold(tmp_path, _steps_params_recipe())
+    service.start_run("stepsparams", {"topic": "T"})
+    # Old code: run.step('params') raised a raw KeyError mid-render. Now it is a
+    # clean typed token error (and a RecipeEngineError so the CLI translates it).
+    with pytest.raises(UnknownTokenError) as exc:
+        service.next("stepsparams-0001")
+    assert isinstance(exc.value, RecipeEngineError)
+    assert not isinstance(exc.value, KeyError)
+
+
+# --- F14: every engine error subclasses the shared base RecipeEngineError ------
+def test_all_engine_errors_share_base_class() -> None:
+    # The uniform CLI translation (F14) depends on every typed engine error being
+    # a RecipeEngineError so a single `except RecipeEngineError` catches them all.
+    for err in (
+        RecipeNotFoundError,
+        RunNotFoundError,
+        MissingParamError,
+        InputNotReadyError,
+        UndeclaredInputError,
+        UnknownTokenError,
+        RecipeDefinitionChangedError,
+        ArtifactDecodeError,
+        GateStateError,
+    ):
+        assert issubclass(err, RecipeEngineError), err
 
 
 def test_result_dataclass_validation() -> None:

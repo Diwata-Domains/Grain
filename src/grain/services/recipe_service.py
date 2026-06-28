@@ -37,7 +37,13 @@ from dataclasses import dataclass, field, replace
 from pathlib import Path
 
 from grain.domain.recipe import RECIPE_API_VERSION as _RECIPE_API_VERSION
-from grain.domain.recipe import RecipeDefinition, RecipeStep, load_recipe
+from grain.domain.recipe import (
+    RecipeDefinition,
+    RecipeSchemaError,
+    RecipeStep,
+    ensure_output_within,
+    load_recipe,
+)
 from grain.domain.recipe_run import RUN_API_VERSION as _RUN_API_VERSION
 from grain.domain.recipe_run import (
     VALID_GATES,
@@ -88,28 +94,82 @@ _ENV_RUN_DIR = "GRAIN_RECIPE_RUN_DIR"
 
 
 # --- Typed errors ------------------------------------------------------------
-class RecipeNotFoundError(Exception):
+class RecipeEngineError(Exception):
+    """Base class for EVERY typed error the recipe engine raises (F14).
+
+    Each engine error subclasses this so the CLI run verbs can translate the
+    WHOLE family uniformly to a :mod:`grain.domain.errors` type (and thus a spec
+    exit code) with a single ``except RecipeEngineError`` catch. This is what
+    guarantees no engine error — including any added later — falls through to the
+    CLI catch-all as a bare ``Error: ...`` exit 1, and that no raw
+    ``KeyError`` / ``FileNotFoundError`` / ``UnicodeDecodeError`` ever escapes.
+    """
+
+
+class RecipeNotFoundError(RecipeEngineError):
     """No recipe with the given id under workspace or bundled recipes."""
 
 
-class RunNotFoundError(Exception):
+class RunNotFoundError(RecipeEngineError):
     """No run with the given id under docs/recipes/runs/."""
 
 
-class MissingParamError(Exception):
+class MissingParamError(RecipeEngineError):
     """A required recipe parameter was not supplied to start_run."""
 
 
-class InputNotReadyError(Exception):
+class InputNotReadyError(RecipeEngineError):
     """A declared input references a prior step that is not yet ``done``."""
 
 
-class UndeclaredInputError(Exception):
+class UndeclaredInputError(RecipeEngineError):
     """A ``{{steps.<id>}}`` references a step NOT in the cursor step's inputs."""
 
 
-class UnknownTokenError(Exception):
+class UnknownTokenError(RecipeEngineError):
     """A ``{{...}}`` token resolves to neither a param nor a valid steps.<id>."""
+
+
+class RecipeDefinitionChangedError(RecipeEngineError):
+    """The live ``recipe.yaml`` no longer matches the run's persisted steps.
+
+    Raised (F8) when a recipe definition is edited mid-run so that its step set /
+    order — or its captured ``recipe_apiVersion`` — diverges from what the run was
+    created against. Surfacing this as a TYPED error keeps a desync from stranding
+    the run with a raw ``KeyError`` / ``ValueError`` deep in the engine.
+    """
+
+
+class ArtifactDecodeError(RecipeEngineError):
+    """A prior step artifact (or step output) is not decodable UTF-8 text (F12).
+
+    The engine reads artifacts as UTF-8; a binary / non-UTF8 file yields this
+    clean typed error instead of letting a raw ``UnicodeDecodeError`` escape.
+    """
+
+
+class GateStateError(RecipeEngineError):
+    """A gate decision (approve/reject) was requested on a non-``awaiting_gate`` run."""
+
+
+def _recipe_api_major(version: str) -> str:
+    """Major component of a ``<name>/v<major>`` recipe apiVersion string."""
+    if not isinstance(version, str) or "/v" not in version:
+        raise RecipeDefinitionChangedError(
+            f"malformed recipe apiVersion {version!r}; expected '<name>/v<major>'"
+        )
+    return version.rsplit("/v", 1)[1].split(".", 1)[0]
+
+
+def _read_artifact_text(path: Path, *, label: str) -> str:
+    """Read ``path`` as UTF-8, translating a decode failure into a typed error (F12)."""
+    try:
+        return path.read_text(encoding="utf-8")
+    except UnicodeDecodeError as exc:
+        raise ArtifactDecodeError(
+            f"{label} {path.name!r} is not valid UTF-8 text "
+            f"(binary or wrong-encoding artifact): {exc}"
+        ) from exc
 
 
 # --- Result dataclasses ------------------------------------------------------
@@ -277,6 +337,18 @@ def _format_params(params: dict[str, str]) -> str:
     return "\n".join(f"{key}={params[key]}" for key in sorted(params))
 
 
+def _artifact_present_nonempty(path: Path) -> bool:
+    """True iff ``path`` is a non-empty file (the completion gate, F2).
+
+    Completion is NOT bare existence: an artifact must exist AND carry content
+    for the step to count as done. A zero-byte file is treated as not-yet-done.
+    """
+    try:
+        return path.is_file() and path.stat().st_size > 0
+    except OSError:
+        return False
+
+
 class RecipeService:
     """Operator-mode (offline, deterministic) recipe step-runner engine."""
 
@@ -312,9 +384,75 @@ class RecipeService:
         )
 
     def resolve(self, recipe_id: str) -> RecipeDefinition:
-        """Find + parse a recipe by id (workspace first, then bundled)."""
+        """Find + parse a recipe by id (workspace first, then bundled).
+
+        Enforces two start-time invariants so a run can never be stranded later:
+
+        * **F5 (dir == id):** the parsed ``id`` MUST equal the directory the
+          recipe was resolved from. Resolution keys on the directory name while
+          persistence keys on ``definition.id``; requiring them equal means
+          resolve-by-dir and persist-by-id can never diverge into an orphaned run.
+        * **F11 (prompt files exist):** every path-based step ``prompt:`` must
+          exist now, failing fast with a typed :class:`RecipeSchemaError` rather
+          than mid-run via an unguarded ``read_text``.
+        """
         recipe_dir = self._recipe_dir(recipe_id)
-        return load_recipe(recipe_dir / "recipe.yaml")
+        definition = load_recipe(recipe_dir / "recipe.yaml")
+        if definition.id != recipe_dir.name:
+            raise RecipeSchemaError(
+                f"recipe id {definition.id!r} does not match its directory "
+                f"{recipe_dir.name!r}; a recipe must live in "
+                f"docs/recipes/<id>/recipe.yaml with id == <id>"
+            )
+        self._validate_prompt_files(definition, recipe_dir)
+        return definition
+
+    @staticmethod
+    def _validate_prompt_files(
+        definition: RecipeDefinition, recipe_dir: Path
+    ) -> None:
+        """Fail fast (F11) if any path-based step ``prompt:`` is missing on disk."""
+        for step in definition.steps:
+            if step.prompt.startswith(_INLINE_PREFIX):
+                continue
+            prompt_path = recipe_dir / step.prompt
+            if not prompt_path.is_file():
+                raise RecipeSchemaError(
+                    f"recipe {definition.id!r} step {step.id!r} prompt file "
+                    f"{step.prompt!r} not found at {str(prompt_path)!r}"
+                )
+
+    def _resolve_for_run(self, run: RecipeRun) -> RecipeDefinition:
+        """Resolve the recipe for a run, asserting it has not desynced (F8).
+
+        A ``recipe.yaml`` edited mid-run must not strand the run with a raw
+        ``KeyError`` / ``ValueError``. This re-resolves the definition and checks
+        it still matches the run's persisted state:
+
+        * the captured ``recipe_apiVersion`` major must match this engine's, and
+        * the definition's step ids (in order) must equal the run's step records.
+
+        Any divergence raises a typed :class:`RecipeDefinitionChangedError`.
+        """
+        definition = self.resolve(run.recipe)
+        if _recipe_api_major(run.recipe_api_version) != _recipe_api_major(
+            RECIPE_API_VERSION
+        ):
+            raise RecipeDefinitionChangedError(
+                f"run {run.run_id!r} was created against recipe apiVersion "
+                f"{run.recipe_api_version!r}, incompatible with this engine's "
+                f"{RECIPE_API_VERSION!r}; start a new run"
+            )
+        def_ids = [step.id for step in definition.steps]
+        run_ids = [record.id for record in run.steps]
+        if def_ids != run_ids:
+            raise RecipeDefinitionChangedError(
+                f"recipe {run.recipe!r} definition changed since run "
+                f"{run.run_id!r} started: live steps {def_ids} no longer match "
+                f"the run's persisted steps {run_ids}; resolve the desync or "
+                f"start a new run"
+            )
+        return definition
 
     def list_recipes(self) -> list[RecipeSummary]:
         """Enumerate bundled + workspace recipes (workspace overrides bundled)."""
@@ -335,6 +473,11 @@ class RecipeService:
                     definition = load_recipe(entry / "recipe.yaml")
                 except Exception:
                     # A malformed recipe must not break enumeration of the rest.
+                    continue
+                # F5: a recipe whose id does not match its directory is not
+                # resolvable (resolve enforces dir == id), so it must not be
+                # advertised as runnable.
+                if definition.id != entry.name:
                     continue
                 summaries[definition.id] = RecipeSummary(
                     id=definition.id,
@@ -413,64 +556,32 @@ class RecipeService:
                 message="run already complete",
             )
 
-        definition = self.resolve(run.recipe)
+        # F8: re-resolve against the run, rejecting a mid-run definition desync
+        # as a typed error instead of a raw KeyError/ValueError deep in advance.
+        definition = self._resolve_for_run(run)
         recipe_dir = self._recipe_dir(run.recipe)
         step_def = self._step_def(definition, run.cursor)
         record = run.step(run.cursor)
         directory = recipe_store.run_dir(self.workspace_root, run.run_id)
-        output_path = directory / step_def.output
+        # F1: confirm the declared output resolves strictly inside the run dir.
+        output_path = ensure_output_within(directory, step_def.output, label="step")
 
-        # 4. Output exists -> mark done + advance (or gate / complete).
-        if output_path.exists():
-            record.status = "done"
-            record.artifact = step_def.output
-            record.ended = recipe_store._utc_now()
-            if record.attempts == 0:
-                record.attempts = 1
-
-            if step_def.gate == "review":
-                record.status = "awaiting_gate"
-                run.status = "awaiting_gate"
-                # cursor unchanged
-                recipe_store.save_run(self.workspace_root, run)
-                return NextResult(
-                    run_id=run.run_id,
-                    outcome="awaiting_gate",
-                    cursor=run.cursor,
-                    step_id=step_def.id,
-                    run_status="awaiting_gate",
-                    gate="review",
-                    message=f"step {step_def.id} complete; awaiting review gate",
-                )
-
-            next_step = self._next_step_def(definition, run.cursor)
-            if next_step is None:
-                run.status = "done"
-                # cursor stays on the final step id (run.json invariant, §2.2);
-                # the NextResult reports cursor=None for a done run.
-                recipe_store.save_run(self.workspace_root, run)
-                return NextResult(
-                    run_id=run.run_id,
-                    outcome="run_complete",
-                    cursor=None,
-                    step_id=step_def.id,
-                    run_status="done",
-                    message="final step complete; run done",
-                )
-
-            run.status = "running"
-            run.cursor = next_step.id
-            recipe_store.save_run(self.workspace_root, run)
-            return NextResult(
-                run_id=run.run_id,
-                outcome="advanced",
-                cursor=next_step.id,
-                step_id=next_step.id,
-                run_status="running",
-                message=f"step {step_def.id} done; advanced to {next_step.id}",
+        # 4. Completion (F2/F4): a step is done ONLY when its output artifact
+        #    EXISTS and is NON-EMPTY, the step record is not ``failed``, and the
+        #    run is not ``failed``. A failed run/step must take an explicit
+        #    re-run path (re-render + re-author) — a left-behind output never
+        #    silently counts as completion.
+        if (
+            run.status != "failed"
+            and record.status != "failed"
+            and _artifact_present_nonempty(output_path)
+        ):
+            return self._complete_and_advance(
+                run, definition, step_def, record, content=None
             )
 
-        # 5. Output missing -> operator-mode pause (render + surface, no failure).
+        # 5. Output missing/empty (or re-entering a failed step) -> operator-mode
+        #    pause (render + surface, no failure). The engine writes NOTHING.
         scoped_inputs = self._assemble_inputs(run, step_def, directory)
         prompt_text = self._render_prompt(
             run, step_def, recipe_dir, directory
@@ -497,6 +608,145 @@ class RecipeService:
             inputs=scoped_inputs,
             message=f"step {step_def.id} awaiting output artifact",
         )
+
+    def _complete_and_advance(
+        self,
+        run: RecipeRun,
+        definition: RecipeDefinition,
+        step_def: RecipeStep,
+        record,
+        *,
+        content: str | None,
+    ) -> NextResult:
+        """Mark the cursor step done, then gate / advance / complete (spec §3.1).
+
+        Shared by operator :meth:`next` and auto :meth:`run_auto`.
+
+        * ``content is None`` (operator): the human already authored the artifact
+          on disk; the engine NEVER writes a step artifact in operator mode, so
+          only ``run.json`` is persisted (via :func:`recipe_store.save_run`).
+        * ``content`` supplied (auto): the artifact is (re)written ATOMICALLY via
+          :func:`recipe_store.write_step_artifact` (artifact lands first, then
+          ``run.json``), making the documented atomic-write invariant live.
+        """
+        record.status = "done"
+        record.artifact = step_def.output
+        record.ended = recipe_store._utc_now()
+        if record.attempts == 0:
+            record.attempts = 1
+
+        def _persist() -> None:
+            if content is None:
+                recipe_store.save_run(self.workspace_root, run)
+            else:
+                recipe_store.write_step_artifact(
+                    self.workspace_root, run, step_def.id, content, step_def.output
+                )
+
+        if step_def.gate == "review":
+            record.status = "awaiting_gate"
+            run.status = "awaiting_gate"
+            # cursor unchanged
+            _persist()
+            return NextResult(
+                run_id=run.run_id,
+                outcome="awaiting_gate",
+                cursor=run.cursor,
+                step_id=step_def.id,
+                run_status="awaiting_gate",
+                gate="review",
+                message=f"step {step_def.id} complete; awaiting review gate",
+            )
+
+        next_step = self._next_step_def(definition, run.cursor)
+        if next_step is None:
+            run.status = "done"
+            # cursor stays on the final step id (run.json invariant, §2.2); the
+            # NextResult reports cursor=None for a done run.
+            _persist()
+            return NextResult(
+                run_id=run.run_id,
+                outcome="run_complete",
+                cursor=None,
+                step_id=step_def.id,
+                run_status="done",
+                message="final step complete; run done",
+            )
+
+        run.status = "running"
+        run.cursor = next_step.id
+        _persist()
+        return NextResult(
+            run_id=run.run_id,
+            outcome="advanced",
+            cursor=next_step.id,
+            step_id=next_step.id,
+            run_status="running",
+            message=f"step {step_def.id} done; advanced to {next_step.id}",
+        )
+
+    # --- gate decisions (spec §3 / §5) --------------------------------------
+    def approve_gate(self, run_id: str) -> RecipeRun:
+        """Approve the review gate on the cursor step and advance past it.
+
+        The gated step is marked ``done`` WITHOUT re-running it (its already
+        produced artifact stands); the cursor moves to the next step (or the run
+        completes if the gated step was last). Returns the updated run.
+        """
+        run = self._load_run(run_id)
+        if run.status != "awaiting_gate":
+            raise GateStateError(
+                f"run {run_id!r} is not awaiting a gate (status {run.status!r})"
+            )
+        definition = self._resolve_for_run(run)
+        record = run.step(run.cursor)
+        record.status = "done"
+        record.ended = recipe_store._utc_now()
+
+        next_step = self._next_step_def(definition, run.cursor)
+        if next_step is None:
+            # cursor stays on the final step id (run.json invariant, §2.2).
+            run.status = "done"
+        else:
+            run.cursor = next_step.id
+            run.status = "running"
+        recipe_store.save_run(self.workspace_root, run)
+        return run
+
+    def reject_gate(self, run_id: str) -> RecipeRun:
+        """Reject the review gate, sending the gated step back for rework (F7).
+
+        Reject is NOT a dead-end: it resets the gated step to a re-runnable state
+        so the NEXT ``next`` (operator) / ``resume`` (auto) re-renders / re-invokes
+        it. The rejected artifact is discarded (removed from disk + its record
+        reference cleared) so the run does not immediately re-complete from the
+        stale output; the cursor stays on the gated step and the run returns to
+        ``running``. Returns the updated run.
+        """
+        run = self._load_run(run_id)
+        if run.status != "awaiting_gate":
+            raise GateStateError(
+                f"run {run_id!r} is not awaiting a gate (status {run.status!r})"
+            )
+        definition = self._resolve_for_run(run)
+        step_def = self._step_def(definition, run.cursor)
+        record = run.step(run.cursor)
+
+        directory = recipe_store.run_dir(self.workspace_root, run.run_id)
+        output_path = ensure_output_within(directory, step_def.output, label="step")
+        # Discard the rejected artifact so completion does not re-fire from it.
+        try:
+            output_path.unlink()
+        except FileNotFoundError:
+            pass
+
+        record.status = "pending"
+        record.artifact = None
+        record.ended = None
+        run.status = "running"
+        # cursor unchanged — `next`/`resume` re-render and re-author the step.
+        recipe_store.save_run(self.workspace_root, run)
+        return run
 
     def resume(
         self, run_id: str, *, agent: WorkflowLoopAgentConfig | None = None
@@ -553,12 +803,14 @@ class RecipeService:
             if run.status in ("done", "awaiting_gate"):
                 return run
 
-            definition = self.resolve(run.recipe)
+            # F8: reject a mid-run definition desync as a typed error.
+            definition = self._resolve_for_run(run)
             recipe_dir = self._recipe_dir(run.recipe)
             step_def = self._step_def(definition, run.cursor)
             record = run.step(run.cursor)
             directory = recipe_store.run_dir(self.workspace_root, run.run_id)
-            output_path = directory / step_def.output
+            # F1: confirm the declared output resolves inside the run dir.
+            output_path = ensure_output_within(directory, step_def.output, label="step")
 
             # Render BEFORE marking the step running so a render error (e.g. an
             # undeclared token) is not mistaken for an agent failure.
@@ -585,14 +837,29 @@ class RecipeService:
                     run, record, f"agent exited {invocation.returncode}", invocation
                 )
                 return run
-            if not output_path.exists():
+            # Completion gate (F2): the artifact must exist AND be non-empty.
+            if not output_path.is_file():
                 self._fail_step(
                     run, record, "agent produced no output artifact", invocation
                 )
                 return run
+            if output_path.stat().st_size == 0:
+                self._fail_step(
+                    run, record, "agent produced an empty output artifact", invocation
+                )
+                return run
 
-            # Output exists -> reuse the operator advance/gate/complete logic.
-            result = self.next(run_id)
+            # Output present + non-empty -> finalize through write_step_artifact
+            # (atomic: artifact-first, then run.json) and advance/gate/complete.
+            # F12: a non-UTF8 agent artifact is a step failure, not a crash.
+            try:
+                content = _read_artifact_text(output_path, label="output artifact")
+            except ArtifactDecodeError as exc:
+                self._fail_step(run, record, str(exc), invocation)
+                return run
+            result = self._complete_and_advance(
+                run, definition, step_def, record, content=content
+            )
             if result.outcome in ("awaiting_gate", "run_complete"):
                 return self._load_run(run_id)
             # outcome == "advanced": continue with the next cursor step.
@@ -706,7 +973,14 @@ class RecipeService:
     def _artifact_input(
         self, run: RecipeRun, step_id: str, directory: Path
     ) -> ScopedInput:
-        record = run.step(step_id)  # KeyError impossible: parser validates refs
+        try:
+            record = run.step(step_id)
+        except KeyError as exc:
+            # Belt-and-suspenders (F10): a reference to a non-step id (e.g.
+            # 'params') must never escape as a raw KeyError from run.step().
+            raise UnknownTokenError(
+                f"input {step_id!r} is not a step in run {run.run_id!r}"
+            ) from exc
         if record.status != "done":
             raise InputNotReadyError(
                 f"input {step_id!r} is not done (status {record.status!r})"
@@ -720,7 +994,9 @@ class RecipeService:
             kind="artifact",
             id=step_id,
             path=str(artifact_path),
-            content=artifact_path.read_text(encoding="utf-8"),
+            # F12: a non-UTF8 prior artifact yields a typed ArtifactDecodeError,
+            # never a raw UnicodeDecodeError crash.
+            content=_read_artifact_text(artifact_path, label=f"input {step_id!r} artifact"),
         )
 
     def _render_prompt(
@@ -752,6 +1028,16 @@ class RecipeService:
             token = match.group(1).strip()
             if token.startswith(_STEPS_PREFIX):
                 ref_id = token[len(_STEPS_PREFIX) :]
+                # F10: 'params' is a legal *inputs* entry but is NOT a step, so a
+                # ``{{steps.params}}`` reference must not be treated as an
+                # artifact lookup (which would hit ``run.step('params')`` and
+                # raise a raw KeyError). Surface a clean typed token error.
+                if ref_id == _PARAMS_INPUT:
+                    raise UnknownTokenError(
+                        f"{{{{steps.params}}}} in step {step_def.id!r} is not a "
+                        f"valid step reference; 'params' is not a step (use "
+                        f"'{{{{<param>}}}}' with 'params' declared in inputs)"
+                    )
                 if ref_id not in declared:
                     raise UndeclaredInputError(
                         f"{{{{steps.{ref_id}}}}} is not declared in step "
@@ -759,6 +1045,16 @@ class RecipeService:
                     )
                 return self._artifact_input(run, ref_id, directory).content
             if token in run.params:
+                # F13: a {{param}} token is in scope ONLY when the step declares
+                # ``params`` in its inputs — same declared-input scoping as
+                # {{steps.<id>}}. Otherwise it is an undeclared (out-of-scope)
+                # reference, not a free-for-all read of the run params.
+                if _PARAMS_INPUT not in declared:
+                    raise UndeclaredInputError(
+                        f"{{{{{token}}}}} references a param but step "
+                        f"{step_def.id!r} does not declare 'params' in its "
+                        f"inputs {sorted(declared)}"
+                    )
                 return run.params[token]
             raise UnknownTokenError(
                 f"unresolved token {{{{{token}}}}} in step {step_def.id!r}"
