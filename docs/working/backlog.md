@@ -288,6 +288,64 @@ Key deliverables: `grain workflow guard`, `grain hooks install/list/remove`, `gr
 
 ---
 
+## Phase 34 — v0.5.0 Recipe Engine (Step-Runner) MVP
+
+> **Status:** ACTIVE (drafted) — 9 packets (P34-T01–P34-T09). First v0.5.0 execution phase: ships the operator-mode recipe step-runner (parser → persistence → engine → CLI → bundled recipe → demo → tests) per `recipe_spec.md` §7 MVP. Critical path is T01–T08 (target July 21); T09 is STRETCH.
+
+### P34 Notes
+- Scope is the §7 MVP only: `grain.recipe/v2` parser, file-backed `RecipeRun` (`grain.recipe-run/v1`) under `docs/recipes/runs/<run-id>/`, operator-mode engine, CLI surface, one bundled 6-step research-brief recipe, a pre-staged demo workspace + runbook, and integration tests. Parallel-engine isolation: no `evaluate_workflow_state` / packet-lifecycle coupling.
+- **Build order:** T01 → T02 → T03 → T04 → T05 → T06 → T07 → T08; T09 is STRETCH (off the July-21 critical path). The strict numeric dependency graph is acyclic with this topological order.
+- **Spec decisions (resolved 2026-06-28):** `supervision` is parsed into `RecipeDefinition` and carried into `run.json`; `start_run` returns outcome `started` (status `pending`, no auto-advance); per-step `gate` is persisted in `run.json`; the service module is `recipe_service.py`; `run.json` separates `mode` (operator|auto) from `supervision` (supervised|gated|autonomous); operator mode pauses at the new `awaiting_input` status — a bare `recipe run` does not auto-complete offline. See `recipe_engine_spec.md` §2.2 / §3.1 / §5.
+- **T04↔T06 cycle: resolved** — T04's `recipe list` test uses a scaffolded fixture (not the bundled recipe), recipe enumeration is owned by T03, and T06 depends on T04. Cross-reference labels (T06→T04, T07 dep roles, T08 resume attribution) corrected.
+- **Demo approach (locked):** "reference run + live `next`" — show the committed `research-brief-0001` run, then drive `grain recipe next` / `status` live; auto-mode (`--auto`) pre-recorded is the optional "watch artifacts appear" beat.
+
+### P34-T01 — v2 recipe parser + typed dataclasses
+- **Status:** draft
+- **Description:** Parse `grain.recipe/v2` definitions into typed dataclasses (`RecipeDefinition`, `RecipeParam`, steps) with strict-key rejection; validate `category` against `VALID_CATEGORIES`; `supervision` is accept-and-ignore (deferred run-mode), and error messages name the offending key/version.
+- **Dependencies:** none
+
+### P34-T02 — File-backed RecipeRun persistence + create_run
+- **Status:** draft
+- **Description:** File-backed `RecipeRun`/`RecipeStepRecord` model (`grain.recipe-run/v1`) with `create_run(...)` and the run-id allocation helper, persisting atomically (step artifact → `run.json`) under `docs/recipes/runs/<run-id>/` for lossless round-trip.
+- **Dependencies:** P34-T01
+
+### P34-T03 — Operator-mode recipe engine
+- **Status:** draft
+- **Description:** Operator-mode engine — `resolve` / `start_run` / `next` / `resume` over declared-inputs-only `{{steps.<id>}}` token scoping, with `NextResult` outcomes and typed errors; renders prompts and surfaces output paths, never generating step content.
+- **Dependencies:** P34-T01, P34-T02
+
+### P34-T04 — CLI: grain recipe list / show / scaffold
+- **Status:** draft
+- **Description:** `grain recipe list | show | scaffold` over the shared discovery service (bundled + workspace enumeration), with text and `--format json` output; creates and registers the `recipe` Click group.
+- **Dependencies:** P34-T01, P34-T03
+
+### P34-T05 — CLI: grain recipe run / next / status / resume / gate
+- **Status:** draft
+- **Description:** Extend the `recipe` Click group with `run | next | status | resume | gate` over the engine, driving operator-mode runs step-by-step and exposing gate approve/reject and resume-on-failure.
+- **Dependencies:** P34-T03, P34-T04
+
+### P34-T06 — Bundled research-brief recipe
+- **Status:** draft
+- **Description:** Ship the canonical 6-step, gateless `research-brief` recipe as package data and wire the bundled-recipe discovery enumeration so `grain recipe list/show` (T04) surface it as `source: bundled`.
+- **Dependencies:** P34-T01, P34-T03, P34-T04
+
+### P34-T07 — Pre-staged recipe-demo workspace + runbook
+- **Status:** draft
+- **Description:** Pre-staged `examples/recipe-demo/` workspace (a byte-identical copy of the bundled research-brief plus a completed `run.json`) and a shippable runbook for the venue/PyPI demo path, using a valid `supervision` level.
+- **Dependencies:** P34-T05, P34-T06
+
+### P34-T08 — Recipe MVP integration / e2e tests
+- **Status:** draft
+- **Description:** Integration/e2e tests over the bundled recipe: operator run-to-`done` (gateless, no API key) and resume-on-failure (engine T03 / CLI T05), discovering the recipe via the engine.
+- **Dependencies:** P34-T05, P34-T06
+
+### P34-T09 — Agent auto-mode orchestrator (STRETCH)
+- **Status:** draft
+- **Description:** Auto-mode orchestrator — `resolve_recipe_agent` + a single canonical `workflow_loop.yaml` driving autonomous/gated recipe runs (halting on the gated step) on top of the operator engine; STRETCH, off the July-21 critical path.
+- **Dependencies:** P34-T03, P34-T05
+
+---
+
 ## Backlog Maintenance Rules
 
 1. Backlog items must remain concrete and implementable
