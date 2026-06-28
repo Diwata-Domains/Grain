@@ -1,0 +1,5 @@
+# Pre-staged demo workspace for the Grain recipe step-runner (P34).
+# workspace_kind is intentionally omitted: the recipe engine must degrade gracefully
+# (recipe_engine_spec.md §6) so the demo runs before the full workspace_kind work lands.
+name = "recipe-demo"
+# workspace_kind = "knowledge"   # intentionally commented out — do NOT enable for the MVP demo

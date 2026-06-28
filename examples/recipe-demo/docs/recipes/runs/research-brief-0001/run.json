@@ -1,0 +1,65 @@
+{
+  "apiVersion": "grain.recipe-run/v1",
+  "run_id": "research-brief-0001",
+  "recipe": "research-brief",
+  "recipe_apiVersion": "grain.recipe/v2",
+  "params": {
+    "topic": "GLP-1 obesity market"
+  },
+  "mode": "operator",
+  "supervision": "autonomous",
+  "status": "done",
+  "cursor": "format",
+  "created": "2026-06-28T19:52:11Z",
+  "updated": "2026-06-28T19:52:11Z",
+  "steps": [
+    {
+      "id": "intake",
+      "status": "done",
+      "artifact": "01-intake.md",
+      "attempts": 1,
+      "started": "2026-06-28T19:52:11Z",
+      "ended": "2026-06-28T19:52:11Z"
+    },
+    {
+      "id": "gather",
+      "status": "done",
+      "artifact": "02-sources.md",
+      "attempts": 1,
+      "started": "2026-06-28T19:52:11Z",
+      "ended": "2026-06-28T19:52:11Z"
+    },
+    {
+      "id": "outline",
+      "status": "done",
+      "artifact": "03-outline.md",
+      "attempts": 1,
+      "started": "2026-06-28T19:52:11Z",
+      "ended": "2026-06-28T19:52:11Z"
+    },
+    {
+      "id": "draft",
+      "status": "done",
+      "artifact": "04-draft.md",
+      "attempts": 1,
+      "started": "2026-06-28T19:52:11Z",
+      "ended": "2026-06-28T19:52:11Z"
+    },
+    {
+      "id": "self_check",
+      "status": "done",
+      "artifact": "05-review.md",
+      "attempts": 1,
+      "started": "2026-06-28T19:52:11Z",
+      "ended": "2026-06-28T19:52:11Z"
+    },
+    {
+      "id": "format",
+      "status": "done",
+      "artifact": "brief.md",
+      "attempts": 1,
+      "started": "2026-06-28T19:52:11Z",
+      "ended": "2026-06-28T19:52:11Z"
+    }
+  ]
+}

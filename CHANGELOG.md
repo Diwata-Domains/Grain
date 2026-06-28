@@ -1,3 +1,13 @@
+## [Unreleased] — v0.5.0
+
+### Features
+- recipe step-runner MVP: `grain.recipe/v2` definitions driven through
+  `grain.recipe-run/v1` run state (`docs/recipes/runs/<run-id>/`) by a parallel
+  engine that never touches the SDLC packet loop. Operator mode (`grain recipe
+  run | next | status | resume | gate`) is offline and deterministic; resume on
+  explicit validation failure; bundled gateless `research-brief` recipe. The
+  step-runner supersedes the single-packet recipe model.
+
 ## [0.4.0] — 2026-06-25
 
 ### Chores

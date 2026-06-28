@@ -1,0 +1,46 @@
+apiVersion: grain.recipe/v2
+id: research-brief
+name: "Research Brief"
+description: "Produce a sourced research brief on a topic"
+category: research
+supervision: autonomous       # gateless default run mode; NOT a per-step gate
+
+params:
+  - id: topic
+    label: "Topic"
+    required: true
+    type: string
+
+steps:
+  - id: intake
+    name: "Frame the topic"
+    prompt: steps/intake.md
+    inputs: [params]
+    output: 01-intake.md
+  - id: gather
+    name: "Gather sources"
+    prompt: steps/gather.md
+    inputs: [params, intake]
+    output: 02-sources.md
+  - id: outline
+    name: "Outline the brief"
+    prompt: steps/outline.md
+    inputs: [intake, gather]
+    output: 03-outline.md
+  - id: draft
+    name: "Draft the brief"
+    prompt: steps/draft.md
+    inputs: [outline, gather]
+    output: 04-draft.md
+  - id: self_check
+    name: "Self-check the draft"
+    prompt: steps/self_check.md
+    inputs: [draft, gather]
+    output: 05-review.md
+  - id: format
+    name: "Format the deliverable"
+    prompt: steps/format.md
+    inputs: [draft, self_check]
+    output: brief.md
+
+final: brief.md

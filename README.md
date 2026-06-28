@@ -289,6 +289,35 @@ These outputs are proposals meant to support sequencing, not bypass review.
 
 ---
 
+## Recipes
+
+A recipe is a deterministic, multi-step workflow engine — an ordered list of steps,
+each producing an inspectable artifact, with memory flowing between steps via declared
+inputs. The step-runner engine **supersedes the older single-packet recipe model** (a
+recipe is no longer "one configured task packet"). Recipes run as their own small linear
+state machine **parallel to** — never inside — the task-packet loop: they never create
+task packets and never touch the workflow engine.
+
+Definitions are `grain.recipe/v2` (`docs/recipes/<id>/recipe.yaml` or bundled); run state
+is `grain.recipe-run/v1` under `docs/recipes/runs/<run-id>/`, file-backed and resumable.
+
+Default **operator mode** is offline and deterministic: `grain recipe next` renders the
+current step's prompt with its scoped inputs and pauses at `awaiting_input`; you (or an
+agent) write the step's `output` artifact, then advance. The engine never writes the
+artifact itself and never auto-completes — a missing output is a pause, not a failure.
+
+```bash
+grain recipe run research-brief --param topic="GLP-1 obesity market"   # start a run
+grain recipe status                                                    # cursor + per-step state
+# write the cursor step's output artifact under docs/recipes/runs/<run-id>/, then:
+grain recipe next                                                      # advance one step
+grain recipe resume <run-id>                                           # re-enter a paused/failed run
+```
+
+Add `--format json` to any recipe command to drive it headlessly from an agent.
+
+---
+
 ## Terminal UI
 
 `grain tui` is an operator shell over Grain's CLI and file-backed workflow.
