@@ -19,7 +19,7 @@ def test_formula_metadata_matches_public_project_identity() -> None:
     content = (repo_root / "Formula" / "grain.rb").read_text(encoding="utf-8")
 
     assert 'homepage "https://github.com/Diwata-Labs/Grain"' in content
-    assert 'license "MIT"' in content
+    assert 'license "Apache-2.0"' in content
 
 
 def test_packet_first_guardrails_exist_in_shipped_prompt_assets() -> None:
