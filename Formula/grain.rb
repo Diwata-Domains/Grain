@@ -8,7 +8,7 @@ class Grain < Formula
   # distribution path until the release tarball metadata is refreshed.
   url "file://#{File.expand_path("../dist/grain-0.1.0.tar.gz", __dir__)}"
   sha256 "0ee0aa82310fb32faef7ba9ab08c8634ef4cbb5f1669c5723373b12df18c900d"
-  license "MIT"
+  license "Apache-2.0"
 
   depends_on "python@3.13"
 

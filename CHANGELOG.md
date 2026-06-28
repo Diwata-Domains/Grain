@@ -1,5 +1,7 @@
 ## [Unreleased] — v0.5.0
 
+- Relicensed from AGPL-3.0-only to Apache-2.0.
+
 ### Features
 - recipe step-runner MVP: `grain.recipe/v2` definitions driven through
   `grain.recipe-run/v1` run state (`docs/recipes/runs/<run-id>/`) by a parallel

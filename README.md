@@ -1,7 +1,7 @@
 # Grain
 
 [![PyPI](https://img.shields.io/pypi/v/grain-kit)](https://pypi.org/project/grain-kit/)
-[![License: AGPL-3.0-only](https://img.shields.io/badge/license-AGPL--3.0--only-blue)](LICENSE)
+[![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
 
 **Deterministic workflow for agent CLIs.**
 
@@ -366,7 +366,7 @@ pip install -e .
 
 ## License
 
-[AGPL-3.0-only](LICENSE). Commercial licensing for closed-source or hosted use: ss@diwata.domains
+[Apache-2.0](LICENSE).
 
 ---
 
