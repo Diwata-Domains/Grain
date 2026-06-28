@@ -1,0 +1,30 @@
+apiVersion: grain.recipe/v2
+id: explainer
+name: "Beginner Explainer"
+description: "Turn a topic into a short, beginner-friendly explainer"
+category: content
+
+params:
+  - id: topic
+    label: "Topic to explain"
+    required: true
+    type: string
+
+steps:
+  - id: outline
+    name: "Outline the explanation"
+    prompt: steps/outline.md
+    inputs: [params]
+    output: 01-outline.md
+  - id: draft
+    name: "Draft the explainer"
+    prompt: steps/draft.md
+    inputs: [params, outline]
+    output: 02-draft.md
+  - id: polish
+    name: "Tighten and format"
+    prompt: steps/polish.md
+    inputs: [draft]
+    output: explainer.md
+
+final: explainer.md
