@@ -344,6 +344,70 @@ Key deliverables: `grain workflow guard`, `grain hooks install/list/remove`, `gr
 - **Description:** Auto-mode orchestrator — `resolve_recipe_agent` + a single canonical `workflow_loop.yaml` driving autonomous/gated recipe runs (halting on the gated step) on top of the operator engine; STRETCH, off the July-21 critical path.
 - **Dependencies:** P34-T03, P34-T05
 
+## Phase 35 — v0.5.0 Grain-as-Engine Headless Contract
+
+> **Status:** ACTIVE (drafted) — 11 packets (P35-T01–P35-T11). Ships the headless engine contract: `grain.engine/v1` envelope + typed error model, single version resolver, capability registry, envelope/error wiring across CLI + MCP surfaces, and a CLI↔MCP conformance suite. Foundation T01–T03 land first; per `engine_contract_spec.md` §8. The 11 packets map 1:1 onto the §8 MVP areas.
+
+### P35 Notes
+- **Build order:** foundation T01 / T02 / T03 (no deps, parallelizable) → T04, T05 (consume T01) → T06 (consumes T01/T02/T03/T05) → T07, T08 → T09, T10 → T11 (capstone, consumes T01–T10). The declared graph is acyclic with this topological order.
+- **Scope is §8 MVP only:** envelope + errors, version resolver, capability registry, envelope wiring (workflow `next`/`run`/`loop`/`explain` + recipe sites), recipe error mapping, MCP surface expansion, HTTP wrapper fix, capabilities/workspace CLI, non-interactive gate envelopes, version check, and conformance tests. **Deferred per §8:** `workflow guard`/`reconcile` and the remaining legacy JSON sites (task*/review*/suggest*/docs audit/status) stay bare-by-default behind `--envelope`/`GRAIN_ENGINE_ENVELOPE=1`.
+- **Cross-packet items to resolve before building (see verify report):** (1) `version_check` ownership across T03 (capability seed) / T06 (MCP tool) / T10 (CLI + service) — T10 must consume, not re-add; (2) pin the T03 seed `surfaces` values so T06's `tools/list` derivation is deterministic; (3) have T01 enumerate the `suggest accept` / `docs audit` kinds in `VALID_ENGINE_KINDS` so T09 does not hit its escalation/blocker path; (4) state that T09's new suggest/docs emits are always-enveloped to reconcile with T04's default-bare legacy sites.
+
+### P35-T01 — grain.engine/v1 envelope + typed error model
+- **Status:** draft
+- **Description:** Define the `grain.engine/v1` `EngineEnvelope` and `ErrorEnvelope` dataclasses (§4.2), `VALID_ENGINE_KINDS`/`VALID_ERROR_CODES`, and the error taxonomy (`code`/`exit_code` as ClassVars on `ForgeError` subclasses) plus a format-aware `error_handler`; `errors.py` and `envelope.py` resolve one-way (acyclic) and an `envelope_to_dict` serializes the error object.
+- **Dependencies:** none
+
+### P35-T02 — single version resolver (src/grain/version.py)
+- **Status:** draft
+- **Description:** Introduce one `get_version()` resolver in `src/grain/version.py` (via `importlib.metadata`) and rewire reported-version sites (MCP `serverInfo.version`, etc.) to it, removing scattered `MAJOR.MINOR.PATCH(-dev)` string literals as reported versions.
+- **Dependencies:** none
+
+### P35-T03 — capability registry (Capability dataclass + CAPABILITIES seed)
+- **Status:** draft
+- **Description:** Frozen `Capability` dataclass with `__post_init__`/`VALID_*` validation and the `CAPABILITIES` seed (§6.2) carrying `since`/`kind`/`drive`/`stability`/`surfaces`; pins the §6.2 ids and the genuinely-frozen kind/drive/stability subset, including per-entry `surfaces ∈ {cli, mcp}`.
+- **Dependencies:** none
+
+### P35-T04 — envelope + error wiring across CLI emit sites
+- **Status:** draft
+- **Description:** Route `workflow next`/`run`/`loop`/`explain` and the recipe CLI sites through a single `emit(...)` helper that frames the `grain.engine/v1` envelope (built inline per T01's note) with `grain_version` from the version resolver, behind the `--envelope`/`GRAIN_ENGINE_ENVELOPE=1` opt-in; `guard`/`reconcile` are deferred per §8.
+- **Dependencies:** P35-T01, P35-T02
+
+### P35-T05 — engine_error_to_forge mapping for recipe engine
+- **Status:** draft
+- **Description:** Extract `engine_error_to_forge(exc) -> ForgeError` mapping recipe engine errors (§4.3 table) and collapse `_drive` to catch both `RecipeEngineError` and `RecipeSchemaError` (a `ValueError`, not a `RecipeEngineError`), preserving today's exit codes (e.g. `RecipeSchemaError` → exit 3) with no behavior change.
+- **Dependencies:** P35-T01
+
+### P35-T06 — MCP surface expansion (catalog-driven tools/list)
+- **Status:** draft
+- **Description:** Expand `mcp_service.py` to a single capability-derived catalog — `tools/list` filtered by `surfaces ∈ mcp`, `_ok`/`_err` envelope helpers, and the extended `McpTool` (write/capability) — with every catalog tool delegating to the CLI-canonical service fn and returning a `grain.engine/v1` envelope; defers the `version_check` tool to T10.
+- **Dependencies:** P35-T01, P35-T02, P35-T03, P35-T05
+
+### P35-T07 — HTTP MCP wrapper alignment (apps/grain-mcp/main.py)
+- **Status:** draft
+- **Description:** Align the HTTP wrapper app (`apps/grain-mcp/main.py`, at monorepo root) so `tools/list` derives from the expanded registry and JSON-RPC boundary errors map to the §4 error shape (§5.6); resolve the cross-package path/test-runner/REUSE-header questions before editing.
+- **Dependencies:** P35-T01, P35-T02, P35-T06
+
+### P35-T08 — CLI: grain capabilities / workspace
+- **Status:** draft
+- **Description:** `grain capabilities list|show` and `grain workspace list` commands emitting `grain.engine/v1` envelopes (status `ok`/`error`) over the capability registry; consumes the envelope/error taxonomy (T01), version resolver (T02), and `CAPABILITIES` (T03).
+- **Dependencies:** P35-T01, P35-T02, P35-T03
+
+### P35-T09 — non-interactive gate/ok envelopes (suggest accept, docs audit)
+- **Status:** draft
+- **Description:** Emit `grain.engine/v1` envelopes on the consent path for `suggest accept` and `docs audit` (§7.1) — `status:gate` on the gate, `status:ok` on `--yes` — always-enveloped on these legacy sites regardless of the default-bare opt-out; depends on T01 having registered their kinds.
+- **Dependencies:** P35-T01, P35-T04
+
+### P35-T10 — version check (grain version --check/--refresh + version_check tool)
+- **Status:** draft
+- **Description:** `grain version` with `--check`/`--refresh` plus a shared `version_service` producing the `grain.version/v1` payload (installed/latest/update_available via the pypi adapter, §7.2) that both the CLI and the MCP `version_check` read tool delegate to; consumes (not re-adds) the T03 capability seed and T06 MCP helpers. Network is the §2 principle-4 carve-out.
+- **Dependencies:** P35-T01, P35-T02, P35-T03, P35-T06
+
+### P35-T11 — change proposal + CLI↔MCP conformance tests
+- **Status:** draft
+- **Description:** Capstone: the canonical-doc change proposal plus the conformance suite — taxonomy error round-trip and CLI↔MCP frame parity over an always-enveloped command pair (e.g. CLI `capabilities` ↔ MCP `capabilities_list`, or CLI `version` ↔ MCP `version_check`), not the default-bare legacy `workflow`/`recipe` sites.
+- **Dependencies:** P35-T01, P35-T02, P35-T03, P35-T04, P35-T05, P35-T06, P35-T07, P35-T08, P35-T09, P35-T10
+
 ---
 
 ## Backlog Maintenance Rules
