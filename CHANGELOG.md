@@ -1,4 +1,6 @@
-## [Unreleased] — v0.5.0
+## [Unreleased]
+
+## [0.5.0] — 2026-06-28
 
 - Relicensed from AGPL-3.0-only to Apache-2.0.
 
@@ -9,6 +11,8 @@
   run | next | status | resume | gate`) is offline and deterministic; resume on
   explicit validation failure; bundled gateless `research-brief` recipe. The
   step-runner supersedes the single-packet recipe model.
+- bundled 3-step `explainer` starter recipe — `grain recipe list` now shows
+  `explainer` + `research-brief`.
 
 ## [0.4.0] — 2026-06-25
 
