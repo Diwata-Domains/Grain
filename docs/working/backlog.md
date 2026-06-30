@@ -410,6 +410,83 @@ Key deliverables: `grain workflow guard`, `grain hooks install/list/remove`, `gr
 
 ---
 
+## Phase 36 — v0.5.0 Release Readiness & Fleet Hardening
+
+> **Status:** ACTIVE (drafted) — from the 2026-06-29 grain audit (`docs/working/grain-audit-0.5.0.md`). Closes the finite punch-list between a functionally-working 0.5.0 and a clean public release, fixes the workspace fleet, and lands the user-requested staleness check.
+> **Corrections to the audit (founder, 2026-06-29):** (1) `grain-kit` is **already published and owned** on PyPI — the audit's "name taken" CRITICAL is void; the *only* 0.5.0 release blocker is the unpushed `grain-v0.5.0` tag, and tagging/release runs on **GitHub Actions credits that are currently exhausted** (resets later). (2) `packages/{identity-kernel,vault-kit,grimoire}` are **strictly familiar runtime substrate, not grain products** — de-list them from the grain fleet (remove the stray `grain.toml`), do **not** `grain init` them.
+> **Sequencing note:** the structured-output/version-resolver items (P36-T06, P36-T09) overlap Phase 35's engine-envelope contract — coordinate, do not duplicate. P35 is the *familiar-facing* envelope layer; these are the plumbing beneath it.
+
+### P36 Notes
+- **Build order:** local release-prep (T01–T05) → staleness feature (T06) + version-check consolidation (T07, with P35-T02) → quality plumbing (T08, T09) → contract migration (T10, with P35) → fleet (T11, T12) → cleanups (T13). Tag push (inside T01) is **blocked on Actions credits**; everything else proceeds now.
+- **Do NOT** bulk `grain upgrade --add-missing` the fleet — audit §4: it never creates the PROTECTED `docs_manifest.yaml`, so live "shell" workspaces stay ungoverned. Use `grain init` for real products; remove `grain.toml` from familiar substrate.
+
+### P36-T01 — Reconcile source version + ship 0.5.0 (tag push credit-blocked)
+- **Status:** blocked (tag push) / draft (local half)
+- **Description:** `grain doctor` fails 3/4 fleet-wide because the source pyproject version reads `0.1.0` while installed is `0.5.0`. Confirm the true on-disk `version`, fix so doctor passes everywhere. Then ship 0.5.0 via the repo convention (`pnpm trace release` / push `grain-v0.5.0`) — **the release pipeline only fires on tag push and has never run for 0.5.0; blocked until Actions credits reset.** Name is fine (`grain-kit` already published).
+- **Dependencies:** none
+
+### P36-T02 — Split 6 heavy lazy deps into extras
+- **Status:** draft
+- **Description:** Move `textual`, `pdfplumber`, `python-docx`, `openpyxl`, `networkx`, `tree-sitter`(+`-language-pack`) from mandatory deps (`pyproject.toml:30-40`) into extras (`[tui]`/`[office]`/`[scan]`). All are already lazy-imported with fallbacks → runtime cost ≈ 0, install footprint drops massively (tree-sitter-language-pack alone is hundreds of MB). Add helpful `pip install …[office]` ImportError messages. Extras pattern exists at `pyproject.toml:45-57`. (Ships in the next minor since it changes the published dep surface.)
+- **Dependencies:** none
+
+### P36-T03 — Fix pyproject [project.urls]
+- **Status:** draft
+- **Description:** Homepage/Repository/Issues point at `Diwata-Labs/Grain` but the public mirror is `Diwata-Domains/Grain` → 404 links in immutable PyPI metadata. Fix before the next publish.
+- **Dependencies:** none
+
+### P36-T04 — Release pre-flight (clean dist/, twine check)
+- **Status:** draft
+- **Description:** Drop the stale `grain_kit-0.4.0-py3-none-any.whl` from `dist/` (a manual `uv publish`/`gh release … dist/*` would ship 0.4.0), and wire `uv sync --extra release && twine check dist/*` so README long-description rendering is validated before upload (the `release` extra is declared but not installed today).
+- **Dependencies:** P36-T02
+
+### P36-T05 — Remove orphaned products/grain/uv.lock
+- **Status:** draft
+- **Description:** `products/grain/uv.lock` pins `grain-kit 0.1.7` (vs pyproject 0.5.0) and drives `release-python.yml`'s cache key, so release resolves differently from CI (which uses the root lock). Delete/regenerate and point the release cache glob at the root lock.
+- **Dependencies:** none
+
+### P36-T06 — Workspace staleness check (the requested feature)
+- **Status:** draft
+- **Description:** Add `check_staleness(root, installed_version) -> StalenessReport` to `upgrade_service.py` (reuse `load_upgrade_policy` + `upgrade_repo(dry_run=True)`); **pair version comparison with the file-drift scan** (the `min_version` ratchet bumps unconditionally, so a pure version check goes quiet while customized files stay stale). Wire into `doctor` (new `workspace_current` check + "Upgrade" section) and a one-line `status` warn. **Fix the silent no-op nag loop:** report stale-applyable vs `customized_skipped` separately and route the latter to `grain upgrade --interactive` (never plain `upgrade`). Flip `GrainConfig.upgrade_check` default `silent → warn`; add `--check` exit-non-zero for CI. Do NOT auto-write. Full spec: audit §5.
+- **Dependencies:** none (intersects P36-T07)
+
+### P36-T07 — Consolidate the triple version-check on the hot path
+- **Status:** draft
+- **Description:** `cli/__init__.py` chains three version checks using two manifest keys for the same concept (`project.minimum_grain_version` vs `upgrade_policy.min_version` — dual source of truth), one of which runs a full filesystem dry-run scan on *every* invocation, all wrapped in silent `except: return`. Collapse to one function, one key, off the hot path; let failures surface. Land on P35-T02's single resolver.
+- **Dependencies:** P35-T02 (coordinate P36-T06)
+
+### P36-T08 — Coverage visibility + gate
+- **Status:** draft
+- **Description:** Add `pytest-cov` + `[tool.coverage]` and a baseline coverage gate (ratchet up). 1633 tests run today with zero coverage signal — the largest regression-escape hole for a published package.
+- **Dependencies:** none
+
+### P36-T09 — CI matrix + lint depth + scheduled run
+- **Status:** draft
+- **Description:** Add a Python 3.11/3.12/3.13 test matrix (package advertises all three, CI exercises one). Add `[tool.ruff]` (enable I/B/UP) + `ruff format --check` (current bare `ruff check` is default F/E only). Add a scheduled CI run so upstream transitive-dep regressions (textual/tree-sitter/pdfplumber) are caught without a code change.
+- **Dependencies:** none
+
+### P36-T10 — @grain_command decorator + structured-output contract migration
+- **Status:** draft
+- **Description:** Introduce a `@grain_command`/`@pass_repo` decorator (kills ~238 repeated `repo/fmt` boilerplate copies + 108 ad-hoc `resolve_repo_root` calls) and migrate all CLI modules onto `print_result/CommandResult` (only 7/31 use it today; 813 hand-rolled `click.echo`). Makes `--format json` a real contract — **the machine/MCP interface familiars depend on** (audit Positioning). Coordinate tightly with Phase 35: the engine envelope is the outer familiar-facing layer; this is the per-command output contract beneath it. Large — split before execution.
+- **Dependencies:** P35-T01, P35-T04 (coordinate)
+
+### P36-T11 — Workspace fleet remediation
+- **Status:** draft
+- **Description:** Execute audit §4's ordered, dry-run-first sequence for the **grain-owned** workspaces only: `grain init` (NOT upgrade) the live shells that hold real code — `apps/{diwa-web,gateway,sanctum}` and `products/{atlas,chronicle,key}` (`apps/eden` is a true 0-code stub — decide init vs drop); two-step `--add-missing`→`--interactive`→`init --update-agents` for `apps/apex` + `products/daemon`; `--diff`→`--interactive` for the customized-drift trio (`.`/`lore`/`grain`, where plain upgrade is a silent no-op). Excludes the familiar packages (see T12).
+- **Dependencies:** P36-T12
+
+### P36-T12 — Fleet taxonomy: remove non-grain workspaces + fix ledger schema
+- **Status:** draft
+- **Description:** `packages/{identity-kernel,vault-kit,grimoire}` are **strictly familiar runtime substrate, not grain products** — remove their stray `grain.toml` so they drop out of the grain fleet/governance entirely. Establish the taxonomy rule (grain manages `product`-type workspaces; familiar substrate is out of scope). Migrate `products/ledger/grain.toml` off the malformed legacy `[workspace]` schema to `[project]`+`[paths]` (or confirm ledger is also out of grain's scope).
+- **Dependencies:** none
+
+### P36-T13 — Low-priority cleanups
+- **Status:** draft
+- **Description:** Delete the dead `src/grain/contracts/` package (3 license-only lines, imported nowhere; real contracts live in `domain/`). Finish the Forge→grain rename — `ForgeError` (public, caught by name) → `GrainError` with a deprecation alias (36 refs / 9 files). Correct the stale CHANGELOG 0.4.0 entry that advertises the deleted `publish-pypi.yml`. Regenerate `Formula/grain.rb` against the real 0.5.0 sdist (currently a 0.1.0 placeholder pointing at a nonexistent tarball).
+- **Dependencies:** none
+
+---
+
 ## Backlog Maintenance Rules
 
 1. Backlog items must remain concrete and implementable
