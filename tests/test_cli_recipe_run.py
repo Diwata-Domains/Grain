@@ -284,7 +284,7 @@ def test_status_reflects_cursor_and_per_step_status(tmp_path):
     runner = CliRunner()
     _write_recipe(tmp_path, _nogate_recipe())
     _invoke(runner, tmp_path, "run", "nogate", "-p", "topic=x")
-    run_id = _only_run_id(tmp_path)
+    _only_run_id(tmp_path)
 
     r = _invoke(runner, tmp_path, "status")
     assert r.exit_code == 0, r.output
