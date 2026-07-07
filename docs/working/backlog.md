@@ -493,6 +493,12 @@ Key deliverables: `grain workflow guard`, `grain hooks install/list/remove`, `gr
 - **Files:** `src/grain/services/verification_service.py`, `tests/test_verify_submit_cmd.py`
 - **Dependencies:** none
 
+### P36-T15 — FR-006 verification gate in workflow evaluator
+- **Status:** review — packet `tasks/P36-T15-TASK-0224/`. Machine-readable gate: `verification_pending`/`verification_failed` stop reasons keyed off verification_request.json, `verification_id` on the evaluation, failure summary + follow-ups in blocking_reasons, exact ingest resume command. Live-verified full lifecycle via CLI. TDD, 3 new tests, 1637 green.
+- **Description:** Closure validation already blocked on pending/failed verification but agents only saw generic `review_close_blocked`. Implements the v2-plan FR-006 machine contract in the read-only evaluator (no status auto-mutation — guidance instead, to avoid backlog-sync drift).
+- **Files:** `src/grain/domain/workflow.py`, `src/grain/services/workflow_service.py`, `tests/test_workflow_state_service.py`
+- **Dependencies:** P36-T14
+
 ## Backlog Maintenance Rules
 
 1. Backlog items must remain concrete and implementable

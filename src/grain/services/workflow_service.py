@@ -37,6 +37,8 @@ STOP_PHASE_HAS_NO_TASKS = "phase_has_no_tasks"             # active phase has no
 STOP_PHASE_BOUNDARY_REVIEW_CLOSE_REQUIRED = "phase_boundary_review_close_required"  # all tasks done, phase not sealed
 STOP_TASK_PLANNING_REQUIRED = "task_planning_required"     # no executable candidate; planning needed
 STOP_WRONG_BRANCH = "wrong_branch"                         # current branch doesn't satisfy branch_policy
+STOP_VERIFICATION_PENDING = "verification_pending"         # external verification requested, verdict not ingested
+STOP_VERIFICATION_FAILED = "verification_failed"           # ingested verification verdict was a fail
 
 _CURRENT_TASK_REQUIRED = ("Task ID:", "Task Path:", "Status:")
 _TASK_HEADING = re.compile(r"^###\s+(P(\d+)-T(\d+))\s+—\s+(.+)$")
@@ -315,6 +317,11 @@ def _evaluate_workflow_state_core(
                     recommended_prompt="prompts/task.execute.md",
                 )
                 return _result_with_evaluation(root, evaluation)
+            verification_id, verification_stop = _verification_gate(
+                root, packet_dir, current_phase, active_task_id
+            )
+            if verification_stop is not None:
+                return _result_with_evaluation(root, verification_stop)
             closure_errors = validate_closure(packet_dir, policy=load_completion_policy(root))
             if closure_errors:
                 evaluation = WorkflowEvaluation(
@@ -340,6 +347,7 @@ def _evaluate_workflow_state_core(
                 ],
                 active_phase=current_phase,
                 active_task_id=active_task_id,
+                verification_id=verification_id,
             )
             return _result_with_evaluation(root, evaluation)
 
@@ -537,6 +545,84 @@ def _resolve_packet_dir(root: Path, task_id: str, task_path: str) -> Path | None
         if candidate.exists():
             return candidate
     return find_packet_dir(root / "tasks", task_id)
+
+
+def _verification_gate(
+    root: Path,
+    packet_dir: Path,
+    current_phase: str,
+    active_task_id: str,
+) -> tuple[str, WorkflowEvaluation | None]:
+    """FR-006: block review→close while an external verification is unresolved.
+
+    Returns (verification_id, stop_evaluation). verification_id is "" when the
+    packet has no readable verification request; stop_evaluation is None when
+    routing may proceed (no request, or verdict was pass/inconclusive).
+    Malformed artifacts fall through to closure validation rather than stopping.
+    """
+    import json
+
+    request_path = packet_dir / "verification_request.json"
+    if not request_path.exists():
+        return "", None
+    try:
+        request = json.loads(request_path.read_text(encoding="utf-8"))
+    except Exception:
+        return "", None
+    verification_id = str(request.get("verification_id", ""))
+    status = str(request.get("status", ""))
+    provider = str(request.get("provider", "")) or "assay"
+
+    if status == "pending":
+        return verification_id, WorkflowEvaluation(
+            ok=False,
+            stop_reason=STOP_VERIFICATION_PENDING,
+            blocking_reasons=[
+                f"verification {verification_id} is pending with provider '{provider}' — the verdict has not been ingested",
+                f"resume after: grain verify ingest --verification-id {verification_id} --payload <{provider} payload.json>",
+            ],
+            affected_artifacts=[
+                str(request_path.relative_to(root)),
+                str((packet_dir / "results.md").relative_to(root)),
+            ],
+            active_phase=current_phase,
+            active_task_id=active_task_id,
+            verification_id=verification_id,
+        )
+
+    if status == "failed":
+        reasons = [f"verification {verification_id} failed — resolve findings before closure"]
+        result_path = packet_dir / "verification_result.json"
+        try:
+            verdict = json.loads(result_path.read_text(encoding="utf-8"))
+        except Exception:
+            verdict = {}
+        summary = str(verdict.get("summary", "")).strip()
+        if summary:
+            reasons.append(summary)
+        from grain.services.verification_service import _followup_lines
+
+        followups = verdict.get("followup_candidates", [])
+        if isinstance(followups, list):
+            reasons.extend(_followup_lines(followups))
+        reasons.append(
+            "address the findings and set the task to needs_fix, or re-run `grain verify submit` for a fresh verdict"
+        )
+        return verification_id, WorkflowEvaluation(
+            ok=False,
+            stop_reason=STOP_VERIFICATION_FAILED,
+            blocking_reasons=reasons,
+            affected_artifacts=[
+                str(request_path.relative_to(root)),
+                str((packet_dir / "results.md").relative_to(root)),
+            ],
+            active_phase=current_phase,
+            active_task_id=active_task_id,
+            recommended_prompt="prompts/task.execute.md",
+            verification_id=verification_id,
+        )
+
+    return verification_id, None
 
 
 def _missing_review_artifacts(packet_dir: Path) -> list[str]:

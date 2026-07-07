@@ -36,3 +36,7 @@ class WorkflowEvaluation:
     warnings: list[str] = field(default_factory=list)
     # Populated when stop_reason == "wrong_branch"; gives agents an actionable target.
     suggested_branch: str = ""
+    # Populated when the active packet has a verification request (FR-006 gate) —
+    # set on verification_pending / verification_failed stops and on task_close
+    # after a completed verification, so agents know which VERIFY-… to act on.
+    verification_id: str = ""

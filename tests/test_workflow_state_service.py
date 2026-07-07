@@ -465,3 +465,156 @@ def test_evaluate_workflow_state_stops_for_phase_review_when_no_open_tasks(tmp_p
     assert result.ok is False
     assert evaluation is not None
     assert evaluation.stop_reason == "phase_boundary_review_close_required"
+
+
+def _review_results(verification_state: str, verification_summary: str) -> str:
+    return (
+        "# Results: TASK-0001\n\n"
+        "## Summary\nDone.\n\n"
+        "## User Review\n"
+        "- **State:** approved\n"
+        "- **Summary:** Ready.\n"
+        "- **Resolution Mode:** close_task\n\n"
+        "### Required Fixes\n- None\n\n"
+        "### Open Questions To Log\n- None\n\n"
+        "### Proposal Candidates To Log\n- None\n\n"
+        "### Follow-Ups To Log\n- None\n\n"
+        "### Residual Risks\n- None\n\n"
+        "## Verification Review\n"
+        f"- **State:** {verification_state}\n"
+        f"- **Summary:** {verification_summary}\n\n"
+        "### Findings\n- None\n\n"
+        "## Closure Decision\n"
+        "- **Decision:** pending\n"
+        "- **Reason:** Awaiting close.\n\n"
+        "### Closure Blockers\n- None\n"
+    )
+
+
+def _verification_review_repo(tmp_path: Path, verification_state: str, verification_summary: str) -> Path:
+    _base_docs(
+        tmp_path,
+        (
+            "# Current Task\n\n"
+            "Task ID: TASK-0001\n"
+            "Task Path: tasks/P8-T02-TASK-0001/\n"
+            "Status: review\n"
+        ),
+        (
+            "## 10. Phase 8 — Workflow Automation Runner Foundation\n\n"
+            "### P8-T02 — Implement workflow state evaluator service\n"
+            "- **Status:** review\n"
+        ),
+    )
+    packet_dir = _packet(tmp_path, "P8-T02-TASK-0001", "TASK-0001", "review")
+    _write(packet_dir / "results.md", _review_results(verification_state, verification_summary))
+    _write(packet_dir / "handoff.md", "# Handoff\nReady.\n")
+    return packet_dir
+
+
+def test_evaluate_workflow_state_stops_with_verification_pending_for_open_request(tmp_path: Path):
+    import json
+
+    packet_dir = _verification_review_repo(tmp_path, "pending", "Pending Assay verification request `VERIFY-0001-001`.")
+    _write(
+        packet_dir / "verification_request.json",
+        json.dumps(
+            {
+                "verification_id": "VERIFY-0001-001",
+                "task_id": "TASK-0001",
+                "packet_dir": "tasks/P8-T02-TASK-0001",
+                "provider": "assay",
+                "status": "pending",
+                "artifact_paths": [],
+                "submitted_at": "2026-07-07T06:00:00Z",
+            },
+            indent=2,
+        ),
+    )
+
+    result, evaluation = evaluate_workflow_state(tmp_path)
+
+    assert result.ok is False
+    assert evaluation is not None
+    assert evaluation.stop_reason == "verification_pending"
+    assert evaluation.verification_id == "VERIFY-0001-001"
+    assert any("VERIFY-0001-001" in reason for reason in evaluation.blocking_reasons)
+    assert any("grain verify ingest" in reason for reason in evaluation.blocking_reasons)
+
+
+def test_evaluate_workflow_state_stops_with_verification_failed_and_surfaces_followups(tmp_path: Path):
+    import json
+
+    packet_dir = _verification_review_repo(tmp_path, "failed", "Adversarial review: needs_fix.")
+    _write(
+        packet_dir / "verification_request.json",
+        json.dumps(
+            {
+                "verification_id": "VERIFY-0001-001",
+                "task_id": "TASK-0001",
+                "packet_dir": "tasks/P8-T02-TASK-0001",
+                "provider": "assay",
+                "status": "failed",
+                "artifact_paths": [],
+                "submitted_at": "2026-07-07T06:00:00Z",
+            },
+            indent=2,
+        ),
+    )
+    _write(
+        packet_dir / "verification_result.json",
+        json.dumps(
+            {
+                "verification_id": "VERIFY-0001-001",
+                "task_id": "TASK-0001",
+                "outcome": "fail",
+                "severity": "error",
+                "summary": "Adversarial review: needs_fix. 1 blocking finding.",
+                "issue_type": "code_review",
+                "artifact_refs": [],
+                "followup_candidates": [
+                    {"title": "Fix session leak", "description": "close() never called on error path."}
+                ],
+                "verified_at": "2026-07-07T06:30:00Z",
+                "review": None,
+            },
+            indent=2,
+        ),
+    )
+
+    result, evaluation = evaluate_workflow_state(tmp_path)
+
+    assert result.ok is False
+    assert evaluation is not None
+    assert evaluation.stop_reason == "verification_failed"
+    assert evaluation.verification_id == "VERIFY-0001-001"
+    assert any("Adversarial review: needs_fix. 1 blocking finding." in reason for reason in evaluation.blocking_reasons)
+    assert any("follow-up: Fix session leak" in reason for reason in evaluation.blocking_reasons)
+
+
+def test_evaluate_workflow_state_routes_task_close_after_verification_complete(tmp_path: Path):
+    import json
+
+    packet_dir = _verification_review_repo(tmp_path, "passed", "Assay verification passed.")
+    _write(
+        packet_dir / "verification_request.json",
+        json.dumps(
+            {
+                "verification_id": "VERIFY-0001-001",
+                "task_id": "TASK-0001",
+                "packet_dir": "tasks/P8-T02-TASK-0001",
+                "provider": "assay",
+                "status": "complete",
+                "artifact_paths": [],
+                "submitted_at": "2026-07-07T06:00:00Z",
+            },
+            indent=2,
+        ),
+    )
+
+    result, evaluation = evaluate_workflow_state(tmp_path)
+
+    assert result.ok is True
+    assert evaluation is not None
+    assert evaluation.next_action == "task_close"
+    assert evaluation.verification_id == "VERIFY-0001-001"
