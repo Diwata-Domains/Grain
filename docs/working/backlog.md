@@ -421,7 +421,7 @@ Key deliverables: `grain workflow guard`, `grain hooks install/list/remove`, `gr
 - **Do NOT** bulk `grain upgrade --add-missing` the fleet — audit §4: it never creates the PROTECTED `docs_manifest.yaml`, so live "shell" workspaces stay ungoverned. Use `grain init` for real products; remove `grain.toml` from familiar substrate.
 
 ### P36-T01 — Reconcile source version + ship 0.5.0 (tag push credit-blocked)
-- **Status:** in_progress — packet `tasks/P36-T01-TASK-0222/`; Actions credits confirmed working again (operator deploys ran 2026-07-03); version coherence verified (pyproject 0.5.0, doctor 4/4), project.urls fixed to Diwata-Domains, dist built + twine-checked, 1632 tests pass; awaiting tag push
+- **Status:** review — SHIPPED 2026-07-07: grain-kit 0.5.0 live on PyPI (release run 28845125357 all-green: test → build → publish → mirror sync → GH Release). Packet `tasks/P36-T01-TASK-0222/` has full results; operator review then `grain task close`.
 - **Description:** `grain doctor` fails 3/4 fleet-wide because the source pyproject version reads `0.1.0` while installed is `0.5.0`. Confirm the true on-disk `version`, fix so doctor passes everywhere. Then ship 0.5.0 via the repo convention (`pnpm trace release` / push `grain-v0.5.0`) — **the release pipeline only fires on tag push and has never run for 0.5.0; blocked until Actions credits reset.** Name is fine (`grain-kit` already published).
 - **Dependencies:** none
 
