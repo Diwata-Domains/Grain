@@ -487,6 +487,12 @@ Key deliverables: `grain workflow guard`, `grain hooks install/list/remove`, `gr
 
 ---
 
+### P36-T14 — Close the assay bridge loop: surface review findings on ingest
+- **Status:** review — packet `tasks/P36-T14-TASK-0223/`. Live round trip (2026-07-07) proved the bridge works end-to-end incl. `code_review`; this task adds what was missing: `review.findings` + `followup_candidates` rendered into results.md and the review block persisted in verification_result.json. TDD, 2 new tests, 1634 green.
+- **Description:** `grain verify ingest` existed (Phase 28) but dropped assay's structured review findings on the floor — only the summary reached the packet. Render `file:line [severity] message` findings and `follow-up:` lines; persist `review` in the result record. Out of scope: FR-006 workflow-gate wiring.
+- **Files:** `src/grain/services/verification_service.py`, `tests/test_verify_submit_cmd.py`
+- **Dependencies:** none
+
 ## Backlog Maintenance Rules
 
 1. Backlog items must remain concrete and implementable

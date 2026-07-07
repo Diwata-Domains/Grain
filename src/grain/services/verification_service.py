@@ -40,6 +40,7 @@ class VerificationResultRecord:
     artifact_refs: list[str]
     followup_candidates: list[dict]
     verified_at: str
+    review: dict | None = None
 
 
 def get_verification_request_status(
@@ -251,6 +252,7 @@ def ingest_verification_result(
         artifact_refs=list(payload.get("artifact_refs", [])),
         followup_candidates=list(payload.get("followup_candidates", [])),
         verified_at=str(payload.get("verified_at", _now_iso())),
+        review=payload.get("review") if isinstance(payload.get("review"), dict) else None,
     )
     result_path = packet_dir / VERIFICATION_RESULT_FILENAME
     result_path.write_text(json.dumps(asdict(record), indent=2) + "\n", encoding="utf-8")
@@ -408,7 +410,9 @@ def _apply_results_verification_outcome(
     }[record.outcome]
     findings = []
     findings.append(f"{record.issue_type} [{record.severity}]: {record.summary}")
+    findings.extend(_review_finding_lines(record.review))
     findings.extend(record.artifact_refs)
+    findings.extend(_followup_lines(record.followup_candidates))
 
     lines = results_path.read_text(encoding="utf-8").splitlines()
     updated_lines: list[str] = []
@@ -458,6 +462,38 @@ def _apply_results_verification_outcome(
             updated_lines.append(f"- {item}")
 
     results_path.write_text("\n".join(updated_lines) + "\n", encoding="utf-8")
+
+
+def _review_finding_lines(review: dict | None) -> list[str]:
+    if not review:
+        return []
+    lines: list[str] = []
+    for finding in review.get("findings", []):
+        if not isinstance(finding, dict):
+            continue
+        file = str(finding.get("file", "")).strip()
+        message = str(finding.get("message", "")).strip()
+        if not file or not message:
+            continue
+        severity = str(finding.get("severity", "")).strip()
+        line = finding.get("line")
+        location = f"{file}:{line}" if isinstance(line, int) else file
+        severity_part = f" [{severity}]" if severity else ""
+        lines.append(f"{location}{severity_part} {message}")
+    return lines
+
+
+def _followup_lines(followup_candidates: list[dict]) -> list[str]:
+    lines: list[str] = []
+    for candidate in followup_candidates:
+        if not isinstance(candidate, dict):
+            continue
+        title = str(candidate.get("title", "")).strip()
+        if not title:
+            continue
+        description = str(candidate.get("description", "")).strip()
+        lines.append(f"follow-up: {title} — {description}" if description else f"follow-up: {title}")
+    return lines
 
 
 def _now_iso() -> str:

@@ -276,6 +276,98 @@ def test_verify_ingest_accepts_code_review_issue_type(tmp_path):
     assert result_payload["outcome"] == "fail"
 
 
+def test_verify_ingest_surfaces_review_findings_and_followups_in_results(tmp_path):
+    _base_repo(tmp_path)
+    runner = CliRunner()
+    submit = runner.invoke(main, ["--repo", str(tmp_path), "verify", "submit", "--id", "TASK-0179"])
+    assert submit.exit_code == 0, submit.output
+
+    payload_path = tmp_path / "payload.json"
+    payload_path.write_text(
+        json.dumps(
+            {
+                "verification_id": "VERIFY-0179-001",
+                "task_id": "TASK-0179",
+                "issue_type": "code_review",
+                "severity": "error",
+                "outcome": "fail",
+                "summary": "Adversarial review: needs_fix. 2 blocking findings.",
+                "artifact_refs": ["artifacts/findings.json"],
+                "followup_candidates": [
+                    {"title": "Fix session leak", "description": "close() never called on error path."}
+                ],
+                "verified_at": "2026-07-07T06:30:00Z",
+                "review": {
+                    "verdict": "fail",
+                    "findings": [
+                        {"file": "src/app.py", "line": 42, "severity": "error", "message": "session leaked on error path"},
+                        {"file": "src/db.py", "line": None, "severity": "warning", "message": "unbounded retry loop"},
+                    ],
+                    "reviewers": ["proposer", "critic", "judge"],
+                    "confidence": 0.81,
+                },
+            },
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+
+    result = runner.invoke(
+        main,
+        ["--repo", str(tmp_path), "verify", "ingest", "--verification-id", "VERIFY-0179-001", "--payload", str(payload_path)],
+    )
+
+    assert result.exit_code == 0, result.output
+    results_text = (tmp_path / "tasks" / "P28-T01-TASK-0179" / "results.md").read_text(encoding="utf-8")
+    assert "- src/app.py:42 [error] session leaked on error path" in results_text
+    assert "- src/db.py [warning] unbounded retry loop" in results_text
+    assert "- follow-up: Fix session leak — close() never called on error path." in results_text
+    result_payload = json.loads(
+        (tmp_path / "tasks" / "P28-T01-TASK-0179" / "verification_result.json").read_text(encoding="utf-8")
+    )
+    assert result_payload["review"]["verdict"] == "fail"
+    assert len(result_payload["review"]["findings"]) == 2
+
+
+def test_verify_ingest_without_review_block_keeps_plain_findings(tmp_path):
+    _base_repo(tmp_path)
+    runner = CliRunner()
+    submit = runner.invoke(main, ["--repo", str(tmp_path), "verify", "submit", "--id", "TASK-0179"])
+    assert submit.exit_code == 0, submit.output
+
+    payload_path = tmp_path / "payload.json"
+    payload_path.write_text(
+        json.dumps(
+            {
+                "verification_id": "VERIFY-0179-001",
+                "task_id": "TASK-0179",
+                "issue_type": "screenshot_evidence",
+                "severity": "info",
+                "outcome": "pass",
+                "summary": "Visual check passed.",
+                "artifact_refs": ["artifacts/shot.png"],
+                "verified_at": "2026-07-07T06:30:00Z",
+            },
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+
+    result = runner.invoke(
+        main,
+        ["--repo", str(tmp_path), "verify", "ingest", "--verification-id", "VERIFY-0179-001", "--payload", str(payload_path)],
+    )
+
+    assert result.exit_code == 0, result.output
+    results_text = (tmp_path / "tasks" / "P28-T01-TASK-0179" / "results.md").read_text(encoding="utf-8")
+    assert "- screenshot_evidence [info]: Visual check passed." in results_text
+    assert "follow-up:" not in results_text
+    result_payload = json.loads(
+        (tmp_path / "tasks" / "P28-T01-TASK-0179" / "verification_result.json").read_text(encoding="utf-8")
+    )
+    assert result_payload["review"] is None
+
+
 def test_verify_ingest_rejects_invalid_payload(tmp_path):
     _base_repo(tmp_path)
     runner = CliRunner()
