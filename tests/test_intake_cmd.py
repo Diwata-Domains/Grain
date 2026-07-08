@@ -127,7 +127,55 @@ def test_pull_is_idempotent_by_assay_vid(packet_repo, monkeypatch):
     assert second.exit_code == 0, second.output
     assert len(list((root / "tasks").glob("P20-*-TASK-*"))) == 1  # no duplicate
 
-    # Only the first pull should have acked; the vid was skipped on the second.
+    # No second packet is created for the dedup-skipped vid, but the ack is
+    # retried on every pull that still sees it as `promoted` — it's the only
+    # way a ticket whose first ack silently failed ever gets un-stuck.
+    assert post_captured["post_calls"] == [
+        "https://assay.test/promotions/v1/ack",
+        "https://assay.test/promotions/v1/ack",
+    ]
+
+
+def test_pull_reconciles_stuck_ack_on_dedup_skip(packet_repo, monkeypatch):
+    """A ticket whose packet exists but whose first ack failed (network/5xx)
+    must not be stuck forever: the *next* pull still sees it via GET
+    /promotions (Assay only stops returning it once acked) and must retry the
+    ack for that already-on-disk vid, without minting a second packet.
+    """
+    root = packet_repo
+    _set_env(monkeypatch)
+    get_fake, _ = _fake_get([_PROMOTION_V1])
+    monkeypatch.setattr(intake_service, "_urllib_get", get_fake)
+
+    # First pull: ack fails outright (simulating a network/5xx error).
+    failing_post_calls = []
+
+    def failing_post(url, headers):
+        failing_post_calls.append(url)
+        raise OSError("simulated network failure")
+
+    monkeypatch.setattr(intake_service, "_urllib_post", failing_post)
+
+    runner = CliRunner()
+    first = runner.invoke(main, ["--repo", str(root), "intake", "pull", "--phase", "20"])
+    assert first.exit_code != 0  # the ack failure surfaces as a failed run
+    packets = list((root / "tasks").glob("P20-*-TASK-*"))
+    assert len(packets) == 1  # the packet was still created on disk
+    assert failing_post_calls == ["https://assay.test/promotions/v1/ack"]
+
+    # Second pull: same ticket still comes back from GET /promotions (Assay
+    # never saw a successful ack, so it's still `promoted`); this time the
+    # ack succeeds.
+    post_fake, post_captured = _fake_post()
+    monkeypatch.setattr(intake_service, "_urllib_post", post_fake)
+
+    second = runner.invoke(main, ["--repo", str(root), "intake", "pull", "--phase", "20"])
+    assert second.exit_code == 0, second.output
+
+    # No duplicate packet was minted for the dedup-skipped vid...
+    packets = list((root / "tasks").glob("P20-*-TASK-*"))
+    assert len(packets) == 1
+    # ...but the ack WAS retried (reconciled) on this second run.
     assert post_captured["post_calls"] == ["https://assay.test/promotions/v1/ack"]
 
 

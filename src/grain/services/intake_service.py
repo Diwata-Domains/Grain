@@ -143,7 +143,18 @@ def pull_promotions(
             result.errors.append("promotion missing verification_id; skipped")
             continue
         if vid in existing_vids:
+            # A packet for this vid already exists, so don't create another
+            # one — but GET /promotions only ever returns tickets Assay still
+            # considers `promoted` (not `imported`), so if the vid shows up
+            # here AND is already on disk, the ack from whatever pull created
+            # the packet must never have landed. Retry it now: it's always
+            # safe (idempotent on Assay's side) and this is the only way a
+            # stuck-`promoted` ticket ever self-heals.
             result.skipped.append(vid)
+            try:
+                poster(f"{endpoint.rstrip('/')}/promotions/{vid}/ack", headers)
+            except Exception as exc:  # noqa: BLE001 — surfaced as an expected failure
+                result.errors.append(f"ack retry failed for {vid}: {exc}")
             continue
 
         create_result = task_service.create_packet_directory(
