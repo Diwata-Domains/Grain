@@ -956,3 +956,20 @@ Released between Phase 14 close and Phase 15 start. Not tracked as formal phases
 
 * Sealed empty on 2026-07-09 with `grain phase close --allow-empty`. The scope is intact in Phase 37; nothing was archived and nothing was dropped.
 * What created friction: `grain phase close` refused a zero-task phase outright, which meant a planning or deferred phase could never be sealed and therefore permanently blocked the phase after it. Fixed by adding `--allow-empty`, which waives only the empty check and still refuses a phase whose tasks exist but are unfinished.
+
+### Phase 36
+
+* Tasks completed: 3 — `P36-T01` (ship 0.5.0), `P36-T14` (assay bridge review findings), `P36-T15` (FR-006 verification gate). Packets `tasks/P36-T01-TASK-0222/`, `-0223/`, `-0224/`.
+* Blocked tasks: 0
+* Prompt runs: not recorded
+* Manual interventions: operator decision 2026-07-09 — seal the phase on its three executed packets and defer the release-hygiene remainder rather than let 14 drafts block routing.
+* First-pass success rate: 3/3 on executed packets
+* Rework count: 0
+* Drift incidents: 2 — (1) Phase 38 was executed as commits `c917cb7` and `f63716d` with **no task packets**, leaving 11 `missing_packet` reconcile warnings that `reconcile --fix` cannot repair; (2) Phases 21–31 carry `✓ CLOSED` inside the heading text rather than in a status field, so `grain phase list` reports them `[open]`.
+* Phase duration: 2026-06-29 → 2026-07-09
+
+### Phase 36 Notes
+
+* The 14 remaining drafts were release hygiene, not release blockers. Twelve moved verbatim to Phase 40 (`Release Hygiene & DX`), renumbered `P40-T01`–`P40-T12`. `P36-T10` (`@grain_command` structured-output migration) moved to `P37-T12`, and `P36-T07` (triple version-check on the hot path) was absorbed into `P37-T02` — both exactly as Phase 36's own sequencing note instructed: *"coordinate, do not duplicate."*
+* `P36-T13`'s bullet proposing deletion of `src/grain/contracts/` is **reversed**. The package is unbuilt, not dead: `docs/superpowers/specs/2026-07-09-entity-boundaries-design.md` §5.1 reserves it as the home of Grain's published workflow vocabulary, which `P37-T13` now populates. Carried into `P40-T10` with the bullet struck.
+* Same failure mode as Phase 35: a later phase was begun before its predecessor sealed, so `previous_phase_not_closed` blocked routing. Phase 35 was sealed empty; Phase 36 is sealed on its executed packets. The recurrence suggests the workflow needs a first-class "defer remaining tasks to phase N" operation — filed as tooling friction.

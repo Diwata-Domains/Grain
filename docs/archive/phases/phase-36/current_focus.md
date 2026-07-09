@@ -1,31 +1,14 @@
 # Current Focus
 
 ## Current Phase
-Phase 37 — v0.6.0 Grain-as-Engine Headless Contract
+Phase 36 — v0.5.0 Release Readiness & Fleet Hardening
 
-> **Status:** 20 packets. `T01`–`T12` ship the *machine interface* (`grain.engine/v1` envelope,
-> typed errors, version resolver, capability registry, MCP surface, `@grain_command` migration).
-> `T13`–`T20` ship the *workflow contract and state kernel*: the five-term vocabulary in
-> `src/grain/contracts/`, a `RunStore` port and pure `advance()` reducer in a new `src/grain/engine/`,
-> a filesystem store plus a store-agnostic conformance suite, then the refactors of `recipe_store`,
-> `recipe_service` and `workflow_service`. Nothing is active yet.
-> **Why T13–T20 exist:** Diwa's Missions must target Grain's workflow contract rather than grow a
-> second workflow engine (`Diwata-Infra/docs/canonical/capability_register.md`;
-> `docs/superpowers/specs/2026-07-09-entity-boundaries-design.md` §5.1, §9). Diwa builds a
-> `PostgresRunStore` against the same port and must pass the same conformance suite.
-> **Demo hazard:** `T17`–`T19` touch modules on the CLI startup import graph
-> (`cli/__init__.py:52` → `cli/recipe.py` → `recipe_store.py`; `workflow_service.py` backs
-> `grain workflow next`, demo Beats 2 and 5). `cli()` wraps only `main()` (`cli/__init__.py:317-334`),
-> so an import-time fault there is an uncatchable traceback on `grain status` — the demo's first
-> command. Land them behind a green startup smoke test, and rehearse the runbook afterwards.
-> **Next:** plan `P37-T13` (no deps, off the startup graph).
+> **Status:** v0.5.0 (recipe step-runner + Apache-2.0 relicense) is **shipped** — grain-kit
+> 0.5.0 live on PyPI (2026-07-07, release run 28845125357: test → build → publish → mirror
+> sync → GH Release). Phase 36 closes the punch-list between a working 0.5.0 and a clean
+> public release. `P36-T01`, `P36-T14`, and `P36-T15` are done; no packet is active.
+> **Next:** ship the demo-readiness fixes as v0.6.0, then run the late-July 2026 live demo.
 > **Last shipped:** v0.5.0 (2026-06-28, published to PyPI 2026-07-07)
-
-Phase 36 was sealed on 2026-07-09 with its three executed packets. Its 12 remaining
-release-hygiene drafts moved verbatim to **Phase 40** (`Release Hygiene & DX`); `P36-T10` moved
-to `P37-T12` and `P36-T07` was absorbed into `P37-T02`, exactly as Phase 36's own sequencing
-note directed. `P36-T13`'s proposal to delete `src/grain/contracts/` is **reversed** — that
-package is unbuilt, not dead, and `P37-T13` populates it.
 
 All execution phases through Phase 35 are CLOSED. The Closed-Phase Ledger below is the
 authoritative one-line status of every closed phase; full task detail lives in
