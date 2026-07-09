@@ -130,6 +130,30 @@ def test_onboard_creates_workflow_metrics(tmp_path: Path):
     assert (tmp_path / "docs" / "working" / "workflow_metrics.md").exists()
 
 
+def test_onboard_leaves_no_stale_grain_managed_files(tmp_path: Path):
+    # An onboarded workspace must not tell the user to run `grain upgrade`.
+    from grain.services.upgrade_service import upgrade_repo
+
+    result = _run(tmp_path, "onboard", str(tmp_path))
+    assert result.exit_code == 0, result.output
+
+    upgrade = upgrade_repo(tmp_path, dry_run=True)
+    assert upgrade.added == []
+    assert upgrade.updated == []
+
+
+def test_onboard_workspace_passes_its_own_docs_audit(tmp_path: Path):
+    # Every doc registered in the seeded docs_manifest.yaml must exist on disk.
+    from grain.services.docs_audit_service import run_audit
+
+    result = _run(tmp_path, "onboard", str(tmp_path))
+    assert result.exit_code == 0, result.output
+
+    audit = run_audit(tmp_path)
+    errors = [f for f in audit.findings if f.severity == "error"]
+    assert errors == [], [f.message for f in errors]
+
+
 def test_all_stub_files_contain_draft_marker(tmp_path: Path):
     result = _run(tmp_path, "onboard", str(tmp_path))
     assert result.exit_code == 0, result.output

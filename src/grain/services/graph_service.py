@@ -1,5 +1,5 @@
 # SPDX-FileCopyrightText: 2024-2026 Shaznay Sison
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: MIT
 
 """Knowledge graph builder service (Phase 10 Layer 3)."""
 
@@ -328,7 +328,9 @@ def _add_adapter_nodes(root: Path, graph) -> None:
 def _add_static_repo_edges(root: Path, graph) -> None:
     file_nodes = [node_id for node_id, data in _iter_nodes(graph) if data.get("kind") == "file"]
 
-    for node_id, data in _iter_nodes(graph):
+    # Snapshot: _add_edge below can create an absent adapter node, and mutating
+    # the graph while iterating its live node view raises RuntimeError.
+    for node_id, data in list(_iter_nodes(graph)):
         if data.get("kind") != "task_packet":
             continue
         packet_path = data.get("metadata", {}).get("path", "")
@@ -346,7 +348,7 @@ def _add_static_repo_edges(root: Path, graph) -> None:
                     metadata={},
                 )
         primary_adapter = data.get("metadata", {}).get("primary_adapter", "")
-        if isinstance(primary_adapter, str) and primary_adapter:
+        if isinstance(primary_adapter, str) and primary_adapter and primary_adapter != "none":
             adapter_node = f"adapter::{primary_adapter}"
             _add_edge(
                 graph,

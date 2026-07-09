@@ -1,5 +1,5 @@
 # SPDX-FileCopyrightText: 2024-2026 Shaznay Sison
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: MIT
 
 """Additive scaffold service for existing-project onboarding."""
 
@@ -20,7 +20,11 @@ _REQUIRED_DIRS = [
 _STUB_FILES: dict[str, str] = {
     "docs/canonical/product_scope.md": "# Product Scope\n\n# DRAFT - replace with real content\n",
     "docs/canonical/architecture.md": "# Architecture\n\n# DRAFT - replace with real content\n",
+    "docs/canonical/decisions.md": "# Decisions\n\n# DRAFT - replace with real content\n",
+    "docs/canonical/landscape.md": "# Landscape\n\n# DRAFT - replace with real content\n",
     "docs/working/backlog.md": "# Backlog\n\n# DRAFT - replace with real content\n",
+    "docs/working/roadmap.md": "# Roadmap\n\n# DRAFT - replace with real content\n",
+    "docs/working/landscape.md": "# Landscape\n\n# DRAFT - replace with real content\n",
     # current_focus.md uses a parse-safe bootstrap marker so `grain workflow next`
     # returns a structured bootstrap_incomplete state instead of a hard parse error.
     "docs/working/current_focus.md": (
@@ -89,6 +93,10 @@ _SEED_FILE_SOURCES: dict[str, str] = {
     "prompts/phase.review.md": "prompts/phase.review.md",
     "prompts/phase.review_and_close.md": "prompts/phase.review_and_close.md",
     "prompts/tasks.plan.next.md": "prompts/tasks.plan.next.md",
+    "prompts/tasks.next_and_implement.md": "prompts/tasks.next_and_implement.md",
+    "prompts/tasks.review.md": "prompts/tasks.review.md",
+    "prompts/tasks.close.md": "prompts/tasks.close.md",
+    "prompts/workflow.resume.md": "prompts/workflow.resume.md",
 }
 
 

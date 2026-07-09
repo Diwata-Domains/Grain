@@ -1,5 +1,5 @@
 # SPDX-FileCopyrightText: 2024-2026 Shaznay Sison
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: MIT
 
 """Deterministic structural entity extraction service (Phase 10 Layer 1)."""
 
@@ -93,8 +93,23 @@ def extract_structural_entities(file_path: Path, content: str | None = None) -> 
     Layer 1 is deterministic and local-only. No LLMs or remote calls.
     Uses tree-sitter parsers where grammars are available.
     """
-    text = content if content is not None else file_path.read_text(encoding="utf-8")
     language = _detect_language(file_path)
+
+    if content is not None:
+        text = content
+    else:
+        try:
+            text = file_path.read_text(encoding="utf-8")
+        except (UnicodeDecodeError, OSError):
+            # Binary artifacts — office documents, images, archives — carry no
+            # extractable structure. Report them rather than aborting the scan.
+            return StructuralExtraction(
+                file_path=str(file_path),
+                language=language,
+                entities=[],
+                parser="none",
+            )
+
     parser_name = _PARSER_BY_LANGUAGE.get(language)
 
     if get_parser is None or not parser_name:

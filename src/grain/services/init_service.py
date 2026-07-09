@@ -1,5 +1,5 @@
 # SPDX-FileCopyrightText: 2024-2026 Shaznay Sison
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: MIT
 
 from __future__ import annotations
 
@@ -64,8 +64,12 @@ _SEED_FILE_SOURCES = {
     "prompts/phase.review.md": "prompts/phase.review.md",
     "prompts/phase.review_and_close.md": "prompts/phase.review_and_close.md",
     "prompts/tasks.plan.next.md": "prompts/tasks.plan.next.md",
+    "prompts/tasks.next_and_implement.md": "prompts/tasks.next_and_implement.md",
+    "prompts/tasks.review.md": "prompts/tasks.review.md",
+    "prompts/tasks.close.md": "prompts/tasks.close.md",
     # working docs
     "docs/working/implementation_plan.md": "runtime/implementation_plan.md",
+    "docs/working/tooling_notes.md": "runtime/tooling_notes.md",
     "docs/working/backlog.md": "runtime/backlog.md",
     "docs/working/current_focus.md": "runtime/current_focus.md",
     "docs/working/open_questions.md": "runtime/open_questions.md",

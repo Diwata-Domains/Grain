@@ -123,3 +123,27 @@ def test_extract_structural_entities_for_files_skips_missing_paths(tmp_path: Pat
 
     assert len(results) == 1
     assert results[0].file_path.endswith("src/mod.py")
+
+
+def test_extract_structural_entities_skips_undecodable_binary_file(tmp_path: Path):
+    # Office documents, images, and archives are not UTF-8 text.
+    path = tmp_path / "budget.xlsx"
+    path.write_bytes(b"PK\x03\x04\x14\x00\x06\x00\x08\x00\x00\x00\xb2!\x00\x00")
+
+    extraction = extract_structural_entities(path)
+
+    assert extraction.entities == []
+    assert extraction.parser == "none"
+
+
+def test_extract_structural_entities_for_files_tolerates_binary_alongside_source(tmp_path: Path):
+    (tmp_path / "src").mkdir()
+    (tmp_path / "src" / "mod.py").write_text("def run():\n    return 1\n", encoding="utf-8")
+    (tmp_path / "report.docx").write_bytes(b"PK\x03\x04\xb2\xb2\xb2\xb2")
+
+    results = extract_structural_entities_for_files(tmp_path, ["src/mod.py", "report.docx"])
+
+    assert len(results) == 2
+    by_name = {Path(r.file_path).name: r for r in results}
+    assert by_name["mod.py"].entities
+    assert by_name["report.docx"].entities == []
