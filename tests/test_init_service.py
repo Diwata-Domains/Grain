@@ -42,8 +42,12 @@ EXPECTED_SEED_FILES = {
     "prompts/phase.review.md",
     "prompts/phase.review_and_close.md",
     "prompts/tasks.plan.next.md",
+    "prompts/tasks.next_and_implement.md",
+    "prompts/tasks.review.md",
+    "prompts/tasks.close.md",
     # working docs
     "docs/working/implementation_plan.md",
+    "docs/working/tooling_notes.md",
     "docs/working/backlog.md",
     "docs/working/current_focus.md",
     "docs/working/open_questions.md",
@@ -302,3 +306,25 @@ def test_init_current_task_template_written_on_fresh_init(tmp_path):
 def test_init_proposals_dir_created(tmp_path):
     init_repo(tmp_path)
     assert (tmp_path / "docs" / "working" / "proposals").is_dir()
+
+
+def test_init_leaves_no_stale_grain_managed_files(tmp_path):
+    # A freshly initialized workspace must not tell the user to run `grain upgrade`.
+    from grain.services.upgrade_service import upgrade_repo
+
+    init_repo(tmp_path)
+    result = upgrade_repo(tmp_path, dry_run=True)
+
+    assert result.added == []
+    assert result.updated == []
+
+
+def test_init_workspace_passes_its_own_docs_audit(tmp_path):
+    # Every doc registered in the seeded docs_manifest.yaml must exist on disk.
+    from grain.services.docs_audit_service import run_audit
+
+    init_repo(tmp_path)
+    audit = run_audit(tmp_path)
+
+    errors = [f for f in audit.findings if f.severity == "error"]
+    assert errors == [], [f.message for f in errors]

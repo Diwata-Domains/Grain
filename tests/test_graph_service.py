@@ -119,3 +119,58 @@ def test_build_knowledge_graph_requires_sources(tmp_path: Path):
     assert result.ok is False
     assert artifact is None
     assert result.errors == ["source_paths is required"]
+
+
+def _seed_packet_with_adapter(root: Path, adapter: str) -> None:
+    _write(
+        root / "tasks" / "P11-T01-TASK-0080" / "task.md",
+        f"""# Task
+
+## Metadata
+- **ID:** TASK-0080
+- **Status:** draft
+- **Phase:** Phase 11
+- **Primary Adapter:** {adapter}
+""",
+    )
+
+
+def test_build_knowledge_graph_treats_none_adapter_as_unset(tmp_path: Path):
+    # `grain task create` seeds packets with the literal sentinel "none".
+    _seed_repo(tmp_path)
+    _seed_packet_with_adapter(tmp_path, "none")
+
+    result, artifact = build_knowledge_graph(tmp_path, source_paths=["src/app.py"])
+
+    assert result.ok is True
+    assert artifact is not None
+    assert not any(node.id == "adapter::none" for node in artifact.nodes)
+    assert not any(edge.target == "adapter::none" for edge in artifact.edges)
+
+
+def test_build_knowledge_graph_links_packet_to_declared_adapter(tmp_path: Path):
+    _seed_repo(tmp_path)
+    _seed_packet_with_adapter(tmp_path, "code_adapter")
+
+    result, artifact = build_knowledge_graph(tmp_path, source_paths=["src/app.py"])
+
+    assert result.ok is True
+    assert artifact is not None
+    assert any(
+        edge.source == "task_packet::TASK-0080"
+        and edge.target == "adapter::code_adapter"
+        and edge.edge_type == "uses_adapter"
+        for edge in artifact.edges
+    )
+
+
+def test_build_knowledge_graph_survives_adapter_absent_from_profiles(tmp_path: Path):
+    # Linking a packet to an unregistered adapter must not mutate the node map
+    # while it is being iterated.
+    _seed_repo(tmp_path)
+    _seed_packet_with_adapter(tmp_path, "ghost_adapter")
+
+    result, artifact = build_knowledge_graph(tmp_path, source_paths=["src/app.py"])
+
+    assert result.ok is True
+    assert artifact is not None

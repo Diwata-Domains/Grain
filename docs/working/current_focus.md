@@ -1,14 +1,16 @@
 # Current Focus
 
 ## Current Phase
-Phase 33 — v0.5.0 planning (planning pass; no execution tasks yet)
+Phase 36 — v0.5.0 Release Readiness & Fleet Hardening
 
-> **Status:** v0.4.0 (Proactive Assistance) implementation complete on `main` + `staging`
-> — 1414 tests passing, adversarially reviewed (23 findings fixed). Its execution phase is
-> CLOSED and archived (see the ledger). v0.4.0 release pending `pnpm trace release minor`
-> (bumps 0.3.1→0.4.0, generates CHANGELOG, tags `grain-v0.4.0` → PyPI).
-> **Next:** lock the v0.5.0 scope into execution phases — see `docs/working/v0.5.0_contract.md`.
-> **Last shipped:** v0.3.1 (Phase 31 close, 2026-06-12)
+> **Status:** v0.5.0 (recipe step-runner + Apache-2.0 relicense) is **shipped** — grain-kit
+> 0.5.0 live on PyPI (2026-07-07, release run 28845125357: test → build → publish → mirror
+> sync → GH Release). Phase 36 closes the punch-list between a working 0.5.0 and a clean
+> public release. Active packets `P36-T14-TASK-0223` and `P36-T15-TASK-0224` are in review.
+> **Next:** demo readiness for the late-July 2026 live demo, then lock v0.6.0 scope —
+> see `docs/working/v0.5.0_contract.md` §2 (general-purpose workspaces, `grain recipe
+> suggest`, signal inbox, apply graduation, engine contract).
+> **Last shipped:** v0.5.0 (2026-06-28, published to PyPI 2026-07-07)
 
 All execution phases through Phase 32 are CLOSED. The Closed-Phase Ledger below is the
 authoritative one-line status of every closed phase; full task detail lives in
@@ -16,11 +18,14 @@ authoritative one-line status of every closed phase; full task detail lives in
 focus; `docs/working/backlog.md` owns task state.
 
 ## Immediate Priorities
-1. Release v0.4.0: `pnpm trace release minor` on main (version + CHANGELOG + tag → PyPI).
-2. Start the v0.5.0 planning pass — see `docs/working/v0.5.0_contract.md` (general-purpose
-   workspaces, recipes, signals, apply graduation, engine contract, token-budget proxy,
-   quick lane, package self-update).
-3. (Separately) push the `scry-wip` branch's Scry/WARDRIVE commits via their own path.
+1. Demo readiness for the late-July 2026 live demo: fix the bootstrap health errors, the
+   `grain init` staleness nag, and the `grain orchestrate` graph crash.
+2. Close the two in-review packets (`P36-T14-TASK-0223`, `P36-T15-TASK-0224`).
+3. Refresh public docs to match shipped reality: `ROADMAP.md` (still claims v0.3.1),
+   `README.md` command coverage, GitHub org links.
+4. Start the v0.6.0 scope pass — see `docs/working/v0.5.0_contract.md` §2 (general-purpose
+   workspaces, recipes, signals, apply graduation, engine contract, token-budget proxy).
+5. (Separately) push the `scry-wip` branch's Scry/WARDRIVE commits via their own path.
 
 ## Active Constraints
 - local filesystem only; no background services or hidden state
