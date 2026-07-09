@@ -113,7 +113,9 @@ and OD-2 (tri-state `status`) are confirmed; do not reopen them.
 - **Grain idioms:** frozen `@dataclass` + `__post_init__` + `VALID_*` frozensets (mirror
   `domain/recipe_run.py` / `domain/workflow_loop.py`); `ForgeError` taxonomy preserved;
   CLI canonical. New `.py` files carry the SPDX Apache-2.0 header used across the repo
+<!-- REUSE-IgnoreStart -->
   (`# SPDX-FileCopyrightText: 2024-2026 Shaznay Sison` / `# SPDX-License-Identifier: Apache-2.0`).
+<!-- REUSE-IgnoreEnd -->
 - Text-mode `handle_error` output must be byte-for-byte the prior behavior (human/script
   back-compat, §4.3); only the new `fmt` parameter and the json branch are added.
 

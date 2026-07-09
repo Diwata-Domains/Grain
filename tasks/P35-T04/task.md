@@ -92,7 +92,9 @@ is deferred to 0.6.0, §8 Deferred).
   re-defines a frame").
 - `get_version()` is the only source for `grain_version` (§5.2/§10), provided by
   `grain/version.py` (P35-T02). Import it; never hardcode a version string (§5.2).
+<!-- REUSE-IgnoreStart -->
 - New `.py` files carry the SPDX Apache-2.0 header (`SPDX-License-Identifier: Apache-2.0`),
+<!-- REUSE-IgnoreEnd -->
   matching `src/grain/domain/workflow_loop.py`.
 - Grain idioms: CLI is canonical (§2 principle 5); the helper is the single print path —
   no command re-rolls `json.dumps` of an envelope.

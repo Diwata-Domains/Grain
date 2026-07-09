@@ -20,7 +20,7 @@
 All new `.py` files begin with the SPDX header block used across the repo:
 ```python
 # SPDX-FileCopyrightText: 2024-2026 Shaznay Sison
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: MIT
 ```
 
 ## Inputs consumed (owned by upstream packets — do NOT redefine/re-implement)

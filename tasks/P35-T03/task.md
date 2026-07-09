@@ -90,7 +90,9 @@ capabilities**, §8) that the MCP, capabilities-service/CLI, and version packets
   (§6.1, §6.3). Do NOT read or write `docs/runtime/grain_capabilities.yaml` here.
 - New `.py` files carry the SPDX header
   (`# SPDX-FileCopyrightText: 2024-2026 Shaznay Sison` /
+<!-- REUSE-IgnoreStart -->
   `# SPDX-License-Identifier: Apache-2.0`).
+<!-- REUSE-IgnoreEnd -->
 - stdio-only / no-network / file-backed contract: this module has no network, no daemon,
   no HTTP, and no on-disk side effects (engine_contract_spec.md §2 principle 4).
 

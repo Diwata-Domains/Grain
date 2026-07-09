@@ -25,7 +25,9 @@
 
 ## Module contract: `src/grain/cli/emit.py`
 
+<!-- REUSE-IgnoreStart -->
 Header: `# SPDX-License-Identifier: Apache-2.0` (+ FileCopyrightText line as in
+<!-- REUSE-IgnoreEnd -->
 `domain/workflow_loop.py`).
 
 ```python

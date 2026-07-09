@@ -24,17 +24,17 @@ Adapter PRs are the only code contributions currently accepted.
 
 ### Bug reports
 
-Open a bug report using the [bug report template](https://github.com/Diwata-Labs/Grain/issues/new/choose). Include the `grain-kit` version, Python version, OS, and exact steps to reproduce.
+Open a bug report using the [bug report template](https://github.com/Diwata-Domains/Grain/issues/new/choose). Include the `grain-kit` version, Python version, OS, and exact steps to reproduce.
 
 ### Feature requests
 
-Open a feature request using the [feature request template](https://github.com/Diwata-Labs/Grain/issues/new/choose). Describe the workflow problem you're trying to solve — that context is more useful than a description of the solution alone.
+Open a feature request using the [feature request template](https://github.com/Diwata-Domains/Grain/issues/new/choose). Describe the workflow problem you're trying to solve — that context is more useful than a description of the solution alone.
 
 ---
 
 ## What is not accepted
 
-Grain does not currently accept external code contributions outside of community adapters. This is an intentional IP policy during the early commercial phase — clean ownership matters for the dual-licensing model.
+Grain does not currently accept external code contributions outside of community adapters. This is an intentional policy while the project is young: keeping copyright ownership in one place means the license can be changed later without tracking down every past contributor.
 
 This includes:
 - Core CLI changes

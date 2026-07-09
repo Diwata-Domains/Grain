@@ -32,7 +32,7 @@
 ### Header
 ```python
 # SPDX-FileCopyrightText: 2024-2026 Shaznay Sison
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: MIT
 ```
 (New `.py` file — carries the Apache-2.0 SPDX header; mirror `src/grain/cli/__init__.py`
 lines 1–2.)
