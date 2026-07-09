@@ -622,18 +622,21 @@ Key deliverables: `grain workflow guard`, `grain hooks install/list/remove`, `gr
 - **Dependencies:** P38-T02
 - **Effort:** days
 
-### P38-T12 — `grain notes triage` cannot tell a missing command from a missing argument
+### P38-T12 — `grain notes triage` classification is unsound: exit code is not evidence
 - **Status:** draft
-- **Description:** Triage classifies a note stale only when its recorded command exits 0, which is the right conservatism. But Click exits 2 for BOTH `No such command 'frobnicate'` and `Missing argument 'MESSAGE'`, so a note reading ``grain notes add`` — the very note that motivated this phase, and which is stale because the command shipped — replays as `exit=2` and stays open. Distinguish them: parse stderr for `No such command` (command genuinely absent → still open) versus `Missing argument` / `Missing option` (command exists; the note's symptom is gone → closure candidate, flagged for human confirmation). Do not widen the stale classification beyond that; a nonzero exit for any other reason must keep the note open.
-- **Repro:** `grain notes add` → exit 2, `Missing argument 'MESSAGE'`. `grain notes frobnicate` → exit 2, `No such command`. `grain notes triage` reports the first as `[open ·] #4 grain notes add exit=2`.
+- **Description:** Triage marks a note stale when its recorded command now exits 0 in a pristine throwaway workspace. Measured against the real fleet on 2026-07-09 that rule has **~27% precision (4 of 15 stale candidates sound) and poor recall** — it reports `grain task close` and `grain notes add` as *still open* although both were fixed, because a bare invocation exits 2 for a missing argument. Two independent defects, one root cause — *an exit code is not evidence*.
+  **(a) State-independence.** Replaying a bare command in an empty workspace exits 0 whether or not the note's symptom was fixed, because the symptom needed state the sandbox does not have. Verified by installing grain-kit 0.5.0 in an isolated venv and replaying each candidate: `onboard .`, `upgrade`, `upgrade --diff`, `upgrade --add-missing`, `doctor`, `phase next`, `workflow next`, `task validate` and `--format json workflow next` **all exit 0 on 0.5.0 too**. Only `task list --format json`, `workflow next --format json`, `phase list` and `phase status` exited 2 on 0.5.0 and 0 on 0.6.0 — the four whose symptom lived on the CLI surface.
+  **(b) Exit-2 ambiguity.** Click exits 2 for both `No such command 'frobnicate'` and `Missing argument 'MESSAGE'`. So ``grain notes add`` — stale, because the command shipped — replays as `exit=2` and stays open. The note that motivated this entire phase is the one case the heuristic cannot see.
+  **Fix.** Stop classifying on exit code alone. Auto-classify stale ONLY when the symptom is state-independent, i.e. the recorded command's stderr on an older grain matches a CLI-surface signature (`No such command`, `No such option`, `Got unexpected extra argument`, `Missing option`) and the current version no longer produces it. Everything else routes to `needs human`, which is honest. Optionally support `--baseline <version>` to install and replay against the version the note was filed against; without a baseline, refuse to call anything stale that is not a CLI-surface symptom. And never let `--resolve-stale` act on a candidate the tool cannot justify.
+- **Repro:** `grain notes triage --fleet <9 roots>` reports `15 stale · 7 open · 27 human`. `uv pip install grain-kit==0.5.0` then replay: 11 of the 15 already exit 0 on 0.5.0. `grain notes add` -> exit 2 `Missing argument`; `grain notes frobnicate` -> exit 2 `No such command`.
 - **Files:** `src/grain/services/notes_service.py`, `tests/test_notes_triage.py`
 - **Dependencies:** P38-T10
-- **Effort:** trivial
+- **Effort:** hours
 
 ### P38-T11 — Drain the fleet inbox
 - **Status:** draft
-- **Description:** Close the 29 verified-stale notes across the 12 workspaces, citing the version that fixed each. Blocked on T10 so the closure is mechanical rather than another manual archaeology dig. Also reconcile the two Limitless trees: `~/Limitless` and `~/Documents/Limitless` hold **different** `tooling_notes.md` content, and `~/Limitless-wt/{stg,pg-lift,crm-backfill}` are byte-identical worktree copies whose inboxes will diverge the moment anyone writes to one.
-- **Dependencies:** P38-T10
+- **Description:** Close the 29 verified-stale notes across the 12 workspaces, citing the version that fixed each. Blocked on **T12**, not T10: triage as shipped has ~27% precision, so `--resolve-stale` would close 11 notes it cannot justify. Drain by hand, or wait for a sound classifier. Also reconcile the two Limitless trees: `~/Limitless` and `~/Documents/Limitless` hold **different** `tooling_notes.md` content, and `~/Limitless-wt/{stg,pg-lift,crm-backfill}` are byte-identical worktree copies whose inboxes will diverge the moment anyone writes to one.
+- **Dependencies:** P38-T12
 - **Effort:** hours
 
 ---

@@ -89,3 +89,49 @@ message string, and both `CLAUDE.md` and `AGENTS.md` said otherwise. That note c
 
 The same defect was independently logged in up to four repos. A per-repo inbox cannot dedupe
 that; see P38-T10.
+
+---
+
+## Addendum — `grain notes triage --fleet` measured against the real fleet
+
+Run after Phase 38 shipped, dry-run, across 9 roots. All 46 `tooling_notes.md` files on the
+machine were hashed before and after: **none was modified.**
+
+```
+notes triage (fleet, dry-run) — grain 0.6.0
+  15 stale candidate(s) · 7 still open · 27 need human
+```
+
+**Do not run `--resolve-stale` against this.** The classifier is unsound, in both directions.
+
+*Precision.* Triage marks a note stale when its recorded command now exits 0 in a pristine
+throwaway workspace. But the sandbox has none of the state the symptom needed. Installing
+`grain-kit==0.5.0` in an isolated venv and replaying every candidate settles it — these all
+exit **0 on 0.5.0 too**, so their exit code never encoded the defect:
+
+| Command | exit on 0.5.0 | exit on 0.6.0 | sound? |
+|---|---|---|---|
+| `grain task list --format json` | 2 | 0 | yes |
+| `grain workflow next --format json` | 2 | 0 | yes |
+| `grain phase list` | 2 | 0 | yes |
+| `grain phase status` | 2 | 0 | yes |
+| `grain onboard .` | 0 | 0 | no |
+| `grain upgrade` | 0 | 0 | no |
+| `grain upgrade --diff` | 0 | 0 | no |
+| `grain upgrade --add-missing` | 0 | 0 | no |
+| `grain doctor` | 0 | 0 | no |
+| `grain phase next` | 0 | 0 | no |
+| `grain workflow next` | 0 | 0 | no |
+| `grain task validate` | 0 | 0 | no |
+| `grain --format json workflow next` | 0 | 0 | no |
+
+Four of fifteen. The four that work are exactly the ones whose symptom lived on the CLI
+surface — a command or a flag that did not exist. `upgrade --add-missing` and the positional
+`task validate` *were* fixed in Phase 38, but the replay did not establish it; they land in the
+stale bucket by accident.
+
+*Recall.* The `still open` bucket is no better. It lists `grain task close` (fixed — `grain
+review approve` now sets the state) and `grain notes add` (shipped long ago) as open, because a
+bare invocation exits 2 for a missing argument, and Click exits 2 for `No such command` too.
+
+An exit code is not evidence. See P38-T12.
