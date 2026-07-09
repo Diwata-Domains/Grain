@@ -523,6 +523,113 @@ Key deliverables: `grain workflow guard`, `grain hooks install/list/remove`, `gr
 
 ---
 
+## Phase 38 — Tooling Friction Remediation
+
+> **Status:** DRAFT — sourced from a fleet-wide sweep of `docs/working/tooling_notes.md` across
+> 12 unique Grain workspaces (2026-07-09). 87 entries harvested, 75 open, 65 against Grain,
+> 61 unique after dedupe. Each was **reproduced against the published grain-kit 0.6.0** in a
+> throwaway workspace before earning a task; 29 no longer reproduce and are listed for closure
+> in `docs/working/friction_sweep_2026-07-09.md`, not fixed here.
+
+### P38 Notes
+- **The inbox is a fleet property, not a repo property.** The same defect ("`--format` only
+  works globally", "onboard leaves `proposals/` missing") was independently logged in
+  Diwata-Labs root, assay, aether, and Limitless — four repos, one bug, four uncoordinated
+  notes. A per-repo inbox structurally cannot dedupe that. T10 is the fix; everything else is
+  a symptom.
+- **Build order:** T01–T04 are cheap and independently shippable. T05–T09 are the workflow
+  engine and can proceed in parallel. T10 and T11 close the loop and should land last.
+- Do **not** re-file the six defects fixed in 0.6.0 (`orchestrate` ×2, `init`/`onboard` health,
+  `status` task counting, `reconcile` phase blindness, `phase close --allow-empty`).
+
+### P38-T01 — `grain onboard` must scaffold `docs/working/proposals/`
+- **Status:** draft
+- **Description:** `grain onboard .` produces a workspace that immediately fails `grain docs validate` with exit 3: `Doc 'proposals': expected path not found: docs/working/proposals/`. `grain init` creates the directory; `onboard`'s `_REQUIRED_DIRS` omits it. This is the third instance of the same init/onboard desync (the seed-file list and the prompt list were reconciled in 0.6.0; the directory list was not). Add `docs/working/proposals` to onboard, then factor **one shared constant** the two scaffolders both consume so they cannot drift a fourth time. Regression test: `grain docs validate` exits 0 on a freshly onboarded repo.
+- **Repro:** `mkdir /tmp/x && cd /tmp/x && git init -q . && grain onboard . && grain docs validate` → exit 3.
+- **Files:** `src/grain/services/onboard_service.py`, `src/grain/services/init_service.py`, `tests/test_onboard_cmd.py`
+- **Dependencies:** none
+- **Effort:** trivial
+
+### P38-T02 — Accept `--format` after the subcommand, everywhere
+- **Status:** draft
+- **Description:** `--format` is a group-level option, so `grain task list --format json` and `grain workflow next --format json` both die at Click parsing with exit 2 (`No such option '--format'`), while `grain --format json task list` succeeds. Exactly two commands declare a local `--format` — `onboard` and `upgrade` — so an agent that learns the flag on one of those and applies it anywhere else gets a usage error. Attach an eager `--format [text|json]` to every envelope-emitting leaf command (a shared decorator or `Group` subclass), deferring to the top-level value when unset. Grain is agent-first; a flag whose position matters is a trap.
+- **Repro:** `grain task list --format json` → exit 2; `grain --format json task list` → exit 0. Local `--format` grep: only `cli/onboard.py:20` and `cli/upgrade.py:22`.
+- **Files:** `src/grain/cli/__init__.py`, and every module under `src/grain/cli/`
+- **Dependencies:** none
+- **Effort:** hours
+
+### P38-T03 — Machine-readable output fidelity
+- **Status:** draft
+- **Description:** Four output bugs that make Grain lie to the agent parsing it. (1) `grain upgrade --add-missing` prints `Added:` / `- (none)` while actually writing the files — `_scan_absent_seeded_files` appends to `result.absent` and never to `result.added`. (2) The `N Grain-managed file(s) are out of date` hint never clears after `grain upgrade` skips locally-customized files, because the stale count includes `skipped_customized`. (3) That hint prints to stderr even under `grain --format json`, unlike the sibling version gate. (4) `grain --format json phase close --dry-run` returns `"dry_run": false` on early-return paths.
+- **Repro:** in a fresh `grain init` workspace, `rm docs/working/tooling_notes.md prompts/tasks.review.md && grain upgrade --add-missing` prints `Added:` `- (none)` yet both files exist afterwards.
+- **Files:** `src/grain/services/upgrade_service.py`, `src/grain/cli/__init__.py`, `src/grain/services/phase_close_service.py`
+- **Dependencies:** none
+- **Effort:** hours
+
+### P38-T04 — `grain phase list` and `grain phase status`
+- **Status:** draft
+- **Description:** `grain phase` exposes only `archive`, `close`, `next`. There is no CLI way to see all phases and their status — `grain phase list` and `grain phase status` both exit 2 with `No such command`. The nearest command, `phase next`, sounds mutating but is read-only. Add `phase list` (every `## Phase N —` heading with its `> **Status:**` and a done/ready/total rollup) and `phase status` (read-only view of the active phase), reusing the existing phase parser. Both honor `--format json` (see T02).
+- **Repro:** `grain phase list` → exit 2. `grain phase --help` shows only archive/close/next.
+- **Files:** `src/grain/cli/phase.py`
+- **Dependencies:** P38-T02
+- **Effort:** hours
+
+### P38-T05 — First-class review approval
+- **Status:** draft
+- **Description:** `grain task close` refuses unless `user_review_state == 'approved'` (`validators/packet_validator.py:118`), but **no CLI command sets that state.** `review` offers check/handoff/summary; `verify` offers ingest/status/submit; neither writes approval. The only path to a validated close is hand-editing the `## User Review` → `- **State:**` field in `results.md`. This was hit for real on 2026-07-09 closing TASK-0222/0223/0224. Add `grain review approve --id <TASK> --summary "..."` (and `--reject`), writing the block Grain already parses. The human gate is Grain's headline feature; it should not be reachable only by hand-editing markdown.
+- **Repro:** `grain task close --id TASK-0001` on a reviewed packet → `user review state must be 'approved' before closing to 'done'`; `grep -ri approv src/grain/cli/review.py` finds no setter.
+- **Files:** `src/grain/cli/review.py`, `src/grain/services/review_service.py`, `src/grain/domain/review_bundle.py`
+- **Dependencies:** none
+- **Effort:** hours
+
+### P38-T06 — Task CLI ergonomics: positional IDs and `grain task start`
+- **Status:** draft
+- **Description:** The `task` group is flag-only and rejects the natural forms. `grain task show P8-T02-TASK-0001` → `Missing option '--id'`; `grain task validate P8-T02-TASK-0001` → `Got unexpected extra argument` — even though the packet dir name is exactly what `grain task list` prints. Accept an optional positional (TASK-#### or packet dir) across show/validate/status/prepare/close, keeping `--id`. Separately, `grain task status --id X --status in_progress` is rejected (the legal path is draft→ready→in_progress) and, when it does apply, updates only the packet's `task.md`, leaving `backlog.md` and `current_task.md` drifted until `reconcile` warns. Add `grain task start <id>` that performs the whole legal transition and syncs both working docs, and make the rejection name the legal next hop.
+- **Repro:** `grain task show P1-T01-TASK-0001` → exit 2, `Missing option '--id'`.
+- **Files:** `src/grain/cli/task.py`, `src/grain/services/task_service.py`
+- **Dependencies:** none
+- **Effort:** days
+
+### P38-T07 — Focus-doc phase parsing is brittle, and reconcile can't repair it
+- **Status:** draft
+- **Description:** `grain workflow next` hard-blocks with `required_docs_invalid` ("unable to parse current phase") when `## Current Phase` uses a hyphen, en-dash, or colon instead of the em-dash the regex demands (`_CURRENT_PHASE_LINE`, `workflow_service.py:48`) — a routine by-product of hand-editing. `grain workflow explain` then routes the agent to `grain workflow reconcile`, which reports `issues 0` and cannot repair it, so the guidance dead-ends. Loosen the separator to `^Phase\s+(\d+)\s*[—–:-]` and add a reconcile `focus_phase_parseable` check that flags and repairs the malformed line.
+- **Repro:** set the heading to `Phase 1 - Foundation`; `grain workflow next` → `required_docs_invalid`; `grain workflow reconcile` → `issues 0`.
+- **Files:** `src/grain/services/workflow_service.py`, `src/grain/services/reconcile_service.py`
+- **Dependencies:** none
+- **Effort:** hours
+
+### P38-T08 — Phase-close gate is off below phase 16; orphan packets undetected
+- **Status:** draft
+- **Description:** Two gaps in the same layer. (1) The `previous_phase_not_closed` gate is disabled below phase 16 by `_PHASE_CLOSE_MIN_ENFORCED = 15` (`workflow_service.py:59`), so every project in phases 1–14 — which is every project that adopts Grain — can hand-edit `current_focus.md` past an unclosed phase with no gate. Make the threshold per-repo (stamp it at `init`) or lower it to 1 for fresh workspaces. (2) `reconcile` skips backlog tasks marked `done`/`in_progress` that have no packet directory (`if packet_dir is None: continue`), and never notices deliverable artifacts on disk with no backing packet. Invert the skip into a report-only `missing_packet` finding.
+- **Repro:** Phase 1 done, `current_focus.md` hand-edited to Phase 2 with no `Phase 1 closed:` marker → routes straight into P2-T01. Same setup at phases 15/16 correctly stops.
+- **Files:** `src/grain/services/workflow_service.py`, `src/grain/services/reconcile_service.py`, `src/grain/services/init_service.py`
+- **Dependencies:** none
+- **Effort:** hours
+
+### P38-T09 — Legacy-packet validation escape hatch
+- **Status:** draft
+- **Description:** `grain task validate --all` hard-fails (exit 3) on a legacy packet holding `task.md` + `context.md` but missing `plan.md`/`deliverable_spec.md`. The simple-packet exemption only covers packets with **zero** planning files, so a partial legacy packet can never pass, and the `- **Mode:** simple` field that `grain task create --simple` writes is ignored by the validator. Pick one: honor `Mode: simple`, add `grain task backfill <id>` to seed missing files from templates, or add `--skip <id>`. Onboarding an existing repo currently means a manual rewrite with no migration path.
+- **Repro:** create a packet, `rm plan.md deliverable_spec.md`, `grain task validate --all` → exit 3.
+- **Files:** `src/grain/validators/packet_validator.py`, `src/grain/cli/task.py`
+- **Dependencies:** none
+- **Effort:** hours
+
+### P38-T10 — Make the friction inbox self-draining: `grain notes triage` and fleet mode
+- **Status:** draft
+- **Description:** The writer and reader both exist — `grain notes add|list|show|resolve|publish` all work in 0.6.0 (the `grain notes add` note is stale). What is missing is anything that **closes the loop**: nothing re-checks whether an open note still reproduces, so more than half this fleet's inbox is fixed-but-never-closed. Add `grain notes triage`, which for each open note replays its recorded `command` (or hands it to an agent) and flags notes whose symptom no longer reproduces as closure candidates. Then add **fleet mode**: `grain notes --fleet <roots...>` scans a set of workspaces, normalizes by `command` + `category`, and emits one finding with N `seen_in` workspaces — exactly the rollup this sweep was hand-built to produce. `grain notes publish --fleet` then files one deduplicated issue per real defect instead of four.
+- **Repro:** 61 unique frictions across 12 workspaces; 29 no longer reproduce. The same four defects were logged independently in four repos.
+- **Files:** `src/grain/cli/notes.py`, `src/grain/services/notes_service.py`
+- **Dependencies:** P38-T02
+- **Effort:** days
+
+### P38-T11 — Drain the fleet inbox
+- **Status:** draft
+- **Description:** Close the 29 verified-stale notes across the 12 workspaces, citing the version that fixed each. Blocked on T10 so the closure is mechanical rather than another manual archaeology dig. Also reconcile the two Limitless trees: `~/Limitless` and `~/Documents/Limitless` hold **different** `tooling_notes.md` content, and `~/Limitless-wt/{stg,pg-lift,crm-backfill}` are byte-identical worktree copies whose inboxes will diverge the moment anyone writes to one.
+- **Dependencies:** P38-T10
+- **Effort:** hours
+
+---
+
 ## Backlog Maintenance Rules
 
 1. Backlog items must remain concrete and implementable
