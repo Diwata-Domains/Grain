@@ -335,6 +335,45 @@ _UNSAFE_PAIR: frozenset[tuple[str, str]] = frozenset(
 # Global options that consume the following token (so it is not a subcommand).
 _GLOBAL_VALUE_OPTS: frozenset[str] = frozenset({"--repo", "--format"})
 
+# A note's symptom is on the CLI surface when the note itself says a command or
+# an option was absent or rejected outright. Replay can settle that. It cannot
+# settle "the output was misleading" or "it did the wrong thing given state X".
+#
+# Three kinds, because each needs a different thing from the replay:
+#   - the COMMAND was absent      -> replaying the bare command settles it
+#   - an OPTION was rejected      -> the replay must carry that option
+#   - a POSITIONAL was rejected   -> the replay must carry a positional
+_OBS_COMMAND_ABSENT = re.compile(
+    r"no such command"
+    r"|does not exist"
+    r"|doesn't exist"
+    r"|command exists"          # "No `phase list` command exists"
+    r"|is not a( valid)? command",
+    re.IGNORECASE,
+)
+_OBS_OPTION_REJECTED = re.compile(
+    r"no such option"
+    r"|not accepted as an option"
+    r"|is not a( valid)? (option|flag)"
+    r"|unrecognized option"
+    r"|missing option",
+    re.IGNORECASE,
+)
+_OBS_POSITIONAL_REJECTED = re.compile(
+    r"got unexpected extra argument|unrecognized argument|positional",
+    re.IGNORECASE,
+)
+
+# The command or flag genuinely is not there.
+_ABSENT_SIGNATURE = re.compile(r"no such command|no such option", re.IGNORECASE)
+
+# The command parsed, then complained about how it was invoked — which proves the
+# command exists. Click exits 2 for this and for `No such command` alike.
+_USAGE_ERROR = re.compile(
+    r"missing argument|missing option|missing parameter|got unexpected extra argument",
+    re.IGNORECASE,
+)
+
 _REPLAY_BOOTSTRAP = "import sys; from grain.cli import cli; cli()"
 _MARKER_REL = ("docs", "runtime", "PROJECT_RULES.md")
 
@@ -347,6 +386,7 @@ class ReplayOutcome:
     exit_code: int | None = None
     command: str = ""   # the normalized `grain …` actually run, or "" if none
     detail: str = ""    # why it was not replayable / any diagnostic
+    stderr: str = ""    # captured stderr — the exit code alone is not evidence
 
 
 @dataclass
@@ -531,6 +571,7 @@ class _ThrowawayReplayer:
             )
             return ReplayOutcome(
                 replayable=True, exit_code=proc.returncode, command=pretty,
+                stderr=proc.stderr or "",
             )
         except subprocess.TimeoutExpired:
             return ReplayOutcome(
@@ -557,14 +598,71 @@ def _current_version() -> str:
         return "unknown"
 
 
-def _verdict_for(outcome: ReplayOutcome) -> str:
+def _replay_exercises_symptom(observation: str, command: str) -> bool:
+    """Can replaying `command` actually settle the symptom this note describes?
+
+    Only a CLI-surface symptom — an absent command, a rejected option, a rejected
+    positional — leaves a trace in an exit code. Everything else (wrong output,
+    misleading text, state-dependent misbehaviour) does not, because the throwaway
+    workspace has none of the state that produced it.
+
+    And the replayed command must exercise the symptom. A note filed against
+    `grain task validate P8-T02-TASK-0027` ("Got unexpected extra argument") whose
+    Command column records only the bare `grain task validate` cannot be settled:
+    the bare form exits 0 on every version.
+    """
+    obs = observation or ""
+    argv = command.split()[1:] if command.startswith("grain ") else command.split()
+
+    if _OBS_COMMAND_ABSENT.search(obs):
+        return True   # the command itself is the experiment
+    if _OBS_OPTION_REJECTED.search(obs):
+        return any(tok.startswith("-") for tok in argv)
+    if _OBS_POSITIONAL_REJECTED.search(obs):
+        return any(not tok.startswith("-") for tok in argv[2:])
+    return False
+
+
+def _command_absent(outcome: ReplayOutcome) -> bool:
+    """True when the replay proves the command or flag still does not exist.
+
+    Click exits 2 for `No such command` *and* for `Missing argument`. Only the
+    stderr distinguishes "absent" from "present but invoked without its args".
+    """
+    return bool(_ABSENT_SIGNATURE.search(outcome.stderr or ""))
+
+
+def _verdict_for(outcome: ReplayOutcome, observation: str = "") -> str:
+    """Classify one replayed note.
+
+    A note is stale only when its symptom lived on the CLI surface AND that
+    surface now exists. Measured on the real fleet (2026-07-09), classifying on
+    exit code alone had ~27% precision: eleven of fifteen candidates already
+    exited 0 on the version they were filed against.
+    """
     if not outcome.replayable:
         return TRIAGE_HUMAN
-    return TRIAGE_STALE if outcome.exit_code == 0 else TRIAGE_OPEN
+
+    if not _replay_exercises_symptom(observation, outcome.command):
+        # The replay cannot speak to this symptom in either direction. Saying
+        # "still open" would be as unfounded as saying "stale".
+        return TRIAGE_HUMAN
+
+    if _command_absent(outcome):
+        return TRIAGE_OPEN
+
+    # The surface exists: exit 0, or a usage error that proves the command parsed.
+    if outcome.exit_code == 0 or _USAGE_ERROR.search(outcome.stderr or ""):
+        return TRIAGE_STALE
+
+    return TRIAGE_OPEN
 
 
 def _stale_resolution(version: str) -> str:
-    return f"stale on replay — command no longer errors as of grain {version}"
+    return (
+        f"stale on replay — the command or flag the note reported missing "
+        f"exists as of grain {version}"
+    )
 
 
 # ── Local triage ──────────────────────────────────────────────────────────────
@@ -595,7 +693,7 @@ def triage_notes(
     resolved_total = 0
     for note in listed.notes:
         outcome = replay(note.command)
-        verdict = _verdict_for(outcome)
+        verdict = _verdict_for(outcome, note.body)
         item = TriageItem(
             note=note, verdict=verdict, replay=outcome,
             workspaces=[root.as_posix()], note_refs=[(root.as_posix(), note.id)],
@@ -760,7 +858,7 @@ def triage_fleet(
     resolved_total = 0
     for finding in scan.findings:
         outcome = replay(finding.command)
-        verdict = _verdict_for(outcome)
+        verdict = _verdict_for(outcome, finding.observation)
         rep = Note(
             id=finding.note_refs[0][1] if finding.note_refs else 0,
             created_at="", type=finding.type, command=finding.command,

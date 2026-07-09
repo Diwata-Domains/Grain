@@ -33,9 +33,11 @@ _HEADER = (
 
 # Shared defect X (logged in two distinct workspaces with the same command and
 # the same observation prefix — the exact rollup the phase had to hand-build).
+# The shared defect is a CLI-surface one — `phase close` reported absent — because
+# only a CLI-surface symptom can be cleared by replay (see _verdict_for).
 ROW_X = (
-    "| 1 | 2026-07-01 | bug | grain phase close | phase close requires a "
-    "workflow_metrics entry even when empty | high | open |"
+    "| 1 | 2026-07-01 | bug | grain phase close | no such command: phase close "
+    "does not exist in this build | high | open |"
 )
 # ws1-only defect Y.
 ROW_Y = (
@@ -44,8 +46,8 @@ ROW_Y = (
 )
 # Same as X but a different date/id — still the same defect after normalization.
 ROW_X2 = (
-    "| 1 | 2026-07-03 | bug | grain phase close | phase close requires a "
-    "workflow_metrics entry even when empty | high | open |"
+    "| 1 | 2026-07-03 | bug | grain phase close | no such command: phase close "
+    "does not exist in this build | high | open |"
 )
 # ws2-only defect Z.
 ROW_Z = (

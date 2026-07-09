@@ -352,9 +352,11 @@ def notes_triage(ctx, resolve_stale, fleet, roots):
     """Replay each open note's recorded command and classify it.
 
     Replay is a HEURISTIC: a note is a closure *candidate* only when its command
-    now exits 0 in a throwaway workspace. Anything that still errors stays open;
-    empty/free-prose commands need a human. Dry-run by default — pass
-    ``--resolve-stale`` to resolve the candidates, recording the fixing version.
+    described an absent command, a rejected option, or a rejected positional —
+    and the replay exercises exactly that. A behavioural symptom leaves no trace
+    in an exit code, so it needs a human, whatever the command returns. Dry-run by
+    default — pass ``--resolve-stale`` to resolve the candidates, recording the
+    fixing version.
 
     \b
     Example:
@@ -390,8 +392,10 @@ def _emit_triage_text(result) -> None:
     mode = "resolve-stale" if not result.dry_run else "dry-run"
     click.echo(f"notes triage ({scope}, {mode}) — grain {result.version}")
     click.echo(
-        "  replay is a heuristic: a note is a closure candidate only when its "
-        "recorded command now exits 0 in a throwaway workspace."
+        "  replay is a heuristic: it settles a note only when the note reported "
+        "an absent command, a rejected option, or a rejected positional, and the "
+        "replayed command exercises exactly that. Everything else needs a human — "
+        "a behavioural symptom leaves no trace in an exit code."
     )
     click.echo(
         f"  {len(result.stale)} stale candidate(s) · "

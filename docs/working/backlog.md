@@ -623,7 +623,7 @@ Key deliverables: `grain workflow guard`, `grain hooks install/list/remove`, `gr
 - **Effort:** days
 
 ### P38-T12 — `grain notes triage` classification is unsound: exit code is not evidence
-- **Status:** draft
+- **Status:** done
 - **Description:** Triage marks a note stale when its recorded command now exits 0 in a pristine throwaway workspace. Measured against the real fleet on 2026-07-09 that rule has **~27% precision (4 of 15 stale candidates sound) and poor recall** — it reports `grain task close` and `grain notes add` as *still open* although both were fixed, because a bare invocation exits 2 for a missing argument. Two independent defects, one root cause — *an exit code is not evidence*.
   **(a) State-independence.** Replaying a bare command in an empty workspace exits 0 whether or not the note's symptom was fixed, because the symptom needed state the sandbox does not have. Verified by installing grain-kit 0.5.0 in an isolated venv and replaying each candidate: `onboard .`, `upgrade`, `upgrade --diff`, `upgrade --add-missing`, `doctor`, `phase next`, `workflow next`, `task validate` and `--format json workflow next` **all exit 0 on 0.5.0 too**. Only `task list --format json`, `workflow next --format json`, `phase list` and `phase status` exited 2 on 0.5.0 and 0 on 0.6.0 — the four whose symptom lived on the CLI surface.
   **(b) Exit-2 ambiguity.** Click exits 2 for both `No such command 'frobnicate'` and `Missing argument 'MESSAGE'`. So ``grain notes add`` — stale, because the command shipped — replays as `exit=2` and stays open. The note that motivated this entire phase is the one case the heuristic cannot see.

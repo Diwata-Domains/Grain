@@ -135,3 +135,43 @@ review approve` now sets the state) and `grain notes add` (shipped long ago) as 
 bare invocation exits 2 for a missing argument, and Click exits 2 for `No such command` too.
 
 An exit code is not evidence. See P38-T12.
+
+---
+
+## Addendum 2 — the classifier, fixed and re-measured
+
+P38-T12 shipped. `_verdict_for` no longer classifies on exit code. A note is a closure
+candidate only when it reported an **absent command**, a **rejected option**, or a **rejected
+positional**, *and* the replayed command exercises exactly that surface. Everything else is
+`needs human`, in both directions — a behavioural symptom leaves no trace in an exit code.
+
+Click exits 2 for `No such command` and for `Missing argument` alike, so the classifier now
+reads stderr: `Missing argument` proves the command *exists*, which is what makes the note
+stale.
+
+Re-run over the same 9 roots, dry-run, with all 46 inboxes hashed before and after:
+
+| | before T12 | after T12 |
+|---|---|---|
+| stale candidates | 15 | **4** |
+| still open | 7 | 0 |
+| needs human | 27 | 45 |
+| precision (sound / stale) | 4/15 ≈ 27% | **4/4** |
+
+The four survivors, each defensible:
+
+- `grain notes add` — replay exits 2 with `Missing argument 'MESSAGE'`, which proves the
+  command exists. Recall repaired: the old rule left this open, and it is the note that
+  motivated the whole phase.
+- `grain phase list` — the note says the command does not exist; it now exits 0.
+- `grain phase status` — same.
+- `grain task list --format json` — the note says `--format` is rejected there; the replayed
+  command carries `--format` and exits 0.
+
+Dropped, correctly: `grain task validate`. The note is about a rejected *positional*
+(`grain task validate P8-T02-TASK-0027`), but the recorded Command column holds only the bare
+`grain task validate`, which exits 0 on every version. The replay never exercised the symptom.
+It was fixed in Phase 38 — but triage cannot know that, and must not pretend to.
+
+`upgrade --add-missing` likewise leaves the stale bucket. It *was* fixed, and the old rule
+called it stale for the wrong reason. Being right by accident is not a property worth keeping.
