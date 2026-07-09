@@ -1,5 +1,7 @@
 ## [Unreleased]
 
+## [0.6.0] — 2026-07-09
+
 - Relicensed from Apache-2.0 to MIT.
 
 ### Features
