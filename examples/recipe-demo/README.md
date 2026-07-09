@@ -82,7 +82,7 @@ pre-record it for the demo rather than running it live.
 | CLI commands    | `grain recipe show` / `run` / `next` / `status`    |
 | Workflow file   | `docs/recipes/research-brief/recipe.yaml`          |
 | Reference run   | `docs/recipes/runs/research-brief-0001/`           |
-| Repo            | `https://github.com/Diwata-Labs/Grain`             |
+| Repo            | `https://github.com/Diwata-Domains/Grain`             |
 
 ## Failure / resume
 

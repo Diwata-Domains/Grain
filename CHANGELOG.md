@@ -1,5 +1,23 @@
 ## [Unreleased]
 
+- Relicensed from Apache-2.0 to MIT.
+
+### Fixes
+- `grain orchestrate scope` / `grain orchestrate plan` no longer abort with
+  `dictionary changed size during iteration` when the workspace contains a task
+  packet. The graph builder mutated its node map while iterating it, and treated
+  the literal `none` adapter sentinel as a real adapter name.
+- `grain init` now seeds `prompts/tasks.next_and_implement.md`,
+  `prompts/tasks.review.md`, `prompts/tasks.close.md`, and
+  `docs/working/tooling_notes.md`. A freshly initialized workspace no longer
+  reports Grain-managed files as out of date, and passes `grain docs audit`.
+- `grain onboard` now seeds the four canonical/working docs registered in
+  `docs_manifest.yaml` that it previously omitted, plus the same prompt set as
+  `grain init`. An onboarded workspace no longer reports audit errors.
+- Structural extraction no longer aborts on binary files. A workspace holding a
+  `.xlsx`, `.docx`, or image killed `grain orchestrate` with a `UnicodeDecodeError`;
+  such files are now reported with no extractable entities and the scan continues.
+
 ## [0.5.0] — 2026-06-28
 
 - Relicensed from AGPL-3.0-only to Apache-2.0.
