@@ -79,8 +79,9 @@ def phase_next(ctx):
 @click.option("--dry-run", is_flag=True, default=False, help="Validate without writing anything.")
 @click.option("--phase", "-p", "phase_override", default=None, metavar="N", help="Phase number to close (must match active phase).")
 @click.option("--keep-tasks", is_flag=True, default=False, help="Leave task packets in tasks/ instead of archiving them.")
+@click.option("--allow-empty", is_flag=True, default=False, help="Seal a phase that has no backlog tasks (planning or deferred phases).")
 @click.pass_context
-def phase_close(ctx, dry_run, phase_override, keep_tasks):
+def phase_close(ctx, dry_run, phase_override, keep_tasks, allow_empty):
     """Validate and seal the current phase.
 
     Writes a grain-verified closed marker to current_focus.md and moves the
@@ -94,7 +95,11 @@ def phase_close(ctx, dry_run, phase_override, keep_tasks):
     root = resolve_repo_root(repo)
 
     result = close_phase(
-        root, dry_run=dry_run, phase_override=phase_override, keep_tasks=keep_tasks
+        root,
+        dry_run=dry_run,
+        phase_override=phase_override,
+        keep_tasks=keep_tasks,
+        allow_empty=allow_empty,
     )
 
     if fmt == "json":

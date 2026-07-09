@@ -18,6 +18,13 @@ _TASK_ID_LINE = re.compile(r"^Task ID:\s*(\S+)", re.IGNORECASE)
 _PACKET_ID_LINE = re.compile(r"^-\s*\*\*ID:\*\*\s*(\S+)", re.IGNORECASE)
 _TASK_PATH_LINE = re.compile(r"^Task Path:\s*(\S+)", re.IGNORECASE)
 _CURRENT_TASK_STATUS_LINE = re.compile(r"^Status:\s*(\S+)", re.IGNORECASE)
+# Canonical backlog form is `## Phase N —`; older scaffolds number the heading.
+_BACKLOG_PHASE_HEADING = re.compile(r"^##\s+(?:\d+\.\s+)?Phase\s+(\d+)\b")
+_CURRENT_PHASE_LINE = re.compile(r"^Phase\s+(\d+)\s+—")
+_PHASE_CLOSED_MARKER = re.compile(r"^Phase\s+(\d+)\s+closed:")
+# Mirrors workflow_service._PHASE_CLOSE_MIN_ENFORCED — below this the evaluator
+# does not require a close marker, so reconcile must not demand one either.
+_PHASE_CLOSE_MIN_ENFORCED = 15
 
 
 @dataclass
@@ -180,6 +187,8 @@ def reconcile(root: Path, fix: bool = False, dry_run: bool = False) -> Reconcile
                 )
             )
 
+    issues.extend(_check_phase_consistency(root))
+
     # ok reflects remaining (unresolved) errors only
     ok = not any(
         i.severity == "error"
@@ -187,6 +196,92 @@ def reconcile(root: Path, fix: bool = False, dry_run: bool = False) -> Reconcile
         if idx not in resolved_indices
     )
     return ReconcileResult(ok=ok, issues=issues, fixed=fixed, dry_run=dry_run)
+
+
+def _check_phase_consistency(root: Path) -> list[ReconcileIssue]:
+    """Detect phase-level drift between current_focus.md and backlog.md.
+
+    Packet-level checks above cannot see this, yet it is what stops
+    `grain workflow next` with `workflow_state_drift` or
+    `previous_phase_not_closed`. Reported, never auto-fixed: resolving it means
+    deciding whether a phase is finished, which is an operator judgement.
+    """
+    focus_path = root / "docs" / "working" / "current_focus.md"
+    backlog_path = root / "docs" / "working" / "backlog.md"
+    if not focus_path.exists() or not backlog_path.exists():
+        return []
+
+    focus_text = focus_path.read_text(encoding="utf-8")
+    active_phase = _active_phase(focus_text)
+    if not active_phase:
+        return []
+
+    backlog_phases = {
+        m.group(1)
+        for line in backlog_path.read_text(encoding="utf-8").splitlines()
+        if (m := _BACKLOG_PHASE_HEADING.match(line))
+    }
+
+    issues: list[ReconcileIssue] = []
+
+    if active_phase not in backlog_phases:
+        issues.append(
+            ReconcileIssue(
+                severity="error",
+                check="phase_consistency",
+                description=(
+                    f"current_focus.md declares Phase {active_phase} but backlog.md has "
+                    f"no '## Phase {active_phase}' block"
+                ),
+                fix_available=False,
+                fix_description=(
+                    "manual: add the phase block to backlog.md, or point "
+                    "'## Current Phase' at a phase that exists"
+                ),
+            )
+        )
+
+    phase_int = int(active_phase)
+    if phase_int > _PHASE_CLOSE_MIN_ENFORCED:
+        closed = {
+            m.group(1)
+            for line in focus_text.splitlines()
+            if (m := _PHASE_CLOSED_MARKER.match(line.strip()))
+        }
+        prev = str(phase_int - 1)
+        if prev not in closed:
+            issues.append(
+                ReconcileIssue(
+                    severity="error",
+                    check="phase_close_chain",
+                    description=(
+                        f"Phase {active_phase} is active but Phase {prev} carries no "
+                        f"'Phase {prev} closed:' marker in current_focus.md — "
+                        f"`grain workflow next` will refuse to route"
+                    ),
+                    fix_available=False,
+                    fix_description=(
+                        f"manual: seal it with `grain phase close -p {prev}` "
+                        f"(add --allow-empty for a planning or deferred phase)"
+                    ),
+                )
+            )
+
+    return issues
+
+
+def _active_phase(focus_text: str) -> str:
+    """Return the phase number under '## Current Phase', or ""."""
+    lines = focus_text.splitlines()
+    for idx, line in enumerate(lines):
+        if line.strip() == "## Current Phase":
+            for candidate in lines[idx + 1:]:
+                candidate = candidate.strip()
+                if not candidate:
+                    continue
+                m = _CURRENT_PHASE_LINE.match(candidate)
+                return m.group(1) if m else ""
+    return ""
 
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
