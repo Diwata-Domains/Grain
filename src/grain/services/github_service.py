@@ -1,5 +1,5 @@
 # SPDX-FileCopyrightText: 2024-2026 Shaznay Sison
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: MIT
 
 """GitHub feedback service — pre-filled issue URLs and a REST issue client.
 

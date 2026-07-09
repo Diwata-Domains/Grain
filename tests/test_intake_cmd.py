@@ -1,5 +1,5 @@
 # SPDX-FileCopyrightText: 2024-2026 Shaznay Sison
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: MIT
 
 """Tests for `grain intake pull` — importing promoted Assay tickets as task packets.
 

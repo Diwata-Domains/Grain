@@ -1,5 +1,5 @@
 # SPDX-FileCopyrightText: 2024-2026 Shaznay Sison
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: MIT
 
 """End-to-end integration tests for the recipe step-runner MVP (P34-T08).
 

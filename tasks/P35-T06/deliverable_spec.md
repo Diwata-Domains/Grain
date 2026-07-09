@@ -12,7 +12,7 @@
 ### New Files
 - none expected (this is an EDIT packet). Any new `.py` test helper carries the SPDX header:
   ```
-  # SPDX-License-Identifier: Apache-2.0
+  # SPDX-License-Identifier: MIT
   ```
 
 ### Imported from dependencies (do NOT redefine)

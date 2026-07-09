@@ -120,7 +120,9 @@ records them as decided, it does not reopen them.
 - **Decisions are resolved (§9) — do not reopen.** The proposal records OD-1..OD-6 + decision #5
   as DECIDED. Frame is `grain.engine/v1`; error is `grain.error/v1`; status is tri-state.
 - **Grain idioms.** The new `tests/test_engine_contract_conformance.py` carries the SPDX header
+<!-- REUSE-IgnoreStart -->
   (`# SPDX-FileCopyrightText: 2024-2026 Shaznay Sison` / `# SPDX-License-Identifier: Apache-2.0`);
+<!-- REUSE-IgnoreEnd -->
   reuse the existing test fixtures/CliRunner pattern in the repo's `tests/`.
 - **stdio-only / no network / file-backed (§2 principle 4).** The version-check fail-silent test
   must SIMULATE network failure (monkeypatch `adapters/pypi.fetch_latest` to raise

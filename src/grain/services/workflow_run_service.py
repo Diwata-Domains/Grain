@@ -1,5 +1,5 @@
 # SPDX-FileCopyrightText: 2024-2026 Shaznay Sison
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: MIT
 
 """Workflow runner service — executes one legal workflow step or stops at a gate."""
 

@@ -20,7 +20,7 @@ Grounded in `docs/working/engine_contract_spec.md` §3 (envelope), §4 (errors),
 Every new `.py` file starts with the repo SPDX header:
 ```python
 # SPDX-FileCopyrightText: 2024-2026 Shaznay Sison
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: MIT
 ```
 
 ## Module contract: `src/grain/domain/envelope.py`

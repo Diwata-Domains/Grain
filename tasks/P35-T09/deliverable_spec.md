@@ -21,7 +21,7 @@
 
 All new `.py` files start with the SPDX header (Grain was relicensed Apache-2.0):
 ```python
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: MIT
 ```
 
 ## Module contract: `src/grain/domain/confirm.py` (§7.1)

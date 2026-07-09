@@ -112,7 +112,9 @@ recipe-error mapping landed by T05.
   errors get the §4 envelope.
 - Grain idioms: frozen dataclass + `__post_init__` + `VALID_*` frozensets; `ForgeError`
   taxonomy; any new `.py` file carries the SPDX Apache-2.0 header
+<!-- REUSE-IgnoreStart -->
   (`# SPDX-License-Identifier: Apache-2.0`).
+<!-- REUSE-IgnoreEnd -->
 
 ## Deliverable
 - Edited `src/grain/services/mcp_service.py` (envelope helpers, retyped errors, live version +

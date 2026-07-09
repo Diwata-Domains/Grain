@@ -19,7 +19,7 @@ Carries the SPDX header (Grain was relicensed):
 
 ```python
 # SPDX-FileCopyrightText: 2024-2026 Shaznay Sison
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: MIT
 ```
 
 ### Constants / frozensets (engine_contract_spec.md §6.1)

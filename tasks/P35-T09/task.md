@@ -110,7 +110,9 @@ no-op; `status: gate` exit 0. All design decisions are RESOLVED (§9) — OD-2 (
   `action, reason, prompt, preview, retry_with`.
 - **Grain idioms:** frozen `@dataclass` + `__post_init__` + `VALID_*` frozenset (mirror
   `domain/recipe_run.py`); `ForgeError` taxonomy preserved; CLI canonical (§2 principle 5).
+<!-- REUSE-IgnoreStart -->
   New `.py` files carry the SPDX Apache-2.0 header (`# SPDX-License-Identifier: Apache-2.0`)
+<!-- REUSE-IgnoreEnd -->
   used across the repo (Grain was relicensed) — matching `src/grain/domain/workflow_loop.py`.
 
 ## Deliverable

@@ -12,7 +12,9 @@
 - `src/grain/cli/recipe.py` — collapse `_drive`'s inline `except` chain to delegate to it.
 
 (No new `.py` module: the function joins the existing `recipe_service.py`, which already
+<!-- REUSE-IgnoreStart -->
 carries the `# SPDX-FileCopyrightText` / `# SPDX-License-Identifier: Apache-2.0` header.)
+<!-- REUSE-IgnoreEnd -->
 
 ## Function contract: `recipe_service.engine_error_to_forge`
 

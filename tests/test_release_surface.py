@@ -18,8 +18,19 @@ def test_formula_metadata_matches_public_project_identity() -> None:
     repo_root = Path(__file__).resolve().parents[1]
     content = (repo_root / "Formula" / "grain.rb").read_text(encoding="utf-8")
 
-    assert 'homepage "https://github.com/Diwata-Labs/Grain"' in content
-    assert 'license "Apache-2.0"' in content
+    assert 'homepage "https://github.com/Diwata-Domains/Grain"' in content
+    assert 'license "MIT"' in content
+
+
+def test_formula_license_matches_pyproject_license() -> None:
+    import tomllib
+
+    repo_root = Path(__file__).resolve().parents[1]
+    formula = (repo_root / "Formula" / "grain.rb").read_text(encoding="utf-8")
+    with (repo_root / "pyproject.toml").open("rb") as handle:
+        declared = tomllib.load(handle)["project"]["license"]
+
+    assert f'license "{declared}"' in formula
 
 
 def test_packet_first_guardrails_exist_in_shipped_prompt_assets() -> None:
