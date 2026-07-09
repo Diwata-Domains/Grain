@@ -1,0 +1,15 @@
+{
+  "task_id": "TASK-0222",
+  "packet_dir": "tasks/P36-T01-TASK-0222",
+  "executor_identity": "",
+  "model_class": "",
+  "last_stage": "close",
+  "last_stage_at": "2026-07-09T04:28:15Z",
+  "last_workflow_action": "task_close",
+  "last_workflow_action_at": "2026-07-09T04:28:15Z",
+  "started_at": "2026-07-09T04:28:15Z",
+  "updated_at": "2026-07-09T04:28:15Z",
+  "stage_timestamps": {
+    "close_at": "2026-07-09T04:28:15Z"
+  }
+}

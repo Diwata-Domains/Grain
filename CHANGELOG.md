@@ -2,7 +2,24 @@
 
 - Relicensed from Apache-2.0 to MIT.
 
+### Features
+- `grain phase close --allow-empty` — seal a phase that has no backlog tasks.
+  Planning and deferred phases legitimately carry none, and refusing them meant
+  such a phase permanently blocked the phase that followed it. The flag waives
+  only the empty check; a phase whose tasks exist but are unfinished is still
+  refused.
+- `grain workflow reconcile` gained two phase-level checks, `phase_consistency`
+  and `phase_close_chain`. Every prior check was packet-scoped, so reconcile
+  reported `issues 0` on workspaces where `grain workflow next` refused to route
+  with `workflow_state_drift` or `previous_phase_not_closed`. Both are reported,
+  never auto-fixed — deciding whether a phase is finished is an operator call.
+
 ### Fixes
+- `grain status` reported `Tasks: 0 total` on any workspace using the canonical
+  `## Phase N —` backlog heading. Three phase-heading regexes (`cli/status.py`,
+  `docs_audit_service.py`, `workflow_run_service.py`) required a numbered
+  `## N. Phase N —` form, and `metrics_service.py` accepted only the unnumbered
+  one. All four now accept both.
 - `grain orchestrate scope` / `grain orchestrate plan` no longer abort with
   `dictionary changed size during iteration` when the workspace contains a task
   packet. The graph builder mutated its node map while iterating it, and treated

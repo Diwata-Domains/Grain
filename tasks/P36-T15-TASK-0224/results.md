@@ -57,9 +57,9 @@ and follow-ups; re-submit + ingest pass verdict → `workflow next: ok`,
 - Local import of `_followup_lines` inside `_verification_gate` avoids a module-load cli import cycle (verification_service imports grain.cli.output at top level).
 
 ## User Review
-- **State:** pending
-- **Summary:** [reviewer fills]
-- **Resolution Mode:** [revise_current_task / replan_current_task / create_followup_task / close_task]
+- **State:** approved
+- **Summary:** Operator reviewed and approved 2026-07-09. FR-006 verification gate lands in the read-only evaluator: `verification_pending` / `verification_failed` stop reasons, `verification_id` on the evaluation, failure summary and follow-ups in blocking_reasons. 3 new tests; full suite 1655 passing.
+- **Resolution Mode:** close_task
 
 ### Required Fixes
 - None
@@ -84,8 +84,8 @@ and follow-ups; re-submit + ingest pass verdict → `workflow next: ok`,
 - None
 
 ## Closure Decision
-- **Decision:** pending
-- **Reason:** awaiting operator review
+- **Decision:** closed
+- **Reason:** Closed via grain task close.
 
 ### Closure Blockers
 - None

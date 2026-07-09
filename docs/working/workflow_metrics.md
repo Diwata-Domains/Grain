@@ -907,3 +907,52 @@ Released between Phase 14 close and Phase 15 start. Not tracked as formal phases
 * What felt efficient: spec-first paid off again (locked suggest_spec/feedback_spec made implementation mechanical); the recon -> implement -> adversarial-review -> fix pipeline caught and fixed real state-corruption/data-loss bugs before merge; test-gated per-feature commits kept the suite monotonically green (1192 -> 1414)
 * What created friction: the `_PHASE_HEADING` regex required a leading list number (`## N. Phase N —`) but the backlog uses `## Phase N —`, silently breaking backlog parsing in 4 modules and blocking phase close (the hygiene task fixed only the docs_audit twin); node/pnpm/git-cliff unavailable in the agent sandbox blocked `trace lint-commit`/`trace release` (validated commit format by hand); pushing main risked sweeping unrelated local Scry/WARDRIVE work onto origin (caught pre-push, split onto scry-wip)
 * What to tighten next: DRY the phase-heading regex into ONE shared definition instead of 4 copies, and add a guard/docs-audit check that the backlog heading format matches what the parsers expect; build the v0.5.0 quick-lane so trivial work skips full packet ceremony; expose a token-budget proxy so the efficiency claim is measured, not assumed
+
+### Phase 33
+
+* Tasks completed: 0 — planning-only phase; v0.5.0 scope was locked into `docs/working/v0.5.0_contract.md` and broken into execution phases 34–36
+* Blocked tasks: 0
+* Prompt runs: not recorded
+* Manual interventions: founder scoping pass
+* First-pass success rate: n/a (no execution tasks)
+* Rework count: 0
+* Drift incidents: 1 — the phase was never sealed, because `grain phase close` refuses a phase with zero backlog tasks. That broke the close-marker chain and blocked Phase 36 until 2026-07-09.
+* Phase duration: 2026-06-25 – 2026-06-26
+
+### Phase 33 Notes
+
+* Reconstructed retroactively on 2026-07-09; contemporaneous metrics were not recorded.
+* What to tighten next: a planning phase with no execution packets must still be sealable. Until `grain phase close` supports an empty phase, every planning phase silently blocks the phase that follows it.
+
+### Phase 34
+
+* Tasks completed: 9 (T01 v2 recipe parser, T02 RecipeRun persistence, T03 operator-mode engine, T04 recipe list/show/scaffold, T05 recipe run/next/status/resume/gate, T06 bundled research-brief, T07 recipe-demo workspace, T08 e2e tests, T09 agent auto-mode orchestrator)
+* Blocked tasks: 0
+* Prompt runs: not recorded
+* Manual interventions: not recorded
+* First-pass success rate: not recorded
+* Rework count: not recorded
+* Drift incidents: 1 — all 9 packets shipped in v0.5.0 but their backlog statuses stayed `draft` until reconciled on 2026-07-09; each deliverable was verified present in `src/` before the statuses were corrected
+* Phase duration: 2026-06-26 – 2026-06-28 (shipped in v0.5.0)
+
+### Phase 34 Notes
+
+* Reconstructed retroactively on 2026-07-09; contemporaneous metrics were not recorded. Task list verified against shipped code (`recipe_service.py`, `recipe_store.py`, `cli/recipe.py`, both bundled recipes, 8 recipe test modules), not against a packet ledger.
+* What created friction: the phase was never sealed and its packet statuses were never reconciled, so `grain workflow next` could not route past it. Neither `grain workflow reconcile` nor `grain docs audit` detects a phase-level status mismatch — only packet-level drift.
+* What to tighten next: teach `grain workflow reconcile` a phase-consistency check (current_focus phase vs backlog phase blocks vs the close-marker chain), so a stale phase surfaces the way a stale packet already does.
+
+### Phase 35
+
+* Tasks completed: 0 — the `grain.engine/v1` headless contract was planned as 11 packets and never executed. No packet produced a `results.md`; none of the deliverables (`envelope.py`, `errors.py`, `version.py`, `capabilities.py`) exist in `src/`.
+* Blocked tasks: 0
+* Prompt runs: 0
+* Manual interventions: operator decision 2026-07-09 — defer the scope rather than seal it as complete
+* First-pass success rate: n/a (no execution tasks)
+* Rework count: 0
+* Drift incidents: 1 — Phase 36 was begun before Phase 35 was built, so the evaluator's `previous_phase_not_closed` guard blocked all routing. Resolved by moving the 11 packets to Phase 37 (`tasks/P37-T*`) and sealing Phase 35 empty.
+* Phase duration: n/a — never entered execution
+
+### Phase 35 Notes
+
+* Sealed empty on 2026-07-09 with `grain phase close --allow-empty`. The scope is intact in Phase 37; nothing was archived and nothing was dropped.
+* What created friction: `grain phase close` refused a zero-task phase outright, which meant a planning or deferred phase could never be sealed and therefore permanently blocked the phase after it. Fixed by adding `--allow-empty`, which waives only the empty check and still refuses a phase whose tasks exist but are unfinished.

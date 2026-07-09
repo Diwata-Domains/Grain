@@ -1,29 +1,28 @@
 # Current Focus
 
 ## Current Phase
-Phase 36 — v0.5.0 Release Readiness & Fleet Hardening
+Phase 34 — v0.5.0 Recipe Engine (Step-Runner) MVP
 
 > **Status:** v0.5.0 (recipe step-runner + Apache-2.0 relicense) is **shipped** — grain-kit
 > 0.5.0 live on PyPI (2026-07-07, release run 28845125357: test → build → publish → mirror
 > sync → GH Release). Phase 36 closes the punch-list between a working 0.5.0 and a clean
-> public release. `P36-T01`, `P36-T14`, and `P36-T15` are done; no packet is active.
-> **Next:** ship the demo-readiness fixes as v0.6.0, then run the late-July 2026 live demo.
+> public release. Active packets `P36-T14-TASK-0223` and `P36-T15-TASK-0224` are in review.
+> **Next:** demo readiness for the late-July 2026 live demo, then lock v0.6.0 scope —
+> see `docs/working/v0.5.0_contract.md` §2 (general-purpose workspaces, `grain recipe
+> suggest`, signal inbox, apply graduation, engine contract).
 > **Last shipped:** v0.5.0 (2026-06-28, published to PyPI 2026-07-07)
 
-All execution phases through Phase 35 are CLOSED. The Closed-Phase Ledger below is the
+All execution phases through Phase 32 are CLOSED. The Closed-Phase Ledger below is the
 authoritative one-line status of every closed phase; full task detail lives in
 `tasks/archive/phase-{N}/` and `docs/archive/phases/phase-{N}/`. This file names the
 focus; `docs/working/backlog.md` owns task state.
 
-Phase 35 (grain-as-engine headless contract) was sealed with **0 tasks executed** — it was
-planned and never built. Its 11 packets moved intact to **Phase 37** (`tasks/P37-T*`).
-
 ## Immediate Priorities
-1. Cut v0.6.0 so the demo-readiness fixes reach PyPI: the installed 0.5.0 still carries the
-   `grain orchestrate` crashes and the `grain init` staleness nag.
-2. Rehearse the late-July 2026 live demo against the pre-baked demo repo.
-3. Finish the remaining Phase 36 punch-list (dependency extras, release pre-flight,
-   fleet cleanup).
+1. Demo readiness for the late-July 2026 live demo: fix the bootstrap health errors, the
+   `grain init` staleness nag, and the `grain orchestrate` graph crash.
+2. Close the two in-review packets (`P36-T14-TASK-0223`, `P36-T15-TASK-0224`).
+3. Refresh public docs to match shipped reality: `ROADMAP.md` (still claims v0.3.1),
+   `README.md` command coverage, GitHub org links.
 4. Start the v0.6.0 scope pass — see `docs/working/v0.5.0_contract.md` §2 (general-purpose
    workspaces, recipes, signals, apply graduation, engine contract, token-budget proxy).
 5. (Separately) push the `scry-wip` branch's Scry/WARDRIVE commits via their own path.
@@ -100,7 +99,3 @@ on main, pending `trace release`.
 Phase 32 closed: 2026-06-25 — 10 tasks done (grain-verified)
 
 Phase 34 closed: 2026-07-09 — 9 tasks done (grain-verified)
-
-Phase 33 closed: 2026-07-09 — 0 tasks done (grain-verified)
-
-Phase 35 closed: 2026-07-09 — 0 tasks done (grain-verified)

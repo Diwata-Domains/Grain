@@ -56,9 +56,9 @@ releases shipped the same way); left for P36-T05.
 - The tag now points at merge commit `ba010dd`, not the original release commit `ff8d06c` — contents differ only by docs/test-fix/urls commits.
 
 ## User Review
-- **State:** pending
-- **Summary:** [reviewer fills]
-- **Resolution Mode:** [revise_current_task / replan_current_task / create_followup_task / close_task]
+- **State:** approved
+- **Summary:** Operator reviewed and approved 2026-07-09. Confirmed independently against the PyPI JSON API: grain-kit 0.5.0 is live. Release run 28845125357 was all-green (test → build → publish → mirror sync → GH Release).
+- **Resolution Mode:** close_task
 
 ### Required Fixes
 - None
@@ -83,8 +83,8 @@ releases shipped the same way); left for P36-T05.
 - None
 
 ## Closure Decision
-- **Decision:** pending
-- **Reason:** awaiting operator review
+- **Decision:** closed
+- **Reason:** Closed via grain task close.
 
 ### Closure Blockers
 - None
