@@ -55,9 +55,9 @@ pass and fail paths, in a scratch workspace. Companion doc edits land in assay
 - Workflow-gate wiring (verification_pending blocking `workflow next`) remains unimplemented — v2-plan FR-006; candidate for a future phase.
 
 ## User Review
-- **State:** pending
-- **Summary:** [reviewer fills]
-- **Resolution Mode:** [revise_current_task / replan_current_task / create_followup_task / close_task]
+- **State:** approved
+- **Summary:** Operator reviewed and approved 2026-07-09. `grain verify ingest` now renders assay's `review.findings` and `followup_candidates` into results.md and persists the review block in verification_result.json. 2 new tests; full suite 1655 passing.
+- **Resolution Mode:** close_task
 
 ### Required Fixes
 - None
@@ -82,8 +82,8 @@ pass and fail paths, in a scratch workspace. Companion doc edits land in assay
 - None
 
 ## Closure Decision
-- **Decision:** pending
-- **Reason:** awaiting operator review
+- **Decision:** closed
+- **Reason:** Closed via grain task close.
 
 ### Closure Blockers
 - None

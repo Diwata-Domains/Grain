@@ -3,7 +3,7 @@
 > STALE SNAPSHOT (produced 2026-06-02, Phase-30 era). `docs/working/current_focus.md`
 > is the source of truth for the active phase/version. Kept for historical context only.
 
-**Phase:** 33 (v0.5.0 planning — authoritative value lives in current_focus.md)
+**Phase:** 36 (v0.5.0 release readiness — authoritative value lives in current_focus.md)
 **Source:** Diwata-Infra Phase 17 audit (P17-T01)
 
 ---
@@ -26,7 +26,7 @@
 > **`docs/working/current_focus.md` is the single source of truth for the active phase
 > and version.** This file does not declare its own active phase (it drifted before —
 > the `cross_doc_phase_agreement` audit check now guards against that). As of this writing
-> v0.4.0 has shipped and v0.5.0 planning (Phase 33) is the active focus; see current_focus.
+> v0.5.0 has shipped to PyPI and Phase 36 (release readiness) is the active focus; see current_focus.
 
 ---
 

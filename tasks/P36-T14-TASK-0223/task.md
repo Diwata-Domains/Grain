@@ -2,7 +2,7 @@
 
 ## Metadata
 - **ID:** TASK-0223
-- **Status:** review
+- **Status:** done
 - **Mode:** simple
 - **Phase:** Phase 36 — v0.5.0 Release Readiness & Fleet Hardening
 - **Backlog:** P36-T14 — Close the assay bridge loop: surface review findings on ingest

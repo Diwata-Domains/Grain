@@ -2,7 +2,7 @@
 
 ## Metadata
 - **ID:** TASK-0224
-- **Status:** review
+- **Status:** done
 - **Mode:** simple
 - **Phase:** Phase 36 — v0.5.0 Release Readiness & Fleet Hardening
 - **Backlog:** P36-T15 — FR-006 verification gate in workflow evaluator

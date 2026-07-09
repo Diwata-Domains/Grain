@@ -2,7 +2,7 @@
 
 ## Metadata
 - **ID:** TASK-0222
-- **Status:** review
+- **Status:** done
 - **Mode:** simple
 - **Phase:** Phase 36 — v0.5.0 Release Readiness & Fleet Hardening
 - **Backlog:** P36-T01 — Reconcile source version + ship 0.5.0 (tag push credit-blocked)

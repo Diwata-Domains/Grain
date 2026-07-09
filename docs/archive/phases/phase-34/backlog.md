@@ -365,7 +365,7 @@ Key deliverables: `grain workflow guard`, `grain hooks install/list/remove`, `gr
 - **Do NOT** bulk `grain upgrade --add-missing` the fleet — audit §4: it never creates the PROTECTED `docs_manifest.yaml`, so live "shell" workspaces stay ungoverned. Use `grain init` for real products; remove `grain.toml` from familiar substrate.
 
 ### P36-T01 — Reconcile source version + ship 0.5.0 (tag push credit-blocked)
-- **Status:** done — SHIPPED 2026-07-07: grain-kit 0.5.0 live on PyPI (release run 28845125357 all-green: test → build → publish → mirror sync → GH Release). Packet `tasks/P36-T01-TASK-0222/` has full results; operator review then `grain task close`.
+- **Status:** review — SHIPPED 2026-07-07: grain-kit 0.5.0 live on PyPI (release run 28845125357 all-green: test → build → publish → mirror sync → GH Release). Packet `tasks/P36-T01-TASK-0222/` has full results; operator review then `grain task close`.
 - **Description:** `grain doctor` fails 3/4 fleet-wide because the source pyproject version reads `0.1.0` while installed is `0.5.0`. Confirm the true on-disk `version`, fix so doctor passes everywhere. Then ship 0.5.0 via the repo convention (`pnpm trace release` / push `grain-v0.5.0`) — **the release pipeline only fires on tag push and has never run for 0.5.0; blocked until Actions credits reset.** Name is fine (`grain-kit` already published).
 - **Dependencies:** none
 
@@ -443,18 +443,6 @@ Key deliverables: `grain workflow guard`, `grain hooks install/list/remove`, `gr
 - **Files:** `src/grain/domain/workflow.py`, `src/grain/services/workflow_service.py`, `tests/test_workflow_state_service.py`
 - **Dependencies:** P36-T14
 
-
-### P36-T16 — DRY the backlog phase-heading regex into one definition
-- **Status:** draft
-- **Description:** Six divergent copies of the phase-heading regex exist. Three required a numbered heading (`## N. Phase N —`) that the canonical backlog never uses, so `grain status` silently reported `Tasks: 0 total` and `docs audit` / `workflow run` mis-parsed the backlog; `metrics_service` accepted only the unnumbered form. All four were made tolerant on 2026-07-09, but the duplication remains — the exact follow-up Phase 32's notes asked for. Collapse them into one shared definition and add a guard/audit check that the backlog heading format matches what the parsers expect.
-- **Files:** `src/grain/cli/status.py`, `src/grain/services/docs_audit_service.py`, `src/grain/services/workflow_run_service.py`, `src/grain/services/metrics_service.py`, `src/grain/services/workflow_service.py`, `src/grain/services/phase_archive_service.py`, `src/grain/tui/app.py`, `src/grain/services/task_advice_service.py`
-- **Dependencies:** none
-
-### P36-T17 — `grain status` health reads a stale cache
-- **Status:** draft
-- **Description:** `grain status` reported `Health: ✗ 1 error(s)` while `run_audit()` on the same tree returned `0 errors` — the cached read outlived the underlying fix. A cache that can disagree with the audit it summarizes is worse than no cache. Invalidate on working-doc mtime, or drop the cache.
-- **Files:** `src/grain/cli/status.py`
-- **Dependencies:** none
 ---
 
 ## Phase 37 — v0.6.0 Grain-as-Engine Headless Contract
