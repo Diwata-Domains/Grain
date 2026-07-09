@@ -42,6 +42,7 @@ def close_phase(
     phase_override: str | None = None,
     *,
     keep_tasks: bool = False,
+    allow_empty: bool = False,
 ) -> PhaseCloseResult:
     """Validate and seal the current phase.
 
@@ -52,6 +53,12 @@ def close_phase(
 
     If ``phase_override`` is given it must match the active phase exactly —
     this guards against accidentally closing the wrong phase.
+
+    A phase with no backlog tasks is refused by default, since an empty task
+    list is usually a parse failure rather than a finished phase.  Planning and
+    deferred phases legitimately carry none; ``allow_empty`` seals those.  It
+    only waives the empty check — a phase whose tasks exist but are unfinished
+    is still refused.
     """
     current_focus_path = root / _DEFAULT_PHASE_DOC
     backlog_path = root / _DEFAULT_BACKLOG_DOC
@@ -115,13 +122,14 @@ def close_phase(
         )
 
     tasks = _read_phase_backlog_tasks(backlog_path, current_phase)
-    if not tasks:
+    if not tasks and not allow_empty:
         return PhaseCloseResult(
             ok=False,
             closed_phase=current_phase,
             errors=[
                 f"no tasks found for Phase {current_phase} in backlog — "
-                "cannot verify completion"
+                "cannot verify completion (pass --allow-empty to seal a "
+                "planning or deferred phase)"
             ],
         )
 

@@ -298,3 +298,59 @@ def test_phase_close_packet_move_failure_json(tmp_path):
     payload = json.loads(jresult.output)
     assert payload["ok"] is False
     assert any("already exists" in e for e in payload["errors"])
+
+
+# ── empty phases (planning / deferred) ─────────────────────────────────────────
+
+def _seed_empty_phase(tmp_path: Path, phase: str = "33") -> None:
+    """A phase with a backlog block but no execution packets."""
+    (tmp_path / "docs" / "working").mkdir(parents=True)
+    (tmp_path / "docs" / "working" / "current_focus.md").write_text(
+        f"Phase {phase} — Planning Phase\n", encoding="utf-8"
+    )
+    (tmp_path / "docs" / "working" / "current_task.md").write_text(
+        "Task ID: none\nTask Path: none\nStatus: unset\n", encoding="utf-8"
+    )
+    (tmp_path / "docs" / "working" / "backlog.md").write_text(
+        f"## Phase {phase} — Planning Phase\n\nNo execution tasks.\n", encoding="utf-8"
+    )
+    (tmp_path / "docs" / "working" / "workflow_metrics.md").write_text(
+        f"### Phase {phase}\n\n* Tasks completed: 0\n", encoding="utf-8"
+    )
+
+
+def test_close_phase_refuses_empty_phase_without_allow_empty(tmp_path):
+    from grain.services.phase_close_service import close_phase
+
+    _seed_empty_phase(tmp_path, "33")
+    result = close_phase(tmp_path, phase_override="33")
+
+    assert result.ok is False
+    assert any("no tasks found" in e for e in result.errors)
+
+
+def test_close_phase_seals_empty_phase_with_allow_empty(tmp_path):
+    from grain.services.phase_close_service import close_phase
+
+    _seed_empty_phase(tmp_path, "33")
+    result = close_phase(tmp_path, phase_override="33", allow_empty=True)
+
+    assert result.ok is True, result.errors
+    assert result.tasks_done == 0
+    marker = (tmp_path / "docs" / "working" / "current_focus.md").read_text(encoding="utf-8")
+    assert "Phase 33 closed:" in marker
+
+
+def test_close_phase_allow_empty_does_not_bypass_a_populated_phase(tmp_path):
+    # --allow-empty must not wave through a phase whose tasks are unfinished.
+    from grain.services.phase_close_service import close_phase
+
+    _seed_empty_phase(tmp_path, "33")
+    (tmp_path / "docs" / "working" / "backlog.md").write_text(
+        "## Phase 33 — Planning Phase\n\n### P33-T01 — Unfinished\n- **Status:** draft\n",
+        encoding="utf-8",
+    )
+    result = close_phase(tmp_path, phase_override="33", allow_empty=True)
+
+    assert result.ok is False
+    assert result.errors
