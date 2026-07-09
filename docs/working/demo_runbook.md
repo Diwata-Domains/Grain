@@ -36,8 +36,9 @@
    - `grain workflow guard` with no active packet → **1**
    - everything else in this script → **0**
 
-4. **Do not type `grain workflow reconcile`.** It reports `issues 0` on repos that
-   `grain workflow next` says are drifted. Known bug; do not surface it.
+4. `grain workflow reconcile` is safe to show as of 0.6.0 — it now reports the same
+   phase-level drift `grain workflow next` refuses on, and names the fix command.
+   On a clean demo repo it prints `issues 0`.
 
 5. **Do not type `grain recipe run`.** Operator mode pauses at `awaiting_input` and
    waits for you to hand-author the step's output file. It looks like a hang.
@@ -166,9 +167,44 @@ one-shot build; Grain governs the ongoing per-task loop.
 
 | Thing | Behavior |
 |---|---|
-| `grain workflow reconcile --dry-run` | reports `issues 0` on genuinely drifted repos |
 | `grain recipe run <id>` | pauses at `awaiting_input`; reads as a hang |
 | `grain recipe run research-brief` | `supervision: autonomous` — shells to a live agent, exit 1 without one |
 | `grain recipe status` / `next` with 2+ open runs | exit 2, `ambiguous`; needs `--run <id>` |
 | `grain office * propose` without `--task-id` | exit 1 |
-| Phase 35 unsealed in Grain's own repo | `grain workflow next` blocks on it |
+| `uv tool install grain-kit` without `--refresh` | may install a cached 0.5.0 |
+
+Fixed in 0.6.0, no longer hazards: the `grain orchestrate` crashes (task packets and
+binary files), the `grain init` staleness nag and health error, `grain status`
+reporting `Tasks: 0 total`, and `grain workflow reconcile` being blind to phase drift.
+
+---
+
+## Recording the asciinema cast
+
+An asciinema cast is a *terminal recording*: it stores the characters and their timing,
+not pixels. A viewer can pause it and copy a command straight out of the page. It embeds
+in the README, weighs a few kilobytes, and stays sharp at any size — which is why it
+beats both a screen recording and a landing page for this audience.
+
+`scripts/demo_cast.sh` drives the whole thing and types each command for you, so a cast
+never contains a typo. It rebuilds a throwaway workspace from `examples/demo` on every
+run, so re-record as often as you like.
+
+```bash
+uv tool install asciinema
+uv tool install --force --refresh grain-kit          # must be >= 0.6.0
+
+bash products/grain/scripts/demo_cast.sh --check     # dry run, no recording
+
+asciinema rec --overwrite --idle-time-limit 2 --cols 92 --rows 28 \
+    -c "bash products/grain/scripts/demo_cast.sh" grain-demo.cast
+
+asciinema play grain-demo.cast                       # watch it back
+```
+
+Runs about **45 seconds**. Slow it down with `READ_PAUSE=3 BEAT_PAUSE=1.5` if it feels
+rushed; `--idle-time-limit 2` already caps dead air at two seconds.
+
+To publish: `asciinema upload grain-demo.cast` gives a shareable link, or self-host with
+[asciinema-player](https://github.com/asciinema/asciinema-player) — one JS file and one
+`<div>` — so the cast lives next to Grain rather than on someone else's service.

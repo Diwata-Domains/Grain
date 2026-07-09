@@ -1,16 +1,18 @@
 # Current Focus
 
 ## Current Phase
-Phase 1 — [Phase name] — Not Started
+Phase 1 — Q3 Readiness
 
 ## Phase Goal
-[One sentence: what does this phase accomplish?]
+Get the status service and the company records ready for the quarter.
 
 ## Status
-[What is the current state? What's done, what's in progress, what's blocked?]
+Nothing started. Three tasks queued: one in `services/api/`, one in the Q3 budget
+spreadsheet, one in the handbook.
 
 ## Active Constraints
-[What must not change during this phase?]
+- Company documents in `company/` are never edited in place — changes are proposed,
+  reviewed, then applied.
 
 ## Immediate Priorities
 1. [First priority]

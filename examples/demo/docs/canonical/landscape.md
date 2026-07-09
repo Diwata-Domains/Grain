@@ -2,7 +2,7 @@
 
 ## Competitors
 
-| Name | Approach | Strengths | Gaps relative to [Your Project Name] |
+| Name | Approach | Strengths | Gaps relative to Northwind Internal |
 |------|----------|-----------|---------------------------------------|
 
 ## Inspirations

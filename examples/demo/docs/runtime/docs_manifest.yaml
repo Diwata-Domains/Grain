@@ -1,7 +1,7 @@
 version: 1
 
 project:
-  name: "[Your Project Name]"
+  name: "Northwind Internal"
   type: "[project type — e.g. web_app, cli_tool, service, data_pipeline]"
   mode: single_user
   storage: filesystem
