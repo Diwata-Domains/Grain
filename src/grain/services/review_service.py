@@ -30,6 +30,19 @@ class ReviewReport:
 
 
 @dataclass
+class ReviewDecisionRecord:
+    """Outcome of a `review approve` / `review reject` decision."""
+
+    task_id: str
+    packet_dir: Path
+    decision: str
+    user_review_state: str
+    summary: str
+    resolution_mode: str
+    packet_status: str
+
+
+@dataclass
 class ReviewSummary:
     """Structured summary of packet state for final inspection."""
 
@@ -122,6 +135,179 @@ def check_packet_review_readiness(
         errors=[],
     )
     return result, report
+
+
+_DEFAULT_RESOLUTION = {
+    "approve": "close_task",
+    "reject": "revise_current_task",
+}
+
+
+def apply_user_review_decision(
+    root: Path,
+    task_id: str,
+    *,
+    decision: str,
+    summary: str,
+    resolution_mode: str | None = None,
+) -> tuple[CommandResult, ReviewDecisionRecord | None]:
+    """Record a reviewer's approve/reject decision in the packet's results.md.
+
+    Rewrites the ``## User Review`` block in place — State, Summary, and
+    Resolution Mode — preserving everything else in the file byte-for-byte.
+    Refuses when the packet has no results.md or is not in ``review`` status.
+    """
+    command = f"review {decision}"
+    state = "approved" if decision == "approve" else "rejected"
+    resolution = resolution_mode or _DEFAULT_RESOLUTION[decision]
+
+    packet_dir = find_packet_dir(root / "tasks", task_id)
+    if packet_dir is None:
+        return (
+            CommandResult(
+                ok=False,
+                command=command,
+                errors=[f"packet '{task_id}' not found"],
+            ),
+            None,
+        )
+
+    results_md = packet_dir / "results.md"
+    if not results_md.exists():
+        return (
+            CommandResult(
+                ok=False,
+                command=command,
+                repo=str(root),
+                task_id=task_id,
+                errors=[f"results.md is required to {decision} but is missing"],
+            ),
+            None,
+        )
+
+    task_md = packet_dir / "task.md"
+    metadata = parse_task_metadata(task_md) if task_md.exists() else {}
+    packet_status = metadata.get("status", "")
+    if packet_status != "review":
+        return (
+            CommandResult(
+                ok=False,
+                command=command,
+                repo=str(root),
+                task_id=task_id,
+                status=packet_status,
+                errors=[
+                    f"packet status is '{packet_status or '(missing)'}' — "
+                    f"must be 'review' to {decision}"
+                ],
+            ),
+            None,
+        )
+
+    text = results_md.read_text(encoding="utf-8")
+    new_text, seen_section = _rewrite_user_review_block(
+        text,
+        state=state,
+        summary=summary,
+        resolution_mode=resolution,
+    )
+    if not seen_section:
+        return (
+            CommandResult(
+                ok=False,
+                command=command,
+                repo=str(root),
+                task_id=task_id,
+                status=packet_status,
+                errors=["results.md has no '## User Review' block to update"],
+            ),
+            None,
+        )
+
+    results_md.write_text(new_text, encoding="utf-8")
+
+    record = ReviewDecisionRecord(
+        task_id=task_id,
+        packet_dir=packet_dir,
+        decision=decision,
+        user_review_state=state,
+        summary=summary,
+        resolution_mode=resolution,
+        packet_status=packet_status,
+    )
+    result = CommandResult(
+        ok=True,
+        command=command,
+        repo=str(root),
+        task_id=task_id,
+        status=packet_status,
+        files_updated=[str(results_md.relative_to(root))],
+    )
+    return result, record
+
+
+def _rewrite_user_review_block(
+    text: str,
+    *,
+    state: str,
+    summary: str,
+    resolution_mode: str,
+) -> tuple[str, bool]:
+    """Rewrite the State/Summary/Resolution Mode lines of the ``## User Review``
+    section, preserving every other byte (including line endings) unchanged.
+
+    Returns the new text and whether a ``## User Review`` heading was found.
+    """
+    values = {
+        "State": state,
+        "Summary": summary,
+        "Resolution Mode": resolution_mode,
+    }
+    lines = text.splitlines(keepends=True)
+    out: list[str] = []
+    in_section = False
+    seen_section = False
+    heading_insert_idx: int | None = None
+    default_nl = "\n"
+    replaced = {key: False for key in values}
+
+    for raw in lines:
+        body = raw.rstrip("\r\n")
+        newline = raw[len(body):] or default_nl
+        stripped = body.strip()
+
+        if stripped == "## User Review":
+            in_section = True
+            seen_section = True
+            out.append(raw)
+            heading_insert_idx = len(out)
+            default_nl = newline
+            continue
+
+        if in_section and stripped.startswith("## ") and stripped != "## User Review":
+            in_section = False
+
+        if in_section:
+            matched = next(
+                (key for key in values if stripped.startswith(f"- **{key}:**")),
+                None,
+            )
+            if matched is not None:
+                out.append(f"- **{matched}:** {values[matched]}{newline}")
+                replaced[matched] = True
+                continue
+
+        out.append(raw)
+
+    if seen_section and heading_insert_idx is not None:
+        injected = [
+            f"- **{key}:** {values[key]}{default_nl}"
+            for key in values
+            if not replaced[key]
+        ]
+        out[heading_insert_idx:heading_insert_idx] = injected
+
+    return "".join(out), seen_section
 
 
 def build_packet_review_summary(

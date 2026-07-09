@@ -15,7 +15,7 @@ from typing import Any
 
 from grain.domain.packets import find_packet_dir, parse_task_metadata
 from grain.domain.workflow import WorkflowEvaluation, WorkflowTaskState
-from grain.adapters.manifest import load_completion_policy
+from grain.adapters.manifest import load_completion_policy, load_manifest
 from grain.validators.packet_validator import validate_closure, validate_packet
 
 # Canonical stop reasons — never rename without a major version bump
@@ -45,7 +45,10 @@ _TASK_HEADING = re.compile(r"^###\s+(P(\d+)-T(\d+))\s+—\s+(.+)$")
 _PHASE_HEADING = re.compile(r"^##\s+(?:\d+\.\s+)?Phase\s+(\d+)\s+—")
 _SECTION_HEADING = re.compile(r"^##\s+")
 _BACKLOG_STATUS = re.compile(r"^- \*\*Status:\*\*\s*(\S+)")
-_CURRENT_PHASE_LINE = re.compile(r"^Phase\s+(\d+)\s+—")
+# Accept em dash, en dash, hyphen, or colon as the separator. A hand-edited
+# `## Current Phase` reading `Phase 1 - Foundation` must not hard-block the
+# evaluator. reconcile_service._CURRENT_PHASE_LINE is kept identical.
+_CURRENT_PHASE_LINE = re.compile(r"^Phase\s+(\d+)\s*[—–:-]")
 _CURRENT_PHASE_COMPLETE_LINE = re.compile(r"^(Phase:\s*)?(complete|done)\s*$", re.IGNORECASE)
 _PHASE_CLOSED_MARKER_RE = re.compile(r"^Phase\s+(\d+)\s+closed:")
 _PACKET_TASK_REF_RE = re.compile(r"^(P\d+-T\d+)-TASK-\d+$")
@@ -53,10 +56,45 @@ _DEFAULT_PHASE_DOC = "docs/working/current_focus.md"
 _DEFAULT_BACKLOG_DOC = "docs/working/backlog.md"
 _DEFAULT_CURRENT_TASK_DOC = "docs/working/current_task.md"
 
-# Phases >= this value require a grain-verified closed marker before the next
-# phase can be evaluated.  Phases before this were closed before grain phase
-# close existed and are grandfathered.
+# Legacy fallback threshold: a phase N routes only once phase N-1 carries a
+# grain-verified `Phase N-1 closed:` marker, but the gate is skipped while
+# `phase_int <= _PHASE_CLOSE_MIN_ENFORCED`.  Workspaces created before the
+# `phase_close_enforced_from` manifest stamp existed relied on this value (15) to
+# grandfather phases sealed before `grain phase close` shipped.  New workspaces
+# stamp `phase_close_enforced_from: 1` at `grain init` so every boundary is
+# gated; see `phase_close_enforced_threshold`.
 _PHASE_CLOSE_MIN_ENFORCED = 15
+# Manifest key (top-level) carrying the per-repo threshold above.
+_PHASE_CLOSE_MANIFEST_KEY = "phase_close_enforced_from"
+
+
+def phase_close_enforced_threshold(root: Path) -> int:
+    """Return the phase-close gate threshold for this workspace.
+
+    The gate fires when ``current_phase > threshold`` — phase N then requires
+    phase N-1 to be sealed.  ``grain init`` stamps
+    ``phase_close_enforced_from: 1`` into docs_manifest.yaml so brand-new
+    workspaces gate every phase boundary (phase 2 onward).  Legacy workspaces
+    predate the stamp: when the key is absent or unparseable the threshold falls
+    back to :data:`_PHASE_CLOSE_MIN_ENFORCED` (15) so they do not suddenly
+    hard-block on phases closed before ``grain phase close`` existed.
+
+    Shared with :mod:`grain.services.reconcile_service` so the evaluator gate and
+    the reconcile ``phase_close_chain`` check stay consistent. Never raises.
+    """
+    try:
+        manifest = load_manifest(root)
+    except Exception:
+        return _PHASE_CLOSE_MIN_ENFORCED
+    raw = manifest.get(_PHASE_CLOSE_MANIFEST_KEY)
+    # bool is an int subclass — reject it so `true`/`false` fall back rather than
+    # silently meaning 1/0.
+    if isinstance(raw, bool):
+        return _PHASE_CLOSE_MIN_ENFORCED
+    try:
+        return int(raw)
+    except (TypeError, ValueError):
+        return _PHASE_CLOSE_MIN_ENFORCED
 
 
 def evaluate_workflow_state(
@@ -155,7 +193,7 @@ def _evaluate_workflow_state_core(
         phase_int = int(current_phase)
     except ValueError:
         phase_int = 0
-    if phase_int > _PHASE_CLOSE_MIN_ENFORCED:
+    if phase_int > phase_close_enforced_threshold(root):
         prev_phase = str(phase_int - 1)
         if not _is_phase_properly_closed(root / _DEFAULT_PHASE_DOC, prev_phase):
             evaluation = WorkflowEvaluation(

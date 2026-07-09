@@ -43,14 +43,28 @@ def validate_status_transition(from_status: str, to_status: str) -> list[str]:
 _PLANNING_FILES = ("context.md", "plan.md", "deliverable_spec.md")
 
 
+def _declares_simple_mode(packet_dir: Path) -> bool:
+    """Return True when task.md declares itself a simple packet via `- **Mode:** simple`."""
+    task_md = packet_dir / "task.md"
+    if not task_md.exists():
+        return False
+    return parse_task_metadata(task_md).get("mode", "").lower() == "simple"
+
+
 def validate_packet_files(packet_dir: Path) -> list[str]:
     """Return errors for any required packet files that are missing.
 
-    Simple packets — task.md exists but no planning files exist — are exempt
-    from the planning-file requirement.  Once any planning file is present the
-    full set is required, preventing partial setups from silently passing.
+    Simple packets are exempt from the planning-file requirement.  A packet is
+    simple when either (a) its task.md explicitly declares `- **Mode:** simple`
+    — in which case the exemption holds regardless of which planning files
+    happen to exist, so a partially-migrated legacy packet is not stuck — or
+    (b) task.md exists and no planning files exist at all (the inference used
+    for packets predating the Mode field).  Otherwise the full set is required,
+    preventing partial setups from silently passing.
     """
     has_task_md = (packet_dir / "task.md").exists()
+    if has_task_md and _declares_simple_mode(packet_dir):
+        return []
     has_any_planning_file = any((packet_dir / f).exists() for f in _PLANNING_FILES)
     if has_task_md and not has_any_planning_file:
         return []

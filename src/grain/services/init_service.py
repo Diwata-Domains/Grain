@@ -8,19 +8,11 @@ import tomllib
 from pathlib import Path
 from importlib.metadata import PackageNotFoundError, version
 
-# Directories required by architecture.md Section 5
-_REQUIRED_DIRS = [
-    "docs/canonical",
-    "docs/working",
-    "docs/working/proposals",
-    "docs/runtime",
-    "tasks",
-    "templates/docs",
-    "templates/tasks",
-    "templates/prompts",
-    "src",
-    "tests",
-]
+from grain.domain.scaffold import (
+    PROMPT_SEED_SOURCES,
+    REQUIRED_DIRS as _REQUIRED_DIRS,
+    RUNTIME_SEED_SOURCES,
+)
 
 # Paths treated as canonical — never overwritten without --force, always reported
 _CANONICAL_PREFIX = "docs/canonical"
@@ -37,36 +29,12 @@ _SOURCE_REPO_ROOT = (
 # Baseline seed files written during init when missing.
 # Keys: destination path relative to the new project root.
 # Values: source path relative to _SOURCE_REPO_ROOT.
+# The runtime and prompt maps are shared with onboard via grain.domain.scaffold;
+# the working/canonical/root entries below are init-specific (onboard writes DRAFT
+# stubs for those instead of copying bundled templates).
 _SEED_FILE_SOURCES = {
-    "docs/runtime/PROJECT_RULES.md": "runtime/PROJECT_RULES.md",
-    "docs/runtime/docs_manifest.yaml": "runtime/docs_manifest.yaml",
-    "docs/runtime/docs_index.md": "runtime/docs_index.md",
-    "docs/runtime/context_loading.md": "runtime/context_loading.md",
-    "docs/runtime/agent_profiles.md": "runtime/agent_profiles.md",
-    "docs/runtime/adapter_profiles.md": "runtime/adapter_profiles.md",
-    "docs/runtime/workflow_loop.yaml": "runtime/workflow_loop.yaml",
-    "templates/tasks/task.md": "templates/tasks/task.md",
-    "templates/tasks/context.md": "templates/tasks/context.md",
-    "templates/tasks/plan.md": "templates/tasks/plan.md",
-    "templates/tasks/deliverable_spec.md": "templates/tasks/deliverable_spec.md",
-    "templates/tasks/results.md": "templates/tasks/results.md",
-    "templates/tasks/handoff.md": "templates/tasks/handoff.md",
-    "templates/tasks/task_packet.md": "templates/tasks/task_packet.md",
-    "prompts/workflow.resume.md": "prompts/workflow.resume.md",
-    "prompts/workflow.onboard.new.md": "prompts/workflow.onboard.new.md",
-    "prompts/workflow.onboard.existing.md": "prompts/workflow.onboard.existing.md",
-    "prompts/workflow.init.md": "prompts/workflow.init.md",
-    "prompts/task.plan.next.md": "prompts/task.plan.next.md",
-    "prompts/task.execute.md": "prompts/task.execute.md",
-    "prompts/task.review.md": "prompts/task.review.md",
-    "prompts/task.close.md": "prompts/task.close.md",
-    "prompts/phase.plan.next.md": "prompts/phase.plan.next.md",
-    "prompts/phase.review.md": "prompts/phase.review.md",
-    "prompts/phase.review_and_close.md": "prompts/phase.review_and_close.md",
-    "prompts/tasks.plan.next.md": "prompts/tasks.plan.next.md",
-    "prompts/tasks.next_and_implement.md": "prompts/tasks.next_and_implement.md",
-    "prompts/tasks.review.md": "prompts/tasks.review.md",
-    "prompts/tasks.close.md": "prompts/tasks.close.md",
+    **RUNTIME_SEED_SOURCES,
+    **PROMPT_SEED_SOURCES,
     # working docs
     "docs/working/implementation_plan.md": "runtime/implementation_plan.md",
     "docs/working/tooling_notes.md": "runtime/tooling_notes.md",
@@ -151,6 +119,7 @@ def init_repo(
             text = text.replace(_GRAIN_VERSION_PLACEHOLDER, _current_grain_version())
             if project_type:
                 text = text.replace(_PROJECT_TYPE_PLACEHOLDER, project_type)
+            text = _stamp_phase_close_policy(text)
         if project_name:
             text = text.replace(_PROJECT_NAME_PLACEHOLDER, project_name)
 
@@ -249,6 +218,36 @@ def _apply_adapter_selection(
                 f"unknown secondary adapter '{aid}': not found in adapter profiles"
             )
     result.secondary_adapters = validated_secondary
+
+
+_PHASE_CLOSE_ANCHOR = "# Grain configuration — project-level defaults for the grain CLI."
+_PHASE_CLOSE_BLOCK = (
+    "# Phase-close gate: the phase number from which `grain phase close` sealing is\n"
+    "# enforced. New workspaces enforce from phase 1, so `grain workflow next` refuses\n"
+    "# to route into phase N until phase N-1 carries a verified `Phase N-1 closed:`\n"
+    "# marker. Absent, the gate falls back to a legacy grandfather threshold (15).\n"
+    "phase_close_enforced_from: 1\n"
+)
+
+
+def _stamp_phase_close_policy(text: str) -> str:
+    """Stamp ``phase_close_enforced_from: 1`` into a freshly seeded manifest.
+
+    New workspaces gate every phase boundary; legacy workspaces without the key
+    grandfather early phases (see workflow_service.phase_close_enforced_threshold).
+    Idempotent: leaves an already-stamped manifest untouched. Anchors above the
+    ``grain:`` config block; falls back to appending if the anchor is absent.
+    """
+    if "phase_close_enforced_from:" in text:
+        return text
+    if _PHASE_CLOSE_ANCHOR in text:
+        return text.replace(
+            _PHASE_CLOSE_ANCHOR,
+            _PHASE_CLOSE_BLOCK + "\n" + _PHASE_CLOSE_ANCHOR,
+            1,
+        )
+    suffix = "" if text.endswith("\n") else "\n"
+    return text + suffix + "\n" + _PHASE_CLOSE_BLOCK
 
 
 def _current_grain_version() -> str:

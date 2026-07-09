@@ -164,6 +164,7 @@ def _normalize_user_review_state(raw: str) -> str:
     mapping = {
         "approved": "approved",
         "ready": "approved",
+        "rejected": "rejected",
         "needs_fix": "needs_fix",
         "needs_fixes": "needs_fix",
         "misunderstood": "misunderstood",

@@ -18,15 +18,8 @@ from grain.services.upgrade_service import UpgradeResult, upgrade_repo
 @click.option("--diff", "show_diff", is_flag=True, default=False, help="Show unified diffs for stale files without writing.")
 @click.option("--interactive", "-i", is_flag=True, default=False, help="Review each stale file's diff and choose accept/skip.")
 @click.option("--add-missing", "add_missing", is_flag=True, default=False, help="Seed absent seeded files into the workspace; never overwrites existing files.")
-@click.option(
-    "--format",
-    "local_fmt",
-    type=click.Choice(["text", "json"]),
-    default=None,
-    help="Output format override for this command.",
-)
 @click.pass_context
-def upgrade_cmd(ctx, dry_run: bool, show_diff: bool, interactive: bool, add_missing: bool, local_fmt: str | None) -> None:
+def upgrade_cmd(ctx, dry_run: bool, show_diff: bool, interactive: bool, add_missing: bool) -> None:
     """Update Grain-managed prompts and templates to the current installed version.
 
     Updates: prompts, task templates, safe runtime docs.
@@ -42,8 +35,10 @@ def upgrade_cmd(ctx, dry_run: bool, show_diff: bool, interactive: bool, add_miss
       grain upgrade --interactive    Review each file's diff, accept or skip
       grain upgrade --add-missing    Seed absent files only; never overwrites
     """
+    # `--format` is injected by grain.cli.format_option (accepted before or after
+    # the subcommand) and stored in ctx.obj["fmt"].
     repo = ctx.obj.get("repo") if ctx.obj else None
-    fmt = local_fmt or (ctx.obj.get("fmt", "text") if ctx.obj else "text")
+    fmt = ctx.obj.get("fmt", "text") if ctx.obj else "text"
 
     if repo:
         root = Path(repo).resolve()

@@ -2,7 +2,7 @@
 
 ## Metadata
 - **ID:** P34-T08
-- **Status:** draft
+- **Status:** done
 - **Phase:** Phase 34 — Recipe Step-Runner MVP (v0.5.0)
 - **Backlog:** P34-T08
 - **Packet Path:** tasks/P34-T08/

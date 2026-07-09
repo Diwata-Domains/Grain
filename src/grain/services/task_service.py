@@ -9,6 +9,7 @@ from pathlib import Path
 from grain.adapters.manifest import load_completion_policy
 from grain.cli.output import CommandResult
 from grain.domain.packets import (
+    ALLOWED_TRANSITIONS,
     TASK_ID_PATTERN,
     PacketRecord,
     find_packet_dir,
@@ -34,6 +35,45 @@ _SIMPLE_TEMPLATES = [
     "tasks/task.md",
     "tasks/results.md",
 ]
+
+# P<phase>-T<num> prefix of a packet directory name (before the TASK-#### segment).
+_TASK_REF_PATTERN = re.compile(r"^(P\d+-T\d+)-TASK-\d+")
+
+
+def _canonical_task_ref(identifier: str) -> str:
+    """Reduce a packet identifier to its bare TASK-#### id when possible.
+
+    Accepts either a bare id ("TASK-0001") or a full packet directory name
+    ("P1-T01-TASK-0001") and returns "TASK-0001". Any other string is returned
+    stripped and unchanged.
+    """
+    identifier = identifier.strip()
+    match = TASK_ID_PATTERN.search(identifier)
+    return match.group(0) if match else identifier
+
+
+def resolve_task_identifier(positional: str | None, option: str | None) -> str | None:
+    """Resolve a task id from an optional positional and/or the --id option.
+
+    The positional may be a bare TASK-#### id or a full packet directory name
+    (as printed by ``grain task list``). Returns the canonical id to use for
+    packet lookup, or None when neither was supplied (callers keep their prior
+    behavior in that case).
+
+    Raises:
+        ValueError: when both selectors are given and name different tasks.
+    """
+    if positional and option:
+        if _canonical_task_ref(positional) != _canonical_task_ref(option):
+            raise ValueError(
+                f"positional id '{positional}' and --id '{option}' name different tasks"
+            )
+        return _canonical_task_ref(option)
+    if positional:
+        return _canonical_task_ref(positional)
+    if option:
+        return option
+    return None
 
 
 def create_packet_directory(
@@ -359,7 +399,7 @@ def update_packet_status(root: Path, task_id: str, new_status: str) -> CommandRe
         return CommandResult(
             ok=False,
             command="task status",
-            errors=errors,
+            errors=[f"{errors[0]}; {_legal_next_hint(record.status)}"] + errors[1:],
         )
 
     write_packet_status(packet_dir, new_status)
@@ -371,6 +411,111 @@ def update_packet_status(root: Path, task_id: str, new_status: str) -> CommandRe
         task_id=task_id,
         status=new_status,
         files_updated=[str((packet_dir / "task.md").relative_to(root))],
+    )
+
+
+def _legal_next_hint(from_status: str) -> str:
+    """Render a human hint naming the legal next state(s) from ``from_status``."""
+    allowed = sorted(ALLOWED_TRANSITIONS.get(from_status, frozenset()))
+    if not allowed:
+        return f"'{from_status}' is terminal; no transitions allowed"
+    return f"legal next state(s) from '{from_status}': {', '.join(allowed)}"
+
+
+# Legal forward path from each status up to in_progress. Every hop is an
+# individually-allowed transition per ALLOWED_TRANSITIONS.
+_PATH_TO_IN_PROGRESS: dict[str, list[str]] = {
+    "draft": ["ready", "in_progress"],
+    "ready": ["in_progress"],
+    "blocked": ["ready", "in_progress"],
+    "needs_fix": ["in_progress"],
+    "review": ["in_progress"],
+    "in_progress": [],
+}
+
+
+def start_task(root: Path, task_id: str) -> CommandResult:
+    """Transition a packet to in_progress and sync the working docs.
+
+    Walks the legal status chain from the packet's current status up to
+    in_progress (e.g. draft -> ready -> in_progress), then syncs the backlog.md
+    task status and the current_task.md pointer so ``grain workflow reconcile``
+    reports no drift immediately afterward.
+
+    Returns:
+        CommandResult with ok=True and status='in_progress' on success.
+        ok=False with errors when the packet is not found or its current status
+        cannot legally reach in_progress.
+    """
+    packet_dir = find_packet_dir(root / "tasks", task_id)
+    if packet_dir is None:
+        return CommandResult(
+            ok=False,
+            command="task start",
+            errors=[f"packet '{task_id}' not found"],
+        )
+
+    try:
+        record = read_packet_record(packet_dir)
+    except FileNotFoundError:
+        return CommandResult(
+            ok=False,
+            command="task start",
+            errors=[f"packet '{task_id}': task.md not found"],
+        )
+
+    if record.status not in _PATH_TO_IN_PROGRESS:
+        return CommandResult(
+            ok=False,
+            command="task start",
+            errors=[
+                f"cannot start packet in status '{record.status}'; "
+                f"{_legal_next_hint(record.status)}"
+            ],
+        )
+
+    current = record.status
+    for nxt in _PATH_TO_IN_PROGRESS[record.status]:
+        step_errors = validate_status_transition(current, nxt)
+        if step_errors:  # defensive: the path map is legal by construction
+            return CommandResult(ok=False, command="task start", errors=step_errors)
+        write_packet_status(packet_dir, nxt)
+        current = nxt
+
+    resolved_id = record.id or _canonical_task_ref(task_id)
+    files_updated = [str((packet_dir / "task.md").relative_to(root))]
+
+    # ── Sync backlog.md status for this packet's task ref ────────────────────
+    ref_match = _TASK_REF_PATTERN.match(packet_dir.name)
+    backlog_path = root / "docs" / "working" / "backlog.md"
+    if ref_match and backlog_path.exists():
+        from grain.services.reconcile_service import _update_backlog_task_status
+
+        text = backlog_path.read_text(encoding="utf-8")
+        new_text = _update_backlog_task_status(text, ref_match.group(1), "in_progress")
+        if new_text != text:
+            backlog_path.write_text(new_text, encoding="utf-8")
+            files_updated.append("docs/working/backlog.md")
+
+    # ── Sync current_task.md pointer ─────────────────────────────────────────
+    current_task_path = root / "docs" / "working" / "current_task.md"
+    current_task_path.parent.mkdir(parents=True, exist_ok=True)
+    current_task_path.write_text(
+        "# Current Task\n\n"
+        f"Task ID: {resolved_id}\n"
+        f"Task Path: {packet_dir.relative_to(root)}/\n"
+        "Status: in_progress\n",
+        encoding="utf-8",
+    )
+    files_updated.append("docs/working/current_task.md")
+
+    return CommandResult(
+        ok=True,
+        command="task start",
+        repo=str(root),
+        task_id=resolved_id,
+        status="in_progress",
+        files_updated=files_updated,
     )
 
 

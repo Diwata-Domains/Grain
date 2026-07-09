@@ -69,6 +69,85 @@ def review_check(ctx, task_id):
     if fmt == "text":
         click.echo(f"  status            {report.packet_status}")
 
+_RESOLUTION_CHOICES = click.Choice(
+    ["revise_current_task", "replan_current_task", "create_followup_task", "close_task"]
+)
+
+
+def _run_review_decision(ctx, task_id, decision, summary, resolution_mode):
+    from grain.services.review_service import apply_user_review_decision
+
+    repo = ctx.obj.get("repo") if ctx.obj else None
+    fmt = ctx.obj.get("fmt", "text") if ctx.obj else "text"
+    root = resolve_repo_root(repo)
+
+    result, record = apply_user_review_decision(
+        root,
+        task_id,
+        decision=decision,
+        summary=summary,
+        resolution_mode=resolution_mode,
+    )
+
+    if record is None:
+        if fmt == "json":
+            click.echo(json.dumps(dataclasses.asdict(result), indent=2))
+        else:
+            print_result(result, fmt)
+        if any("not found" in err for err in result.errors):
+            raise click.UsageError(f"packet '{task_id}' not found")
+        raise ValidationError(f"review {decision} failed", detail="; ".join(result.errors))
+
+    if fmt == "json":
+        data = dataclasses.asdict(result)
+        decision_data = dataclasses.asdict(record)
+        decision_data["packet_dir"] = str(record.packet_dir)
+        data["review_decision"] = decision_data
+        click.echo(json.dumps(data, indent=2))
+        return
+
+    click.echo(f"review {decision}: ok")
+    click.echo(f"  task_id           {record.task_id}")
+    click.echo(f"  packet_dir        {record.packet_dir.name}")
+    click.echo(f"  user_review_state {record.user_review_state}")
+    click.echo(f"  resolution_mode   {record.resolution_mode}")
+    click.echo(f"  summary           {record.summary}")
+    for path in result.files_updated:
+        click.echo(f"  updated           {path}")
+
+
+@review_group.command("approve")
+@click.option("--id", "task_id", required=True, metavar="TASK-####", help="Packet ID to approve.")
+@click.option("--summary", required=True, metavar="TEXT", help="Reviewer summary recorded in the User Review block.")
+@click.option(
+    "--resolution",
+    "resolution_mode",
+    default=None,
+    type=_RESOLUTION_CHOICES,
+    help="Resolution mode (default: close_task).",
+)
+@click.pass_context
+def review_approve(ctx, task_id, summary, resolution_mode):
+    """Approve a packet's user review, unblocking `grain task close`."""
+    _run_review_decision(ctx, task_id, "approve", summary, resolution_mode)
+
+
+@review_group.command("reject")
+@click.option("--id", "task_id", required=True, metavar="TASK-####", help="Packet ID to reject.")
+@click.option("--summary", required=True, metavar="TEXT", help="Reviewer summary recorded in the User Review block.")
+@click.option(
+    "--resolution",
+    "resolution_mode",
+    default=None,
+    type=_RESOLUTION_CHOICES,
+    help="Resolution mode (default: revise_current_task).",
+)
+@click.pass_context
+def review_reject(ctx, task_id, summary, resolution_mode):
+    """Reject a packet's user review, keeping it out of `done`."""
+    _run_review_decision(ctx, task_id, "reject", summary, resolution_mode)
+
+
 @review_group.command("handoff")
 @click.option("--id", "task_id", required=True, metavar="TASK-####", help="Packet ID to hand off.")
 @click.option(

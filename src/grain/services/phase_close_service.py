@@ -68,6 +68,7 @@ def close_phase(
         if not p.exists():
             return PhaseCloseResult(
                 ok=False,
+                dry_run=dry_run,
                 errors=[f"missing required doc: {p.relative_to(root)}"],
             )
 
@@ -75,6 +76,7 @@ def close_phase(
     if not current_phase:
         return PhaseCloseResult(
             ok=False,
+            dry_run=dry_run,
             errors=["unable to parse current phase from current_focus.md"],
         )
 
@@ -82,6 +84,7 @@ def close_phase(
         return PhaseCloseResult(
             ok=False,
             closed_phase=current_phase,
+            dry_run=dry_run,
             errors=[
                 f"--phase {phase_override} does not match the active phase ({current_phase}) — "
                 "grain phase close only seals the currently active phase"
@@ -92,6 +95,7 @@ def close_phase(
         return PhaseCloseResult(
             ok=False,
             closed_phase=current_phase,
+            dry_run=dry_run,
             errors=["cannot close bootstrap phase — run the onboarding prompt first"],
         )
 
@@ -99,6 +103,7 @@ def close_phase(
         return PhaseCloseResult(
             ok=False,
             closed_phase=current_phase,
+            dry_run=dry_run,
             errors=[
                 f"Phase {current_phase} is already sealed — "
                 f"update '## Current Phase' in current_focus.md to begin the next phase"
@@ -109,12 +114,14 @@ def close_phase(
     if current_task is None:
         return PhaseCloseResult(
             ok=False,
+            dry_run=dry_run,
             errors=["current_task.md is missing required fields"],
         )
     if current_task["task_id"] != "none":
         return PhaseCloseResult(
             ok=False,
             closed_phase=current_phase,
+            dry_run=dry_run,
             errors=[
                 f"active task in flight: {current_task['task_id']} — "
                 "close it before sealing the phase"
@@ -126,6 +133,7 @@ def close_phase(
         return PhaseCloseResult(
             ok=False,
             closed_phase=current_phase,
+            dry_run=dry_run,
             errors=[
                 f"no tasks found for Phase {current_phase} in backlog — "
                 "cannot verify completion (pass --allow-empty to seal a "
@@ -138,6 +146,7 @@ def close_phase(
         return PhaseCloseResult(
             ok=False,
             closed_phase=current_phase,
+            dry_run=dry_run,
             errors=[
                 f"Phase {current_phase} has {len(open_tasks)} open task(s) — "
                 "all tasks must be 'done' before sealing:",
@@ -153,6 +162,7 @@ def close_phase(
             return PhaseCloseResult(
                 ok=False,
                 closed_phase=current_phase,
+                dry_run=dry_run,
                 errors=[
                     f"workflow_metrics.md has no entry for Phase {current_phase} — "
                     f"add a '### Phase {current_phase}' section before sealing"

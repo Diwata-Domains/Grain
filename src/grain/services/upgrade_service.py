@@ -271,3 +271,4 @@ def _scan_absent_seeded_files(
                 if source.exists():
                     target.parent.mkdir(parents=True, exist_ok=True)
                     target.write_text(source.read_text(encoding="utf-8"), encoding="utf-8")
+                    result.added.append(rel)

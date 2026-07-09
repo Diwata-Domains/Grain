@@ -1,5 +1,51 @@
 ## [Unreleased]
 
+Phase 38 — tooling-friction remediation, sourced from a sweep of every
+`docs/working/tooling_notes.md` on the machine and verified against 0.6.0.
+
+### Features
+- `grain review approve` / `grain review reject` — set the user review state that
+  `grain task close` has always required. Previously the only path to a validated
+  close was hand-editing the `## User Review` block in `results.md`.
+- `--format [text|json]` now works **after** the subcommand on every command, not
+  just as a global flag. `grain task list --format json` used to exit 2.
+- `grain phase list` and `grain phase status` — read-only views of every phase, its
+  status, and its task rollup. Both accept the numbered and unnumbered backlog
+  heading forms.
+- `grain task start <id>` — performs the full legal draft→ready→in_progress
+  transition and syncs `backlog.md` and `current_task.md`, so `reconcile` reports
+  no drift afterwards.
+- `grain task show|validate|status|prepare|close` accept a positional TASK id or
+  packet directory name, which is what `grain task list` prints. `--id` still works.
+- `grain task backfill --id <TASK>` seeds missing planning files from templates so a
+  legacy packet can migrate forward instead of failing validation forever.
+- `grain notes triage` replays each open note's recorded command in a throwaway
+  workspace and classifies it stale / open / needs-human. Dry-run by default.
+- `grain notes list --fleet <roots...>` (and `triage --fleet`) aggregate friction
+  across many workspaces, collapsing git-worktree copies and skipping archives and
+  untouched templates. Friction is a fleet property; the inbox was per-repo.
+- New workspaces stamp `phase_close_enforced_from: 1`, so the `previous_phase_not_closed`
+  gate applies from phase 1. Workspaces without the stamp keep the old threshold of 15
+  and are not suddenly blocked.
+
+### Fixes
+- `grain onboard` omitted `docs/working/proposals/`, so an onboarded repo failed
+  `grain docs validate` with exit 3. Both scaffolders now consume one shared
+  definition of the required directories and seed maps (`domain/scaffold.py`), so the
+  init/onboard desync — this was its third instance — cannot recur.
+- `grain upgrade --add-missing` printed `Added:` `- (none)` while writing the files.
+- The `N Grain-managed file(s) are out of date` hint never cleared after `upgrade`
+  skipped locally-customized files, and printed to stderr even under `--format json`.
+- `grain phase close --dry-run` reported `"dry_run": false` on early-return paths.
+- `grain workflow next` hard-blocked with `required_docs_invalid` when
+  `## Current Phase` used a hyphen, en dash, or colon instead of an em dash. Both
+  copies of the regex now accept all four, and `grain workflow reconcile --fix`
+  detects and normalizes a malformed heading.
+- `grain workflow reconcile` now reports orphan packets — backlog tasks marked
+  done/in_progress with no packet directory.
+- `grain task validate` honors an explicit `- **Mode:** simple` in a packet's
+  metadata, so a partially-migrated legacy packet is no longer stuck failing.
+
 ## [0.6.0] — 2026-07-09
 
 - Relicensed from Apache-2.0 to MIT.

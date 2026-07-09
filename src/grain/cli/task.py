@@ -22,6 +22,18 @@ def task_group():
     """Create and manage task packets."""
 
 
+def _resolve_task_id(positional, option):
+    """Resolve the positional id / --id option to a canonical TASK-#### id.
+
+    Returns None when neither was supplied. Raises click.UsageError when both
+    are given and disagree, so the message renders cleanly (exit 2).
+    """
+    try:
+        return task_service.resolve_task_identifier(positional, option)
+    except ValueError as exc:
+        raise click.UsageError(str(exc))
+
+
 @task_group.command("create")
 @click.option("--phase", type=int, required=True, help="Phase number (e.g. 3).")
 @click.option("--task-num", type=int, required=True, help="Task number within phase (e.g. 4).")
@@ -141,13 +153,22 @@ def task_next(ctx):
 
 
 @task_group.command("show")
-@click.option("--id", "task_id", required=True, metavar="TASK-####", help="Packet ID to show.")
+@click.argument("identifier", required=False, default=None, metavar="[TASK-####]")
+@click.option("--id", "id_option", default=None, metavar="TASK-####", help="Packet ID to show.")
 @click.pass_context
-def task_show(ctx, task_id):
-    """Show packet metadata and status."""
+def task_show(ctx, identifier, id_option):
+    """Show packet metadata and status.
+
+    The packet may be named as a positional argument (a bare TASK-#### id or a
+    full packet directory name as printed by `grain task list`) or with --id.
+    """
     repo = ctx.obj.get("repo") if ctx.obj else None
     fmt = ctx.obj.get("fmt", "text") if ctx.obj else "text"
     root = resolve_repo_root(repo)
+
+    task_id = _resolve_task_id(identifier, id_option)
+    if task_id is None:
+        raise click.UsageError("provide a packet id as an argument or with --id")
 
     result, record, inventory = task_service.show_packet(root, task_id)
 
@@ -250,15 +271,24 @@ def task_observe(ctx, task_id, executor_identity, model_class, stage, workflow_a
 
 
 @task_group.command("prepare")
-@click.option("--id", "task_id", required=True, metavar="TASK-####", help="Packet ID to prepare.")
+@click.argument("identifier", required=False, default=None, metavar="[TASK-####]")
+@click.option("--id", "id_option", default=None, metavar="TASK-####", help="Packet ID to prepare.")
 @click.pass_context
-def task_prepare(ctx, task_id):
-    """Check packet/context/prompt prerequisites for one task."""
+def task_prepare(ctx, identifier, id_option):
+    """Check packet/context/prompt prerequisites for one task.
+
+    The packet may be named as a positional argument (a bare TASK-#### id or a
+    full packet directory name) or with --id.
+    """
     from grain.services.task_prepare_service import prepare_task_packet
 
     repo = ctx.obj.get("repo") if ctx.obj else None
     fmt = ctx.obj.get("fmt", "text") if ctx.obj else "text"
     root = resolve_repo_root(repo)
+
+    task_id = _resolve_task_id(identifier, id_option)
+    if task_id is None:
+        raise click.UsageError("provide a packet id as an argument or with --id")
 
     result, payload = prepare_task_packet(root, task_id)
 
@@ -294,14 +324,23 @@ def task_prepare(ctx, task_id):
 
 
 @task_group.command("status")
-@click.option("--id", "task_id", required=True, metavar="TASK-####", help="Packet ID.")
+@click.argument("identifier", required=False, default=None, metavar="[TASK-####]")
+@click.option("--id", "id_option", default=None, metavar="TASK-####", help="Packet ID.")
 @click.option("--status", "new_status", required=True, help="New status value.")
 @click.pass_context
-def task_status(ctx, task_id, new_status):
-    """Update packet status."""
+def task_status(ctx, identifier, id_option, new_status):
+    """Update packet status.
+
+    The packet may be named as a positional argument (a bare TASK-#### id or a
+    full packet directory name) or with --id.
+    """
     repo = ctx.obj.get("repo") if ctx.obj else None
     fmt = ctx.obj.get("fmt", "text") if ctx.obj else "text"
     root = resolve_repo_root(repo)
+
+    task_id = _resolve_task_id(identifier, id_option)
+    if task_id is None:
+        raise click.UsageError("provide a packet id as an argument or with --id")
 
     result = task_service.update_packet_status(root, task_id, new_status)
 
@@ -325,8 +364,124 @@ def task_status(ctx, task_id, new_status):
             click.echo(f"  updated   {path}")
 
 
+@task_group.command("start")
+@click.argument("identifier", required=False, default=None, metavar="[TASK-####]")
+@click.option("--id", "id_option", default=None, metavar="TASK-####", help="Packet ID to start.")
+@click.pass_context
+def task_start(ctx, identifier, id_option):
+    """Move a packet to in_progress and sync backlog + current_task pointer.
+
+    Walks the legal status path (draft -> ready -> in_progress) in one step and
+    updates backlog.md and current_task.md so `grain workflow reconcile` reports
+    no drift. The packet may be named positionally or with --id.
+    """
+    repo = ctx.obj.get("repo") if ctx.obj else None
+    fmt = ctx.obj.get("fmt", "text") if ctx.obj else "text"
+    root = resolve_repo_root(repo)
+
+    task_id = _resolve_task_id(identifier, id_option)
+    if task_id is None:
+        raise click.UsageError("provide a packet id as an argument or with --id")
+
+    result = task_service.start_task(root, task_id)
+
+    if not result.ok:
+        if any("not found" in e for e in result.errors):
+            for err in result.errors:
+                click.echo(f"  error     {err}", err=True)
+            raise click.UsageError(f"packet '{task_id}' not found")
+        raise InvalidTransitionError(
+            "cannot start packet",
+            detail="; ".join(result.errors),
+        )
+
+    if fmt == "json":
+        print_result(result, fmt=fmt)
+    else:
+        click.echo("task start: ok")
+        click.echo(f"  {result.task_id}  ->  in_progress")
+        for path in result.files_updated:
+            click.echo(f"  updated   {path}")
+
+
+_BACKFILL_TEMPLATES = {
+    "context.md": "tasks/context.md",
+    "plan.md": "tasks/plan.md",
+    "deliverable_spec.md": "tasks/deliverable_spec.md",
+}
+
+
+@task_group.command("backfill")
+@click.argument("identifier", required=False, default=None, metavar="[TASK-####]")
+@click.option("--id", "id_option", default=None, metavar="TASK-####", help="Packet ID to backfill.")
+@click.pass_context
+def task_backfill(ctx, identifier, id_option):
+    """Seed any missing planning files for a legacy packet from templates.
+
+    Migrates a partially-set-up packet forward by writing template copies of any
+    missing planning files (context.md, plan.md, deliverable_spec.md). Existing
+    files are never overwritten. The packet may be named positionally or with --id.
+    """
+    from grain.domain.packets import find_packet_dir, parse_task_metadata
+    from grain.templates.loader import get_template
+
+    repo = ctx.obj.get("repo") if ctx.obj else None
+    fmt = ctx.obj.get("fmt", "text") if ctx.obj else "text"
+    root = resolve_repo_root(repo)
+
+    task_id = _resolve_task_id(identifier, id_option)
+    if task_id is None:
+        raise click.UsageError("provide a packet id as an argument or with --id")
+
+    packet_dir = find_packet_dir(root / "tasks", task_id)
+    if packet_dir is None:
+        raise click.UsageError(f"packet '{task_id}' not found")
+
+    resolved_id = task_id
+    task_md = packet_dir / "task.md"
+    if task_md.exists():
+        resolved_id = parse_task_metadata(task_md).get("id") or task_id
+
+    created: list[str] = []
+    skipped: list[str] = []
+    for filename, template_name in _BACKFILL_TEMPLATES.items():
+        dest = packet_dir / filename
+        if dest.exists():
+            skipped.append(filename)
+            continue
+        content = get_template(template_name, root)
+        content = content.replace("TASK-####", resolved_id)
+        dest.write_text(content, encoding="utf-8")
+        created.append(str(dest.relative_to(root)))
+
+    if fmt == "json":
+        click.echo(
+            json.dumps(
+                {
+                    "command": "task backfill",
+                    "ok": True,
+                    "task_id": task_id,
+                    "files_created": created,
+                    "skipped": skipped,
+                },
+                indent=2,
+            )
+        )
+        return
+
+    click.echo("task backfill: ok")
+    click.echo(f"  {task_id}")
+    for path in created:
+        click.echo(f"  created   {path}")
+    for name in skipped:
+        click.echo(f"  skipped   {name} (already exists)")
+    if not created:
+        click.echo("  (nothing to backfill — all planning files present)")
+
+
 @task_group.command("validate")
-@click.option("--id", "task_id", default=None, metavar="TASK-####", help="Validate one packet by task ID.")
+@click.argument("identifier", required=False, default=None, metavar="[TASK-####]")
+@click.option("--id", "id_option", default=None, metavar="TASK-####", help="Validate one packet by task ID.")
 @click.option(
     "--all",
     "validate_all",
@@ -336,17 +491,21 @@ def task_status(ctx, task_id, new_status):
     help="Validate all packets (default behavior when no selector is provided).",
 )
 @click.pass_context
-def task_validate(ctx, task_id, validate_all):
+def task_validate(ctx, identifier, id_option, validate_all):
     """Validate one packet or all packets.
 
-    When neither --id nor --all is provided, defaults to validating all packets.
+    The packet may be named as a positional argument (a bare TASK-#### id or a
+    full packet directory name) or with --id. When neither a packet nor --all is
+    provided, defaults to validating all packets.
     """
     repo = ctx.obj.get("repo") if ctx.obj else None
     fmt = ctx.obj.get("fmt", "text") if ctx.obj else "text"
     root = resolve_repo_root(repo)
 
+    task_id = _resolve_task_id(identifier, id_option)
+
     if task_id and validate_all:
-        raise click.UsageError("specify --id or --all, not both")
+        raise click.UsageError("specify a packet id or --all, not both")
     if not task_id and not validate_all:
         # default: validate all
         validate_all = True
@@ -370,7 +529,8 @@ def task_validate(ctx, task_id, validate_all):
 
 
 @task_group.command("close")
-@click.option("--id", "task_id", required=True, metavar="TASK-####", help="Packet ID to close.")
+@click.argument("identifier", required=False, default=None, metavar="[TASK-####]")
+@click.option("--id", "id_option", default=None, metavar="TASK-####", help="Packet ID to close.")
 @click.option(
     "--quick",
     is_flag=True,
@@ -391,8 +551,11 @@ def task_validate(ctx, task_id, validate_all):
     help="Files changed (repeatable). Used with --quick to populate results.md.",
 )
 @click.pass_context
-def task_close(ctx, task_id, quick, summary, files_list):
+def task_close(ctx, identifier, id_option, quick, summary, files_list):
     """Attempt closure validation for a packet.
+
+    The packet may be named as a positional argument (a bare TASK-#### id or a
+    full packet directory name) or with --id.
 
     Use --quick for conversational or voice workflows: writes a minimal results.md
     from --summary (and optional --files) and marks the packet done without
@@ -401,6 +564,10 @@ def task_close(ctx, task_id, quick, summary, files_list):
     repo = ctx.obj.get("repo") if ctx.obj else None
     fmt = ctx.obj.get("fmt", "text") if ctx.obj else "text"
     root = resolve_repo_root(repo)
+
+    task_id = _resolve_task_id(identifier, id_option)
+    if task_id is None:
+        raise click.UsageError("provide a packet id as an argument or with --id")
 
     if quick:
         if not summary:

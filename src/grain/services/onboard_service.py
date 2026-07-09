@@ -8,14 +8,11 @@ from __future__ import annotations
 from pathlib import Path
 
 from grain.domain.onboard import ScaffoldManifest
-
-_REQUIRED_DIRS = [
-    "docs/canonical",
-    "docs/working",
-    "docs/runtime",
-    "tasks",
-    "prompts",
-]
+from grain.domain.scaffold import (
+    PROMPT_SEED_SOURCES,
+    REQUIRED_DIRS as _REQUIRED_DIRS,
+    RUNTIME_SEED_SOURCES,
+)
 
 _STUB_FILES: dict[str, str] = {
     "docs/canonical/product_scope.md": "# Product Scope\n\n# DRAFT - replace with real content\n",
@@ -67,36 +64,11 @@ _SOURCE_REPO_ROOT = (
     else Path(__file__).resolve().parents[3]
 )
 
+# Runtime + prompt seed maps are shared with init via grain.domain.scaffold.
+# The canonical/working docs are written as DRAFT stubs above rather than seeded here.
 _SEED_FILE_SOURCES: dict[str, str] = {
-    "docs/runtime/PROJECT_RULES.md": "runtime/PROJECT_RULES.md",
-    "docs/runtime/docs_manifest.yaml": "runtime/docs_manifest.yaml",
-    "docs/runtime/docs_index.md": "runtime/docs_index.md",
-    "docs/runtime/context_loading.md": "runtime/context_loading.md",
-    "docs/runtime/agent_profiles.md": "runtime/agent_profiles.md",
-    "docs/runtime/adapter_profiles.md": "runtime/adapter_profiles.md",
-    "docs/runtime/workflow_loop.yaml": "runtime/workflow_loop.yaml",
-    "templates/tasks/task.md": "templates/tasks/task.md",
-    "templates/tasks/context.md": "templates/tasks/context.md",
-    "templates/tasks/plan.md": "templates/tasks/plan.md",
-    "templates/tasks/deliverable_spec.md": "templates/tasks/deliverable_spec.md",
-    "templates/tasks/results.md": "templates/tasks/results.md",
-    "templates/tasks/handoff.md": "templates/tasks/handoff.md",
-    "templates/tasks/task_packet.md": "templates/tasks/task_packet.md",
-    "prompts/workflow.onboard.new.md": "prompts/workflow.onboard.new.md",
-    "prompts/workflow.onboard.existing.md": "prompts/workflow.onboard.existing.md",
-    "prompts/workflow.init.md": "prompts/workflow.init.md",
-    "prompts/task.plan.next.md": "prompts/task.plan.next.md",
-    "prompts/task.execute.md": "prompts/task.execute.md",
-    "prompts/task.review.md": "prompts/task.review.md",
-    "prompts/task.close.md": "prompts/task.close.md",
-    "prompts/phase.plan.next.md": "prompts/phase.plan.next.md",
-    "prompts/phase.review.md": "prompts/phase.review.md",
-    "prompts/phase.review_and_close.md": "prompts/phase.review_and_close.md",
-    "prompts/tasks.plan.next.md": "prompts/tasks.plan.next.md",
-    "prompts/tasks.next_and_implement.md": "prompts/tasks.next_and_implement.md",
-    "prompts/tasks.review.md": "prompts/tasks.review.md",
-    "prompts/tasks.close.md": "prompts/tasks.close.md",
-    "prompts/workflow.resume.md": "prompts/workflow.resume.md",
+    **RUNTIME_SEED_SOURCES,
+    **PROMPT_SEED_SOURCES,
 }
 
 

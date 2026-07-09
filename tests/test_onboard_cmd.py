@@ -154,6 +154,29 @@ def test_onboard_workspace_passes_its_own_docs_audit(tmp_path: Path):
     assert errors == [], [f.message for f in errors]
 
 
+def test_onboard_creates_proposals_dir(tmp_path: Path):
+    result = _run(tmp_path, "onboard", str(tmp_path))
+    assert result.exit_code == 0, result.output
+    assert (tmp_path / "docs" / "working" / "proposals").is_dir()
+
+
+def test_onboarded_repo_passes_docs_validate(tmp_path: Path):
+    # Regression: onboard used to omit docs/working/proposals, so a freshly
+    # onboarded workspace failed `grain docs validate` with exit 3.
+    result = _run(tmp_path, "onboard", str(tmp_path))
+    assert result.exit_code == 0, result.output
+
+    validate = _run(tmp_path, "docs", "validate")
+    assert validate.exit_code == 0, validate.output
+
+
+def test_init_and_onboard_share_required_dirs():
+    from grain.services.init_service import _REQUIRED_DIRS as init_dirs
+    from grain.services.onboard_service import _REQUIRED_DIRS as onboard_dirs
+
+    assert set(init_dirs) == set(onboard_dirs)
+
+
 def test_all_stub_files_contain_draft_marker(tmp_path: Path):
     result = _run(tmp_path, "onboard", str(tmp_path))
     assert result.exit_code == 0, result.output

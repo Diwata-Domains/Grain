@@ -9,12 +9,139 @@ import click
 from grain.adapters.filesystem import resolve_repo_root
 from grain.services.phase_archive_service import archive_phase
 from grain.services.phase_close_service import close_phase
+from grain.services.phase_query_service import phase_to_dict, query_phases
 from grain.services.workflow_service import evaluate_workflow_state
 
 
 @click.group("phase")
 def phase_group():
     """Phase-level workflow commands."""
+
+
+def _phase_marker(phase) -> str:
+    if phase.active:
+        return "*"
+    if phase.closed:
+        return "×"
+    return " "
+
+
+def _phase_state(phase) -> str:
+    if phase.active:
+        return "active"
+    if phase.closed:
+        return "closed"
+    return "open"
+
+
+@phase_group.command("list")
+@click.pass_context
+def phase_list(ctx):
+    """List every phase in the backlog with its status and task rollup.
+
+    Read-only. Marks the active phase (from current_focus.md) with '*' and
+    phases sealed by `grain phase close` with '×'.
+
+    \b
+    Examples:
+      grain phase list
+      grain phase list --format json
+    """
+    repo = ctx.obj.get("repo") if ctx.obj else None
+    fmt = ctx.obj.get("fmt", "text") if ctx.obj else "text"
+    root = resolve_repo_root(repo)
+
+    inventory = query_phases(root)
+
+    if fmt == "json":
+        click.echo(
+            json.dumps(
+                {
+                    "active_phase": inventory.active_phase,
+                    "phases": [phase_to_dict(p) for p in inventory.phases],
+                },
+                indent=2,
+            )
+        )
+        return
+
+    if not inventory.phases:
+        click.echo("phase list: no phases found in docs/working/backlog.md")
+        return
+
+    click.echo("phase list")
+    for phase in inventory.phases:
+        rollup = phase.rollup()
+        marker = _phase_marker(phase)
+        state = _phase_state(phase)
+        click.echo(
+            f"  {marker} Phase {phase.number:<3} [{state:<6}] "
+            f"{rollup['done']}/{rollup['ready']}/{rollup['total']} done/ready/total  "
+            f"{phase.title}"
+        )
+
+
+@phase_group.command("status")
+@click.pass_context
+def phase_status(ctx):
+    """Show read-only detail of the active phase.
+
+    The active phase is read from '## Current Phase' in current_focus.md.
+
+    \b
+    Examples:
+      grain phase status
+      grain phase status --format json
+    """
+    repo = ctx.obj.get("repo") if ctx.obj else None
+    fmt = ctx.obj.get("fmt", "text") if ctx.obj else "text"
+    root = resolve_repo_root(repo)
+
+    inventory = query_phases(root)
+    active = inventory.active()
+
+    if fmt == "json":
+        click.echo(
+            json.dumps(
+                {
+                    "active_phase": inventory.active_phase,
+                    "phase": phase_to_dict(active) if active is not None else None,
+                },
+                indent=2,
+            )
+        )
+        return
+
+    if inventory.active_phase == "complete":
+        click.echo("phase status: project complete")
+        return
+
+    if active is None:
+        if inventory.active_phase:
+            click.echo(
+                f"phase status: active phase {inventory.active_phase} has no "
+                "matching heading in docs/working/backlog.md"
+            )
+        else:
+            click.echo(
+                "phase status: no active phase — set '## Current Phase' in "
+                "docs/working/current_focus.md"
+            )
+        return
+
+    rollup = active.rollup()
+    click.echo("phase status")
+    click.echo(f"  phase     Phase {active.number} — {active.title}")
+    click.echo(f"  state     {_phase_state(active)}")
+    if active.status:
+        click.echo(f"  status    {active.status}")
+    click.echo(
+        f"  tasks     {rollup['total']} total · {rollup['done']} done · "
+        f"{rollup['ready']} ready · {rollup['in_progress']} in_progress · "
+        f"{rollup['blocked']} blocked"
+    )
+    for task in active.tasks:
+        click.echo(f"    - {task.task_ref}: {task.status or '(no status)'}")
 
 
 @phase_group.command("next")

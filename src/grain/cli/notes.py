@@ -11,12 +11,19 @@ queryable (`list`, `show`), resolvable (`resolve`), and feeds `grain docs audit`
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 import click
 
 from grain.adapters.filesystem import resolve_repo_root
 
 _NOTES_PATH = "docs/working/tooling_notes.md"
+
+
+def _truncate(text: str, width: int) -> str:
+    """Collapse whitespace and clip ``text`` to ``width`` display columns."""
+    text = " ".join(text.split())
+    return text if len(text) <= width else text[: width - 1] + "…"
 
 
 @click.group("notes")
@@ -79,11 +86,27 @@ def notes_add(ctx, message, note_type, command, severity):
                   ["open", "closed", "resolved", "reported", "published", "all"]
               ),
               help="Filter by status (default: open).")
+@click.option("--fleet", is_flag=True, default=False,
+              help="Roll notes up across many workspaces given as ROOTS "
+                   "(dedupes worktree copies; one finding per defect).")
+@click.argument("roots", nargs=-1, type=click.Path())
 @click.pass_context
-def notes_list(ctx, type_filter, status_filter):
-    """List entries from docs/working/tooling_notes.md."""
+def notes_list(ctx, type_filter, status_filter, fleet, roots):
+    """List entries from docs/working/tooling_notes.md.
+
+    \b
+    Fleet rollup across workspaces:
+      grain notes list --fleet ~/repos/a ~/repos/b
+    """
     repo = ctx.obj.get("repo") if ctx.obj else None
     fmt = ctx.obj.get("fmt", "text") if ctx.obj else "text"
+
+    if fleet:
+        _run_fleet_list(repo, roots, type_filter, status_filter, fmt)
+        return
+    if roots:
+        raise click.UsageError("ROOTS are only accepted with --fleet")
+
     root = resolve_repo_root(repo)
 
     from grain.services.notes_service import list_notes
@@ -104,6 +127,64 @@ def notes_list(ctx, type_filter, status_filter):
             f"  {sev_marker}  #{n.id:<4} {n.created_at:<12} "
             f"[{n.type:<11}] [{n.status:<8}] {n.body}"
         )
+
+
+def _fleet_roots(repo, roots) -> list[Path]:
+    """Resolve the scan roots: explicit ROOTS, else the current workspace."""
+    if roots:
+        return [Path(r) for r in roots]
+    return [resolve_repo_root(repo)]
+
+
+def _run_fleet_list(repo, roots, type_filter, status_filter, fmt):
+    from grain.services.notes_service import scan_fleet
+    result = scan_fleet(
+        _fleet_roots(repo, roots),
+        type_filter=type_filter,
+        status_filter=status_filter,
+    )
+
+    if fmt == "json":
+        click.echo(json.dumps({
+            "fleet": True,
+            "workspaces": result.workspaces,
+            "discovered": result.discovered,
+            "skipped": {
+                "archive": result.skipped_archive,
+                "worktree": result.skipped_worktree,
+                "template": result.skipped_template,
+            },
+            "findings": [
+                {
+                    "command": f.command,
+                    "observation": f.observation,
+                    "type": f.type,
+                    "severity": f.severity,
+                    "count": f.count,
+                    "workspaces": f.workspaces,
+                }
+                for f in result.findings
+            ],
+        }, indent=2))
+        return
+
+    click.echo(
+        f"notes list --fleet: {result.workspaces} workspace(s), "
+        f"{len(result.findings)} distinct finding(s)"
+    )
+    click.echo(
+        f"  scanned {result.discovered} inbox(es); collapsed "
+        f"{result.skipped_worktree} worktree copy(ies); skipped "
+        f"{result.skipped_archive} archive + {result.skipped_template} template"
+    )
+    if not result.findings:
+        click.echo("  (no matching findings)")
+        return
+    for f in result.findings:
+        sev_marker = {"high": "✗", "medium": "⚠", "low": "·"}.get(f.severity, "·")
+        click.echo(f"  {sev_marker}  ×{f.count} [{f.type}] {f.command or '—'}")
+        click.echo(f"        {_truncate(f.observation, 100)}")
+        click.echo(f"        seen in: {', '.join(f.workspaces)}")
 
 
 @notes_group.command("show")
@@ -256,3 +337,111 @@ def notes_publish(ctx, note_id):
     if marked:
         click.echo("  status  published")
     click.echo(f"  → {result.issue_url}")
+
+
+@notes_group.command("triage")
+@click.option("--resolve-stale", is_flag=True, default=False,
+              help="Resolve the stale candidates (default: dry-run — nothing "
+                   "is mutated).")
+@click.option("--fleet", is_flag=True, default=False,
+              help="Triage across many workspaces given as ROOTS "
+                   "(one replay per deduped defect).")
+@click.argument("roots", nargs=-1, type=click.Path())
+@click.pass_context
+def notes_triage(ctx, resolve_stale, fleet, roots):
+    """Replay each open note's recorded command and classify it.
+
+    Replay is a HEURISTIC: a note is a closure *candidate* only when its command
+    now exits 0 in a throwaway workspace. Anything that still errors stays open;
+    empty/free-prose commands need a human. Dry-run by default — pass
+    ``--resolve-stale`` to resolve the candidates, recording the fixing version.
+
+    \b
+    Example:
+      grain notes triage                 # dry-run report
+      grain notes triage --resolve-stale # close the stale ones
+      grain notes triage --fleet ~/a ~/b # rollup + replay across repos
+    """
+    repo = ctx.obj.get("repo") if ctx.obj else None
+    fmt = ctx.obj.get("fmt", "text") if ctx.obj else "text"
+
+    from grain.services.notes_service import triage_fleet, triage_notes
+
+    if fleet:
+        result = triage_fleet(
+            _fleet_roots(repo, roots), resolve_stale=resolve_stale,
+        )
+    else:
+        if roots:
+            raise click.UsageError("ROOTS are only accepted with --fleet")
+        result = triage_notes(resolve_repo_root(repo), resolve_stale=resolve_stale)
+
+    if fmt == "json":
+        _emit_triage_json(result)
+        return
+    _emit_triage_text(result)
+
+
+_VERDICT_LABEL = {"stale": "stale ✓", "open": "open  ·", "human": "human ?"}
+
+
+def _emit_triage_text(result) -> None:
+    scope = "fleet" if result.fleet else "local"
+    mode = "resolve-stale" if not result.dry_run else "dry-run"
+    click.echo(f"notes triage ({scope}, {mode}) — grain {result.version}")
+    click.echo(
+        "  replay is a heuristic: a note is a closure candidate only when its "
+        "recorded command now exits 0 in a throwaway workspace."
+    )
+    click.echo(
+        f"  {len(result.stale)} stale candidate(s) · "
+        f"{len(result.still_open)} still open · "
+        f"{len(result.needs_human)} need human"
+    )
+    if not result.items:
+        click.echo("  (no open notes to triage)")
+        return
+    click.echo("")
+    for item in result.items:
+        note = item.note
+        label = _VERDICT_LABEL.get(item.verdict, item.verdict)
+        exit_str = (
+            "" if item.replay.exit_code is None
+            else f" exit={item.replay.exit_code}"
+        )
+        span = f" ×{len(item.workspaces)}" if result.fleet else ""
+        cmd = item.replay.command or item.note.command or "—"
+        click.echo(f"  [{label}]{span} #{note.id} {cmd}{exit_str}")
+        click.echo(f"        {_truncate(note.body, 100)}")
+        if item.resolved:
+            click.echo(f"        → resolved {item.resolved} note(s)")
+    if result.dry_run and result.stale:
+        click.echo("")
+        click.echo("  re-run with --resolve-stale to resolve the candidate(s).")
+
+
+def _emit_triage_json(result) -> None:
+    click.echo(json.dumps({
+        "fleet": result.fleet,
+        "dry_run": result.dry_run,
+        "version": result.version,
+        "resolved_count": result.resolved_count,
+        "summary": {
+            "stale": len(result.stale),
+            "open": len(result.still_open),
+            "human": len(result.needs_human),
+        },
+        "items": [
+            {
+                "id": i.note.id,
+                "verdict": i.verdict,
+                "command": i.replay.command or i.note.command,
+                "observation": i.note.body,
+                "replayable": i.replay.replayable,
+                "exit_code": i.replay.exit_code,
+                "workspaces": i.workspaces,
+                "resolved": i.resolved,
+            }
+            for i in result.items
+        ],
+    }, indent=2))

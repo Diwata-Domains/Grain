@@ -20,11 +20,15 @@ _TASK_PATH_LINE = re.compile(r"^Task Path:\s*(\S+)", re.IGNORECASE)
 _CURRENT_TASK_STATUS_LINE = re.compile(r"^Status:\s*(\S+)", re.IGNORECASE)
 # Canonical backlog form is `## Phase N —`; older scaffolds number the heading.
 _BACKLOG_PHASE_HEADING = re.compile(r"^##\s+(?:\d+\.\s+)?Phase\s+(\d+)\b")
-_CURRENT_PHASE_LINE = re.compile(r"^Phase\s+(\d+)\s+—")
+# Kept identical to workflow_service._CURRENT_PHASE_LINE: accept em dash, en
+# dash, hyphen, or colon so a hand-edited focus doc parses the same way here as
+# in the evaluator.
+_CURRENT_PHASE_LINE = re.compile(r"^Phase\s+(\d+)\s*[—–:-]")
 _PHASE_CLOSED_MARKER = re.compile(r"^Phase\s+(\d+)\s+closed:")
-# Mirrors workflow_service._PHASE_CLOSE_MIN_ENFORCED — below this the evaluator
-# does not require a close marker, so reconcile must not demand one either.
-_PHASE_CLOSE_MIN_ENFORCED = 15
+# Canonical `## Current Phase` form is an em dash: `Phase N — Title`. Any phase
+# line that carries a number but not an em-dash separator is normalizable.
+_FOCUS_PHASE_NUM = re.compile(r"^Phase\s+(\d+)\b")
+_FOCUS_PHASE_EMDASH = re.compile(r"^Phase\s+(\d+)\s*—")
 
 
 @dataclass
@@ -100,7 +104,30 @@ def reconcile(root: Path, fix: bool = False, dry_run: bool = False) -> Reconcile
     for task_ref, backlog_status in backlog_tasks.items():
         packet_dir = _find_packet_dir(tasks_dir, task_ref)
         if packet_dir is None:
-            continue  # No packet yet — nothing to compare
+            # A task the backlog considers done or in flight must have a packet
+            # on disk. Its absence is drift — a deleted/orphaned packet, or a
+            # status hand-advanced ahead of any packet — so surface it instead of
+            # silently skipping. Ready/planned tasks legitimately have no packet
+            # yet. Report-only: recreating a lost packet is an operator judgement,
+            # never a safe auto-fix.
+            if backlog_status in {"done", "in_progress"}:
+                issues.append(
+                    ReconcileIssue(
+                        severity="warning",
+                        check="missing_packet",
+                        description=(
+                            f"{task_ref}: backlog says '{backlog_status}' but no packet "
+                            f"directory exists under tasks/ — orphaned status with no "
+                            f"backing packet"
+                        ),
+                        fix_available=False,
+                        fix_description=(
+                            "manual: recreate the task packet with `grain task create` "
+                            "or correct the backlog status"
+                        ),
+                    )
+                )
+            continue  # No packet to compare status against
 
         packet_status = _read_packet_status(packet_dir)
         if packet_status is None:
@@ -187,6 +214,22 @@ def reconcile(root: Path, fix: bool = False, dry_run: bool = False) -> Reconcile
                 )
             )
 
+    # ── Check 4: current_focus.md '## Current Phase' separator is canonical ──
+    focus_path = root / "docs" / "working" / "current_focus.md"
+    focus_issue = _detect_unparseable_focus_phase(focus_path)
+    if focus_issue is not None:
+        issues.append(focus_issue)
+        if focus_issue.fix_available and (fix or dry_run):
+            focus_text = focus_path.read_text(encoding="utf-8")
+            new_focus_text, changed = _normalize_focus_phase_separator(focus_text)
+            if changed:
+                if not dry_run:
+                    focus_path.write_text(new_focus_text, encoding="utf-8")
+                fixed.append(
+                    "current_focus.md: normalized '## Current Phase' separator to em dash"
+                )
+                resolved_indices.add(len(issues) - 1)
+
     issues.extend(_check_phase_consistency(root))
 
     # ok reflects remaining (unresolved) errors only
@@ -242,7 +285,11 @@ def _check_phase_consistency(root: Path) -> list[ReconcileIssue]:
         )
 
     phase_int = int(active_phase)
-    if phase_int > _PHASE_CLOSE_MIN_ENFORCED:
+    # Read the same per-repo threshold the evaluator uses so this check does not
+    # demand a close marker the evaluator would not.
+    from grain.services.workflow_service import phase_close_enforced_threshold
+
+    if phase_int > phase_close_enforced_threshold(root):
         closed = {
             m.group(1)
             for line in focus_text.splitlines()
@@ -268,6 +315,87 @@ def _check_phase_consistency(root: Path) -> list[ReconcileIssue]:
             )
 
     return issues
+
+
+def _detect_unparseable_focus_phase(focus_path: Path) -> ReconcileIssue | None:
+    """Flag a '## Current Phase' line whose separator is not the canonical em dash.
+
+    `grain workflow explain` routes agents here when the current phase is
+    malformed. The evaluator tolerates a hand-edited hyphen/colon, but a
+    non-canonical separator still drifts from the form every other doc uses, so
+    reconcile reports it and offers a one-step repair (normalize to an em dash).
+    Only the '## Current Phase' line is considered; a 'complete'/'done' marker or
+    a missing focus doc is left alone.
+    """
+    if not focus_path.exists():
+        return None
+
+    phase_line = _current_phase_line(focus_path.read_text(encoding="utf-8"))
+    if phase_line is None:
+        return None
+    if _FOCUS_PHASE_EMDASH.match(phase_line):
+        return None  # already canonical
+    if not _FOCUS_PHASE_NUM.match(phase_line):
+        return None  # not a phase line (e.g. a 'complete' marker)
+
+    return ReconcileIssue(
+        severity="error",
+        check="focus_phase_parseable",
+        description=(
+            f"current_focus.md '## Current Phase' line '{phase_line}' uses a "
+            f"non-canonical separator — the canonical form is 'Phase N — Title' "
+            f"with an em dash"
+        ),
+        fix_available=True,
+        fix_description="normalize the '## Current Phase' separator to an em dash (—)",
+    )
+
+
+def _current_phase_line(focus_text: str) -> str | None:
+    """Return the first non-empty line under '## Current Phase', or None."""
+    lines = focus_text.splitlines()
+    for idx, line in enumerate(lines):
+        if line.strip() == "## Current Phase":
+            for candidate in lines[idx + 1:]:
+                stripped = candidate.strip()
+                if not stripped:
+                    continue
+                if stripped.startswith("##"):
+                    return None
+                return stripped
+    return None
+
+
+def _normalize_focus_phase_separator(text: str) -> tuple[str, bool]:
+    """Rewrite the '## Current Phase' line to use a canonical em-dash separator."""
+    lines = text.splitlines(keepends=True)
+    in_section = False
+    for i, raw in enumerate(lines):
+        stripped = raw.strip()
+        if stripped == "## Current Phase":
+            in_section = True
+            continue
+        if not in_section:
+            continue
+        if not stripped:
+            continue
+        if stripped.startswith("##"):
+            break
+        if _FOCUS_PHASE_NUM.match(stripped) and not _FOCUS_PHASE_EMDASH.match(stripped):
+            trailing = raw[len(raw.rstrip("\n")):]
+            lines[i] = _normalize_phase_line(stripped) + trailing
+            return "".join(lines), True
+        break
+    return text, False
+
+
+def _normalize_phase_line(line: str) -> str:
+    """`Phase 1 - Foundation` / `Phase 1: Foundation` → `Phase 1 — Foundation`."""
+    m = _FOCUS_PHASE_NUM.match(line)
+    assert m is not None  # caller guarantees a phase number
+    number = m.group(1)
+    rest = re.sub(r"^[—–:/\-]+\s*", "", line[m.end():].lstrip())
+    return f"Phase {number} — {rest}" if rest else f"Phase {number} —"
 
 
 def _active_phase(focus_text: str) -> str:
@@ -333,12 +461,34 @@ def _read_all_backlog_tasks(backlog_path: Path) -> dict[str, str]:
 
 
 def _find_packet_dir(tasks_dir: Path, task_ref: str) -> Path | None:
+    """Locate a task packet, active or archived.
+
+    `grain phase close` moves a sealed phase's packets into
+    `tasks/archive/phase-N/`. Those packets still exist, so a closed phase's done
+    tasks must not be reported as orphans.
+    """
     if not tasks_dir.exists():
         return None
-    prefix = task_ref + "-"
+
+    def _matches(candidate: Path) -> bool:
+        # Packets are usually `P1-T01-TASK-0001`, but some carry no TASK suffix.
+        return candidate.is_dir() and (
+            candidate.name == task_ref or candidate.name.startswith(task_ref + "-")
+        )
+
     for candidate in tasks_dir.iterdir():
-        if candidate.is_dir() and candidate.name.startswith(prefix):
+        if _matches(candidate):
             return candidate
+
+    archive_dir = tasks_dir / "archive"
+    if not archive_dir.is_dir():
+        return None
+    for phase_dir in sorted(archive_dir.iterdir()):
+        if not phase_dir.is_dir():
+            continue
+        for candidate in phase_dir.iterdir():
+            if _matches(candidate):
+                return candidate
     return None
 
 

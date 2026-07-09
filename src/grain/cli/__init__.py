@@ -52,6 +52,7 @@ from .suggest import suggest_group
 from .recipe import recipe_group
 from .onboard import onboard_cmd
 from .upgrade import upgrade_cmd
+from .format_option import install_format_option
 from .error_handler import handle_error
 from grain.domain.errors import ForgeError
 from grain.adapters.manifest import load_manifest, load_grain_config
@@ -233,10 +234,13 @@ def _log_version_skip(root: Path, command: str, required: str) -> None:
         pass
 
 
-def _maybe_warn_if_upgrade_needed(root_path, invoked_subcommand: str | None) -> None:
+def _maybe_warn_if_upgrade_needed(root_path, invoked_subcommand: str | None, fmt: str) -> None:
     """If grain.upgrade_check = warn in docs_manifest.yaml, surface a hint when stale files exist."""
     if invoked_subcommand in {"upgrade", "onboard"}:
         return  # onboard seeds managed files itself; warning before it runs is noise
+
+    if fmt == "json":
+        return  # machine-readable callers get no free-text hint on stderr
 
     try:
         cfg = load_grain_config(root_path)
@@ -249,7 +253,9 @@ def _maybe_warn_if_upgrade_needed(root_path, invoked_subcommand: str | None) -> 
     try:
         from grain.services.upgrade_service import upgrade_repo
         result = upgrade_repo(root_path, dry_run=True)
-        stale = len(result.updated) + len(result.added)
+        # Files skipped because the user customized them are not "out of date" —
+        # the user chose to keep them, so excluding them stops a permanent hint.
+        stale = len(result.updated) + len(result.added) - len(result.skipped_customized)
         if stale > 0:
             click.echo(
                 f"hint   {stale} Grain-managed file(s) are out of date. "
@@ -298,7 +304,7 @@ def main(ctx, repo, fmt):
     # Upgrade staleness hint (only when upgrade_check = warn in grain config)
     try:
         root = resolve_repo_root(repo)
-        _maybe_warn_if_upgrade_needed(root, ctx.invoked_subcommand)
+        _maybe_warn_if_upgrade_needed(root, ctx.invoked_subcommand, fmt)
     except Exception:
         pass
 
@@ -357,3 +363,8 @@ main.add_command(suggest_group)
 main.add_command(recipe_group)
 main.add_command(onboard_cmd)
 main.add_command(upgrade_cmd)
+
+# Attach an eager, subcommand-local `--format` to every envelope-emitting leaf so
+# the flag is accepted both before AND after the subcommand (P38-T02). One shared
+# mechanism; see grain.cli.format_option for the resolution rules.
+install_format_option(main)

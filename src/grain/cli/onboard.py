@@ -16,18 +16,13 @@ from grain.services.onboard_service import OnboardService
 @click.command("onboard")
 @click.argument("path", required=False, default=".")
 @click.option("--dry-run", is_flag=True, default=False, show_default=True, help="Report intended scaffold actions without writing.")
-@click.option(
-    "--format",
-    "local_fmt",
-    type=click.Choice(["text", "json"]),
-    default=None,
-    help="Output format override for this command.",
-)
 @click.pass_context
-def onboard_cmd(ctx, path: str, dry_run: bool, local_fmt: str | None) -> None:
+def onboard_cmd(ctx, path: str, dry_run: bool) -> None:
     """Scaffold Grain directory structure into an existing repository path."""
+    # `--format` is injected by grain.cli.format_option (accepted before or after
+    # the subcommand) and stored in ctx.obj["fmt"].
     repo = ctx.obj.get("repo") if ctx.obj else None
-    fmt = local_fmt or (ctx.obj.get("fmt", "text") if ctx.obj else "text")
+    fmt = ctx.obj.get("fmt", "text") if ctx.obj else "text"
 
     if path == "." and repo:
         target = Path(repo).resolve()
