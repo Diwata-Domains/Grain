@@ -15,7 +15,7 @@ from grain.services.task_observability_service import update_task_observability
 
 _TASK_ID_RE = re.compile(r"TASK-\d{4,}")
 _BACKLOG_TASK_HEADING_RE = re.compile(r"^###\s+(P(\d+)-T(\d+))\s+—\s+(.+)$")
-_BACKLOG_PHASE_HEADING_RE = re.compile(r"^##\s+\d+\.\s+(Phase\s+\d+\s+—\s+.+)$")
+_BACKLOG_PHASE_HEADING_RE = re.compile(r"^##\s+(?:\d+\.\s+)?(Phase\s+\d+\s+—\s+.+)$")
 
 # Gate reasons mapped from stop conditions and next_action states.
 _GATE_MAP: dict[str, str] = {

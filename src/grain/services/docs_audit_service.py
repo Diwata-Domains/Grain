@@ -1287,7 +1287,7 @@ def _find_packet_by_id(tasks_root: Path, task_id: str) -> Path | None:
 
 def _parse_backlog_phases(text: str) -> list[dict]:
     """Parse backlog.md into a list of phase dicts with task lists."""
-    _PHASE_RE = re.compile(r"^##\s+\d+\.\s+(Phase\s+\d+[^#\n]*?)(\s*✓\s*CLOSED)?$")
+    _PHASE_RE = re.compile(r"^##\s+(?:\d+\.\s+)?(Phase\s+\d+[^#\n]*?)(\s*✓\s*CLOSED)?$")
     _TASK_RE = re.compile(r"^###\s+(P\d+-T\d+)\s+—")
     _STATUS_RE = re.compile(r"^-\s+\*\*Status:\*\*\s*(\S+)")
     _TASK_ID_RE = re.compile(r"^-\s+\*\*TASK-ID:\*\*\s*(TASK-\d+)")

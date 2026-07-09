@@ -167,7 +167,8 @@ def _count_tasks(root: Path, active_phase: str) -> dict:
 
     text = backlog_path.read_text(encoding="utf-8")
     _STATUS_RE = re.compile(r"^-\s+\*\*Status:\*\*\s*(\S+)")
-    _PHASE_RE = re.compile(r"^##\s+\d+\.\s+Phase\s+(\d+)\s+—")
+    # Canonical backlog form is `## Phase N —`; older scaffolds number the heading.
+    _PHASE_RE = re.compile(r"^##\s+(?:\d+\.\s+)?Phase\s+(\d+)\s+—")
     _TASK_RE = re.compile(r"^###\s+P\d+-T\d+")
 
     counts: dict = {"total": 0, "done": 0, "ready": 0, "in_progress": 0, "blocked": 0}

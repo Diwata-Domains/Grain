@@ -34,7 +34,7 @@ _CACHE_TTL_SECONDS = 3600
 _PHASE_DIR_RE = re.compile(r"^phase-(\d+)$")
 
 # backlog.md phase header and task/status lines.
-_BACKLOG_PHASE_RE = re.compile(r"^##\s+Phase\s+(\d+)\b")
+_BACKLOG_PHASE_RE = re.compile(r"^##\s+(?:\d+\.\s+)?Phase\s+(\d+)\b")
 _BACKLOG_TASK_RE = re.compile(r"^###\s+P(\d+)-T\d+")
 _BACKLOG_STATUS_RE = re.compile(r"^-\s+\*\*Status:\*\*\s*(\S+)")
 
