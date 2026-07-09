@@ -1,17 +1,19 @@
 # Grain
 
 [![PyPI](https://img.shields.io/pypi/v/grain-kit)](https://pypi.org/project/grain-kit/)
-[![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-**Deterministic workflow for agent CLIs.**
+**A checklist your agent can't skip.**
 
-Grain is a workflow layer for Claude Code, Codex, and similar agent CLIs. It gives coding agents explicit task packets, minimal context, and review gates so development stays structured, inspectable, and repeatable.
+A deterministic workflow layer for Claude Code, Codex, and similar agent CLIs: explicit task packets, scoped context, and review gates that every step must pass through before work lands.
 
 ---
 
 ## Why Grain
 
-Ad hoc agent-driven development tends to degrade into repeated explanations, oversized context, hidden state across conversations, and unclear review boundaries.
+Grain governs agentic work of any kind — drafting and editing documents, updating spreadsheets, running multi-step research, as well as software development. The code loop is one instance of the substrate, not the whole of it.
+
+Left to an open-ended conversation, agent-driven work tends to degrade into repeated explanations, oversized context, hidden state across sessions, and unclear review boundaries.
 
 Grain makes the workflow explicit:
 
@@ -24,7 +26,7 @@ Grain makes the workflow explicit:
 Idea → Task Packet → Context → Execute → Review → Close
 ```
 
-This is most useful when you are already working inside an agent CLI and want the agent to follow a deterministic workflow instead of an open-ended conversation.
+This is most useful when you are working inside an agent CLI and want the agent to follow a deterministic workflow instead of improvising.
 
 ---
 
@@ -58,11 +60,11 @@ grain --version
 mkdir my-project && cd my-project
 git init
 grain init
-grain workflow next
-grain prompt show
+grain workflow next      # names the next legal step
+grain prompt show        # surfaces the prompt to run
 ```
 
-Open `prompts/workflow.onboard.new.md` in your agent CLI, fill in the project context section, and let the agent generate the initial docs and backlog.
+For a fresh workspace, `grain workflow next` recommends task planning and `grain prompt show` surfaces `prompts/task.plan.next.md`. Open the prompt Grain surfaces in your agent CLI and follow it exactly — Grain always names the prompt to run next, so trust `grain prompt show` over any hard-coded filename.
 
 ### Existing project
 
@@ -220,9 +222,92 @@ grain adapter list
 grain adapter show --id code_adapter
 ```
 
-Available adapters: `code_adapter`, `frontend_adapter`, `docs_adapter`, `spreadsheet_adapter`, `obsidian_adapter`, `database_adapter`, `crawler_adapter`.
+Eight adapters ship, spanning code and non-code work:
+
+- `code_adapter` — Python, Rust, backend services, CLI tooling
+- `frontend_adapter` — TypeScript, JavaScript, React, Storybook, Tauri UI
+- `spreadsheet_adapter` — Excel spreadsheets, CSV datasets, tabular data review
+- `docs_adapter` — markdown and Word `.docx` documents, documentation-heavy repositories
+- `obsidian_adapter` — Obsidian vaults, wiki-link and frontmatter-driven note systems
+- `data_adapter` — data-science and ML-experimentation workflows, notebook-driven analysis, dataset and model-artifact review
+- `database_adapter` — relational schema and migration planning, SQL surfaces, ORM-backed persistence
+- `crawler_adapter` — crawler and scraping configs, extraction-schema and output-validation work
 
 Declare the adapter on the task packet when the work targets that domain. Grain assembles focused context from relevant files instead of broad app code.
+
+---
+
+## Office documents
+
+Grain is not code-only. It mutates real office artifacts — Word `.docx` and Excel spreadsheets — through the same packet-first, review-before-write discipline it applies to source code.
+
+Every change is proposed first: Grain writes a candidate file plus an `office_review.json` into the active task packet, runs structure, reference, and policy validators over it, and reports residual risks. Nothing overwrites the source until you review the proposal.
+
+```bash
+grain office spreadsheet propose --source data/report.xlsx --set "Sheet1!B2=14"
+grain office docx propose --source docs/brief.docx --replace "old=new"
+grain office review show --task-id TASK-0001
+```
+
+`propose` writes the candidate into the packet as a `.proposed.` file for review. `export` produces a separate reviewed output file (`export-as-new-file`) rather than touching the source in place:
+
+```bash
+grain office spreadsheet export --source data/report.xlsx --set "Sheet1!B2=14"
+grain office docx export --source docs/brief.docx --replace "old=new"
+```
+
+Source paths are relative to the repo root. Both commands default to the active packet (`current_task.md`); pass `--task-id TASK-####` to target another. Review the persisted `office_review.json` before closing the packet.
+
+---
+
+## Recipes
+
+Recipes are the other half of the general-workflow story: a deterministic, multi-step engine for producing a document, a research brief, or any staged deliverable. A recipe is an ordered list of steps, each producing an inspectable artifact, with memory flowing between steps through declared inputs. Recipes run as their own small linear state machine **parallel to** — never inside — the task-packet loop: they never create task packets and never touch the workflow engine.
+
+Definitions are `grain.recipe/v2` (`docs/recipes/<id>/recipe.yaml` or bundled); run state is `grain.recipe-run/v1` under `docs/recipes/runs/<run-id>/`, file-backed and resumable. Two recipes ship bundled: `explainer` (turn a topic into a short, beginner-friendly explainer) and `research-brief` (produce a sourced research brief).
+
+A recipe's supervision mode decides who fills each step. **Operator/gated** recipes run offline and deterministic: `grain recipe run` renders the current step's prompt with its scoped inputs and pauses at `awaiting_input`; you (or an agent) write the step's output artifact, then advance. The engine never writes the artifact itself and never auto-completes — a missing output is a pause, not a failure. **Autonomous** recipes (such as `research-brief`) instead shell to your configured agent per step.
+
+The offline operator loop, using the bundled `explainer` recipe:
+
+```bash
+grain recipe list                                     # bundled + workspace recipes
+grain recipe run explainer --param topic="hash maps"  # start a run; pauses at the first step
+grain recipe status --run <run-id>                    # cursor + per-step state
+# write the cursor step's output artifact under docs/recipes/runs/<run-id>/, then:
+grain recipe next --run <run-id>                       # advance exactly one step
+grain recipe resume <run-id>                           # re-enter a paused or failed run
+```
+
+`--run <run-id>` is required whenever more than one run is open. Add `--format json` to any recipe command to drive it headlessly from an agent.
+
+---
+
+## Workspace health
+
+Grain can report on the state of a workspace and surface what to do next, all from file-backed signals.
+
+```bash
+grain status        # phase, task counts, active task, workflow stage, health summary
+grain doctor        # install mode, version alignment, workspace and Python checks
+grain docs audit    # lint canonical/working docs for drift, staleness, and structural gaps
+```
+
+`grain suggest` proposes what to pick up next from actionable signals in the workspace. Acceptance and dismissal are **subcommands**, not flags:
+
+```bash
+grain suggest              # list proposals
+grain suggest accept <id>  # accept a proposal
+grain suggest dismiss <id> # dismiss a proposal
+```
+
+`grain workflow guard` enforces workflow invariants — for example, that an in-progress packet exists and that implementation has not run ahead of its packet. It **exits non-zero when an invariant is violated**, so it wires directly into git hooks and CI:
+
+```bash
+grain workflow guard        # exit code 1 on any violation, 0 when clean
+grain hooks install         # write Grain's pre-commit and post-checkout hooks to .git/hooks/
+grain hooks status          # show whether the managed hooks are installed and current
+```
 
 ---
 
@@ -243,7 +328,7 @@ Intelligence may propose changes. Closure is a deliberate gate.
 
 ## Verification (Assay integration)
 
-Grain integrates with [Assay](https://github.com/Diwata-Labs/Assay) for visual and functional verification of tasks before closure.
+Grain integrates with [Assay](https://github.com/Diwata-Domains/Assay) for visual and functional verification of tasks before closure.
 
 ```bash
 grain verify submit --id TASK-0001
@@ -259,22 +344,6 @@ Verification rules:
 
 ---
 
-## Office documents
-
-Grain supports packet-first mutation of `.docx` and spreadsheet files with a review step before any writes land.
-
-```bash
-grain office docx propose --source docs/brief.docx --replace "old=new"
-grain office docx export --source docs/brief.docx --replace "old=new"
-grain office spreadsheet propose --source data/report.xlsx --set "Sheet1!B2=14"
-grain office spreadsheet export --source data/report.xlsx --set "Sheet1!B2=14"
-grain office review show --task-id TASK-0001
-```
-
-Every office command persists `office_review.json` into the packet. Review the artifact summary before closing the packet.
-
----
-
 ## Orchestration
 
 Generate plan proposals for larger scopes without silently mutating the repo plan.
@@ -286,35 +355,6 @@ grain orchestrate accept --plan OP-XXXXXXXX
 ```
 
 These outputs are proposals meant to support sequencing, not bypass review.
-
----
-
-## Recipes
-
-A recipe is a deterministic, multi-step workflow engine — an ordered list of steps,
-each producing an inspectable artifact, with memory flowing between steps via declared
-inputs. The step-runner engine **supersedes the older single-packet recipe model** (a
-recipe is no longer "one configured task packet"). Recipes run as their own small linear
-state machine **parallel to** — never inside — the task-packet loop: they never create
-task packets and never touch the workflow engine.
-
-Definitions are `grain.recipe/v2` (`docs/recipes/<id>/recipe.yaml` or bundled); run state
-is `grain.recipe-run/v1` under `docs/recipes/runs/<run-id>/`, file-backed and resumable.
-
-Default **operator mode** is offline and deterministic: `grain recipe next` renders the
-current step's prompt with its scoped inputs and pauses at `awaiting_input`; you (or an
-agent) write the step's `output` artifact, then advance. The engine never writes the
-artifact itself and never auto-completes — a missing output is a pause, not a failure.
-
-```bash
-grain recipe run research-brief --param topic="GLP-1 obesity market"   # start a run
-grain recipe status                                                    # cursor + per-step state
-# write the cursor step's output artifact under docs/recipes/runs/<run-id>/, then:
-grain recipe next                                                      # advance one step
-grain recipe resume <run-id>                                           # re-enter a paused/failed run
-```
-
-Add `--format json` to any recipe command to drive it headlessly from an agent.
 
 ---
 
@@ -340,7 +380,7 @@ The TUI reads the same repo files and service outputs the CLI uses. It does not 
 - a hidden orchestration service
 - a database-backed autonomy layer
 
-It is a filesystem-first workflow layer for agent-assisted development.
+It is a filesystem-first workflow layer for agent-assisted work of any kind.
 
 ---
 
@@ -366,10 +406,10 @@ pip install -e .
 
 ## License
 
-[Apache-2.0](LICENSE).
+[MIT](LICENSE).
 
 ---
 
 ## Feedback
 
-[https://github.com/Diwata-Labs/Grain/issues](https://github.com/Diwata-Labs/Grain/issues)
+[https://github.com/Diwata-Domains/Grain/issues](https://github.com/Diwata-Domains/Grain/issues)
