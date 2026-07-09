@@ -421,7 +421,7 @@ Key deliverables: `grain workflow guard`, `grain hooks install/list/remove`, `gr
 - **Do NOT** bulk `grain upgrade --add-missing` the fleet — audit §4: it never creates the PROTECTED `docs_manifest.yaml`, so live "shell" workspaces stay ungoverned. Use `grain init` for real products; remove `grain.toml` from familiar substrate.
 
 ### P36-T01 — Reconcile source version + ship 0.5.0 (tag push credit-blocked)
-- **Status:** blocked (tag push) / draft (local half)
+- **Status:** review — SHIPPED 2026-07-07: grain-kit 0.5.0 live on PyPI (release run 28845125357 all-green: test → build → publish → mirror sync → GH Release). Packet `tasks/P36-T01-TASK-0222/` has full results; operator review then `grain task close`.
 - **Description:** `grain doctor` fails 3/4 fleet-wide because the source pyproject version reads `0.1.0` while installed is `0.5.0`. Confirm the true on-disk `version`, fix so doctor passes everywhere. Then ship 0.5.0 via the repo convention (`pnpm trace release` / push `grain-v0.5.0`) — **the release pipeline only fires on tag push and has never run for 0.5.0; blocked until Actions credits reset.** Name is fine (`grain-kit` already published).
 - **Dependencies:** none
 
@@ -486,6 +486,18 @@ Key deliverables: `grain workflow guard`, `grain hooks install/list/remove`, `gr
 - **Dependencies:** none
 
 ---
+
+### P36-T14 — Close the assay bridge loop: surface review findings on ingest
+- **Status:** review — packet `tasks/P36-T14-TASK-0223/`. Live round trip (2026-07-07) proved the bridge works end-to-end incl. `code_review`; this task adds what was missing: `review.findings` + `followup_candidates` rendered into results.md and the review block persisted in verification_result.json. TDD, 2 new tests, 1634 green.
+- **Description:** `grain verify ingest` existed (Phase 28) but dropped assay's structured review findings on the floor — only the summary reached the packet. Render `file:line [severity] message` findings and `follow-up:` lines; persist `review` in the result record. Out of scope: FR-006 workflow-gate wiring.
+- **Files:** `src/grain/services/verification_service.py`, `tests/test_verify_submit_cmd.py`
+- **Dependencies:** none
+
+### P36-T15 — FR-006 verification gate in workflow evaluator
+- **Status:** review — packet `tasks/P36-T15-TASK-0224/`. Machine-readable gate: `verification_pending`/`verification_failed` stop reasons keyed off verification_request.json, `verification_id` on the evaluation, failure summary + follow-ups in blocking_reasons, exact ingest resume command. Live-verified full lifecycle via CLI. TDD, 3 new tests, 1637 green.
+- **Description:** Closure validation already blocked on pending/failed verification but agents only saw generic `review_close_blocked`. Implements the v2-plan FR-006 machine contract in the read-only evaluator (no status auto-mutation — guidance instead, to avoid backlog-sync drift).
+- **Files:** `src/grain/domain/workflow.py`, `src/grain/services/workflow_service.py`, `tests/test_workflow_state_service.py`
+- **Dependencies:** P36-T14
 
 ## Backlog Maintenance Rules
 
