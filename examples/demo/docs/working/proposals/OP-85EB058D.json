@@ -1,0 +1,19 @@
+{
+  "plan_id": "OP-85EB058D",
+  "scope_summary": "Add auth",
+  "produced_by": "orchestration_service.task.cli",
+  "status": "draft",
+  "active_adapters": [],
+  "packet_candidates": [
+    {
+      "candidate_id": "C-001",
+      "title": "Implement scope: Add auth",
+      "scope_summary": "Add auth",
+      "primary_adapter": null,
+      "depends_on": []
+    }
+  ],
+  "dependency_links": [],
+  "cross_domain_flags": [],
+  "split_recommendations": []
+}

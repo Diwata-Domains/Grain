@@ -66,3 +66,8 @@ where = ["src"]
 
 [tool.setuptools.package-data]
 grain = ["data/**/*"]
+
+[tool.pytest.ini_options]
+# Collect only the real suite. examples/ holds runnable demo workspaces that
+# ship their own tests; they are fixtures, not tests of grain.
+testpaths = ["tests"]
