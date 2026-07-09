@@ -471,9 +471,9 @@ Key deliverables: `grain workflow guard`, `grain hooks install/list/remove`, `gr
 - **Moved from:** P36-T10 (ROADMAP.md:94 calls this Phase 37's plumbing).
 
 ### P37-T13 — contracts/workflow.py — the typed workflow vocabulary
-- **Status:** draft
+- **Status:** in_progress
 - **Description:** Populate `src/grain/contracts/` (today an 82-byte license header) with spec §5.1's five terms as TYPES ONLY: enums `Gate`/`RunStatus`/`StepStatus`/`Mode`/`Supervision`/`StopReason`, and frozen dataclasses `Artifact`/`StepSpec`/`Protocol`/`StepRecord`/`Run` with `to_dict`/`from_dict`. No reducer, no port, no I/O, stdlib only. Do **not** wire it into `grain/__init__.py`.
-- **Acceptance:** `python -c "import grain.contracts.workflow"` succeeds; an import-trace test proves `import grain.cli` does NOT pull `grain.contracts`, so `grain status` startup is untouched; enum values are byte-equal to the `VALID_*` frozensets in `domain/recipe_run.py:28-42`; `StopReason` members match a captured roster of the ~20 literals in `services/workflow_service.py` (the test asserts the roster, invents nothing); `Run.to_dict` round-trips a captured `docs/recipes/runs/<id>/run.json` byte-identically.
+- **Acceptance:** `python -c "import grain.contracts.workflow"` succeeds; an import-trace test proves `import grain.cli` does NOT pull `grain.contracts`, so `grain status` startup is untouched; enum values are byte-equal to the `VALID_*` frozensets in `domain/recipe_run.py:28-42`; `StopReason` members match a captured roster of the ~20 literals in `services/workflow_service.py` (the test asserts the roster, invents nothing); `Run.from_dict(run.to_dict())` is identity. **Corrected 2026-07-09:** byte-identical round-trip of a recipe `run.json` is NOT achievable here and moved to `P37-T17` — `RecipeRun.to_dict` emits `recipe`/`recipe_apiVersion` under `grain.recipe-run/v1`, while the contract speaks of a `protocol` under `grain.workflow-run/v1`. T17 owns that mapping.
 - **Demo:** SAFE pre-demo — new file, off the CLI startup import graph.
 - **Dependencies:** none
 
@@ -503,6 +503,7 @@ Key deliverables: `grain workflow guard`, `grain hooks install/list/remove`, `gr
 - **Description:** Recast `services/recipe_store.py` to delegate to `FilesystemRunStore`; retype `domain/recipe_run.py` onto the contract vocabulary (`VALID_*` frozensets -> `set(RunStatus)` etc., `gate: Gate`, `artifact: Artifact | None`), keeping `to_dict` byte-identical so live `run.json` files still load.
 - **Acceptance:** P37-T15 conformance and P37-T16 characterization suites both pass; `to_dict` of a migrated `RecipeRun` equals the captured pre-migration JSON byte-for-byte.
 - **Demo:** DEMO-PATH — `recipe_store.py`/`recipe_run.py` are imported at CLI startup (`cli/__init__.py:52 -> cli/recipe.py:43-52 -> recipe_store.py:36-37`). `cli()` wraps only `main()` (`cli/__init__.py:317-334`), so an import fault here is an uncatchable traceback on `grain status`, the demo's first command. Requires a green `grain status` smoke test before the demo.
+- **Inherited from P37-T13:** own the on-disk compatibility mapping — `to_dict` of a migrated `RecipeRun` must equal the captured pre-migration `run.json` byte-for-byte.
 - **Dependencies:** P37-T15, P37-T16
 
 ### P37-T18 — Refactor recipe_service.py onto RunStore + advance()
