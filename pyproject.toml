@@ -28,6 +28,7 @@ classifiers = [
     "Topic :: Software Development :: Build Tools",
 ]
 dependencies = [
+    "grain-contracts>=0.1",
     "click>=8.1",
     "PyYAML>=6.0",
     "networkx>=3.3",

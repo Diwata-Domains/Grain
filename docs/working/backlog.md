@@ -527,6 +527,14 @@ Key deliverables: `grain workflow guard`, `grain hooks install/list/remove`, `gr
 - **Demo:** SAFE pre-demo — docs only.
 - **Dependencies:** none
 
+### P37-T21 — Extract grain-contracts as a zero-dependency distribution
+- **Status:** in_progress
+- **Description:** `grain-kit` mandatorily depends on `networkx`, `textual`, `pdfplumber`, `openpyxl`, `python-docx` and `tree-sitter-language-pack`. Diwa is a FastAPI service that needs six enums and five dataclasses. Ship the vocabulary as its own zero-dep distribution (`packages/grain-contracts`, importable as `grain_contracts`); `grain.contracts.workflow` re-exports it so spec §5.1's address still holds. This is the first slice of the storage-agnostic `grain-core` that §9 names as the exit criterion for Diwa's temporary Missions runtime.
+- **Acceptance:** `importlib.metadata.requires("grain-contracts")` has no runtime entries; `grain.contracts.workflow.Run is grain_contracts.workflow.Run`; `import grain.cli` pulls neither module; grain's suite green; `grain status` exits 0.
+- **Demo:** SAFE pre-demo — new package; `grain/contracts/workflow.py` stays off the CLI startup graph.
+- **Release blocker:** `grain-contracts` must be published to PyPI **before** `grain-kit` 0.6.0, or the release ships an uninstallable package (`release-python.yml` publishes grain-kit only). See tooling note #10.
+- **Dependencies:** P37-T13
+
 ---
 
 ## Phase 38 — Tooling Friction Remediation

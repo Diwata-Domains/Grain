@@ -20,6 +20,7 @@ Two invariants matter more than the types themselves:
 from __future__ import annotations
 
 import ast
+import importlib.metadata
 import pathlib
 import re
 import subprocess
@@ -27,6 +28,7 @@ import sys
 
 import pytest
 
+import grain_contracts.workflow as vocabulary
 from grain.contracts.workflow import (
     Artifact,
     Gate,
@@ -49,8 +51,10 @@ from grain.domain.recipe_run import (
 )
 
 SRC = pathlib.Path(__file__).resolve().parents[1] / "src" / "grain"
-CONTRACT = SRC / "contracts" / "workflow.py"
 WORKFLOW_SERVICE = SRC / "services" / "workflow_service.py"
+# Resolved from the installed module, not a monorepo-relative path: products/grain is subtree-mirrored
+# to a public repo where packages/ does not exist.
+CONTRACT = pathlib.Path(vocabulary.__file__)
 
 
 def _values(enum_cls) -> set[str]:
@@ -106,6 +110,24 @@ def test_contract_imports_only_stdlib():
             imported.add(node.module.split(".")[0])
     allowed = {"__future__", "dataclasses", "enum", "typing"}
     assert imported <= allowed, f"contract must stay stdlib-only; found {sorted(imported - allowed)}"
+
+
+def test_grain_contracts_ships_with_zero_dependencies():
+    """The whole point of the separate distribution.
+
+    grain-kit mandatorily pulls networkx, textual, pdfplumber, openpyxl, python-docx and
+    tree-sitter-language-pack. A consumer that only wants the vocabulary must not inherit any of it.
+    """
+    requires = importlib.metadata.requires("grain-contracts") or []
+    runtime = [r for r in requires if "extra ==" not in r]
+    assert runtime == [], f"grain-contracts must stay dependency-free; found {runtime}"
+
+
+def test_grain_contracts_workflow_is_the_same_object_as_grain_contracts_workflow():
+    """`grain.contracts.workflow` is an address, not a copy. §5.1 keeps its promise."""
+    assert Run is vocabulary.Run
+    assert StopReason is vocabulary.StopReason
+    assert Gate is vocabulary.Gate
 
 
 def test_importing_the_cli_does_not_pull_the_contract():
