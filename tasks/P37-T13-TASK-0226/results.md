@@ -44,6 +44,15 @@ that mapping is P37-T17's job, and the obligation was moved there in the backlog
 `uv run grain task validate` → ok.
 
 ## User Review
+- **Summary:** Founder-approved 2026-07-10: vocabulary published as types, 19 TDD tests, off the CLI import graph, roster corrections recorded in backlog.
+- **Resolution Mode:** close_task
 
-- **State:** pending
+- **State:** approved
 - **Notes:** awaiting `grain review approve P37-T13` then `grain task close`.
+
+## Closure Decision
+- **Decision:** closed
+- **Reason:** Closed via grain task close.
+
+### Closure Blockers
+- None

@@ -43,6 +43,15 @@ Also filed: note #11 — `reconcile --fix` advertises "backlog status sync" but
 `packet_backlog_mismatch` reports `fix_available: false`.
 
 ## User Review
+- **Summary:** Founder-approved 2026-07-10: grain-contracts extracted as zero-dep distribution, re-export keeps spec §5.1 address, release blocker noted (#10).
+- **Resolution Mode:** close_task
 
-- **State:** pending
+- **State:** approved
 - **Notes:** awaiting `grain review approve P37-T21` then `grain task close`.
+
+## Closure Decision
+- **Decision:** closed
+- **Reason:** Closed via grain task close.
+
+### Closure Blockers
+- None

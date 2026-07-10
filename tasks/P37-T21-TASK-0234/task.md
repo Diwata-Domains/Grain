@@ -2,7 +2,7 @@
 
 ## Metadata
 - **ID:** TASK-0234
-- **Status:** in_progress
+- **Status:** done
 - **Phase:** [phase name]
 - **Backlog:** [backlog item]
 - **Packet Path:** tasks/[packet-dir]/
