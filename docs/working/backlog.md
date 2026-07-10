@@ -471,7 +471,7 @@ Key deliverables: `grain workflow guard`, `grain hooks install/list/remove`, `gr
 - **Moved from:** P36-T10 (ROADMAP.md:94 calls this Phase 37's plumbing).
 
 ### P37-T13 — contracts/workflow.py — the typed workflow vocabulary
-- **Status:** in_progress
+- **Status:** done
 - **Description:** Populate `src/grain/contracts/` (today an 82-byte license header) with spec §5.1's five terms as TYPES ONLY: enums `Gate`/`RunStatus`/`StepStatus`/`Mode`/`Supervision`/`StopReason`, and frozen dataclasses `Artifact`/`StepSpec`/`Protocol`/`StepRecord`/`Run` with `to_dict`/`from_dict`. No reducer, no port, no I/O, stdlib only. Do **not** wire it into `grain/__init__.py`.
 - **Acceptance:** `python -c "import grain.contracts.workflow"` succeeds; an import-trace test proves `import grain.cli` does NOT pull `grain.contracts`, so `grain status` startup is untouched; enum values are byte-equal to the `VALID_*` frozensets in `domain/recipe_run.py:28-42`; `StopReason` members match a captured roster of the ~20 literals in `services/workflow_service.py` (the test asserts the roster, invents nothing); `Run.from_dict(run.to_dict())` is identity. **Corrected 2026-07-09:** byte-identical round-trip of a recipe `run.json` is NOT achievable here and moved to `P37-T17` — `RecipeRun.to_dict` emits `recipe`/`recipe_apiVersion` under `grain.recipe-run/v1`, while the contract speaks of a `protocol` under `grain.workflow-run/v1`. T17 owns that mapping.
 - **Demo:** SAFE pre-demo — new file, off the CLI startup import graph.
@@ -528,7 +528,7 @@ Key deliverables: `grain workflow guard`, `grain hooks install/list/remove`, `gr
 - **Dependencies:** none
 
 ### P37-T21 — Extract grain-contracts as a zero-dependency distribution
-- **Status:** in_progress
+- **Status:** done
 - **Description:** `grain-kit` mandatorily depends on `networkx`, `textual`, `pdfplumber`, `openpyxl`, `python-docx` and `tree-sitter-language-pack`. Diwa is a FastAPI service that needs six enums and five dataclasses. Ship the vocabulary as its own zero-dep distribution (`packages/grain-contracts`, importable as `grain_contracts`); `grain.contracts.workflow` re-exports it so spec §5.1's address still holds. This is the first slice of the storage-agnostic `grain-core` that §9 names as the exit criterion for Diwa's temporary Missions runtime.
 - **Acceptance:** `importlib.metadata.requires("grain-contracts")` has no runtime entries; `grain.contracts.workflow.Run is grain_contracts.workflow.Run`; `import grain.cli` pulls neither module; grain's suite green; `grain status` exits 0.
 - **Demo:** SAFE pre-demo — new package; `grain/contracts/workflow.py` stays off the CLI startup graph.
