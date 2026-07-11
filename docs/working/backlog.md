@@ -478,7 +478,7 @@ Key deliverables: `grain workflow guard`, `grain hooks install/list/remove`, `gr
 - **Dependencies:** none
 
 ### P37-T14 — engine/kernel.py — RunStore port + pure advance() reducer
-- **Status:** draft
+- **Status:** review
 - **Description:** New leaf module `src/grain/engine/kernel.py` (NOT `contracts/` — see P37-T20): the `RunStore` Protocol, `Event`/`Effect`/`Transition`, and `advance(run, event, *, now, max_attempts) -> Transition`. `advance()` is pure and returns Effects the driver applies — this is how the reject transition survives: it emits a `DiscardArtifact` effect rather than unlinking. `RunStore` MUST expose `discard_artifact()` (the load-bearing delete at `services/recipe_service.py:739`), `save(run, *, expected_version)` with a `ConcurrentModification` error, and `list_runs()` ordered by a `created` timestamp — never lexical id sort.
 - **Acceptance:** Property tests: reject yields `DiscardArtifact` + `StepRecord.artifact=None`; `advance()` performs zero I/O (asserted with a spy RunStore that raises on any call); `step_failed` increments attempts exactly once and flips FAILED only at `attempts >= max_attempts`; a REVIEW gate halts at `AWAITING_GATE`. A test asserts `grain.engine.kernel` imports no `grain.services`, `grain.domain`, or `os.path`.
 - **Demo:** SAFE pre-demo — new module, off the startup graph.
