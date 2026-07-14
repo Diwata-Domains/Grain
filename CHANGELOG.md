@@ -1,7 +1,5 @@
 ## [Unreleased]
 
-## [0.7.0] — 2026-07-14
-
 Phase 38 — tooling-friction remediation, sourced from a sweep of every
 `docs/working/tooling_notes.md` on the machine and verified against 0.6.0.
 
