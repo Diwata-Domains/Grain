@@ -1,5 +1,12 @@
 ## [Unreleased]
 
+## [0.7.1] — 2026-07-14
+
+Supersedes 0.7.0, which was published depending on an unreleased internal package
+(`grain-contracts`) and could not be installed from PyPI. This release is cut from
+the last self-contained commit and installs cleanly. Same Phase 38 feature set.
+
+
 Phase 38 — tooling-friction remediation, sourced from a sweep of every
 `docs/working/tooling_notes.md` on the machine and verified against 0.6.0.
 

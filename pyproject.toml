@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "grain-kit"
-version = "0.6.0"
+version = "0.7.1"
 description = "CLI-first workflow toolkit for structured AI-assisted software development."
 readme = "README.md"
 license = "MIT"
