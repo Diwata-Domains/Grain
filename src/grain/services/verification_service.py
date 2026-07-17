@@ -9,6 +9,8 @@ from dataclasses import dataclass, asdict
 from datetime import datetime, timezone
 from pathlib import Path
 
+from grain_contracts.verification import IssueType, Outcome, Severity
+
 from grain.cli.output import CommandResult
 from grain.domain.packets import find_packet_dir, parse_task_metadata
 
@@ -27,6 +29,7 @@ class VerificationRequestRecord:
     status: str
     artifact_paths: list[str]
     submitted_at: str
+    source_ticket_id: str = ""
 
 
 @dataclass(frozen=True)
@@ -41,6 +44,7 @@ class VerificationResultRecord:
     followup_candidates: list[dict]
     verified_at: str
     review: dict | None = None
+    source_ticket_id: str = ""
 
 
 def get_verification_request_status(
@@ -75,6 +79,7 @@ def get_verification_request_status(
             status=str(payload.get("status", "")),
             artifact_paths=list(payload.get("artifact_paths", [])),
             submitted_at=str(payload.get("submitted_at", "")),
+            source_ticket_id=str(payload.get("source_ticket_id", "")),
         ),
     )
 
@@ -242,6 +247,9 @@ def ingest_verification_result(
             None,
         )
 
+    source_ticket_id = str(payload.get("source_ticket_id", "")) or str(
+        request_payload.get("source_ticket_id", "")
+    )
     record = VerificationResultRecord(
         verification_id=verification_id,
         task_id=task_id,
@@ -253,10 +261,11 @@ def ingest_verification_result(
         followup_candidates=list(payload.get("followup_candidates", [])),
         verified_at=str(payload.get("verified_at", _now_iso())),
         review=payload.get("review") if isinstance(payload.get("review"), dict) else None,
+        source_ticket_id=source_ticket_id,
     )
     result_path = packet_dir / VERIFICATION_RESULT_FILENAME
     result_path.write_text(json.dumps(asdict(record), indent=2) + "\n", encoding="utf-8")
-    _update_verification_request_status(request_path, record.outcome)
+    _update_verification_request_status(request_path, record.outcome, source_ticket_id)
     _apply_results_verification_outcome(packet_dir / "results.md", record)
 
     return (
@@ -323,21 +332,21 @@ def _validate_ingest_payload(payload: object, verification_id: str) -> list[str]
             f"payload verification_id '{payload.get('verification_id', '')}' does not match requested '{verification_id}'"
         )
 
-    if payload.get("issue_type") not in {
-        "test_failure",
-        "bug_finding",
-        "screenshot_evidence",
-        "trace_capture",
-        "human_annotation",
-        "code_review",
-    }:
-        errors.append("payload issue_type must be one of: test_failure, bug_finding, screenshot_evidence, trace_capture, human_annotation, code_review")
+    if payload.get("issue_type") not in {member.value for member in IssueType}:
+        errors.append(
+            "payload issue_type must be one of: "
+            + ", ".join(member.value for member in IssueType)
+        )
 
-    if payload.get("severity") not in {"info", "warning", "error", "critical"}:
-        errors.append("payload severity must be one of: info, warning, error, critical")
+    if payload.get("severity") not in {member.value for member in Severity}:
+        errors.append(
+            "payload severity must be one of: " + ", ".join(member.value for member in Severity)
+        )
 
-    if payload.get("outcome") not in {"pass", "fail", "inconclusive"}:
-        errors.append("payload outcome must be one of: pass, fail, inconclusive")
+    if payload.get("outcome") not in {member.value for member in Outcome}:
+        errors.append(
+            "payload outcome must be one of: " + ", ".join(member.value for member in Outcome)
+        )
 
     artifact_refs = payload.get("artifact_refs", [])
     if artifact_refs and (
@@ -352,9 +361,15 @@ def _validate_ingest_payload(payload: object, verification_id: str) -> list[str]
     return errors
 
 
-def _update_verification_request_status(request_path: Path, outcome: str) -> None:
+def _update_verification_request_status(
+    request_path: Path,
+    outcome: str,
+    source_ticket_id: str = "",
+) -> None:
     payload = json.loads(request_path.read_text(encoding="utf-8"))
     payload["status"] = "complete" if outcome in {"pass", "inconclusive"} else "failed"
+    if source_ticket_id:
+        payload["source_ticket_id"] = source_ticket_id
     request_path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
 
 
