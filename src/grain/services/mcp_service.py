@@ -274,6 +274,18 @@ def _call_tool(root: Path, name: str, arguments: dict) -> dict:
                     "files_created": result.files_created,
                 }
             )
+
+        if name == "capture":
+            from grain.services.capture_service import CaptureError, capture
+
+            title = arguments.get("title") or ""
+            note = arguments.get("note") or ""
+            kind = arguments.get("kind") or "feature"
+            try:
+                cap_id = capture(root, title, note=note, kind=kind)
+            except CaptureError as exc:
+                return _tool_error({"errors": [str(exc)]})
+            return _tool_success({"ok": True, "cap_id": cap_id})
     except ValueError as exc:
         return _tool_error({"errors": [str(exc)]})
 

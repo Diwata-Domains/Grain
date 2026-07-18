@@ -16,9 +16,6 @@ from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
 
-from grain.services import task_service
-from grain.services.intake_service import _next_task_num
-
 _INBOX_REL = Path("docs/working/inbox.md")
 _BACKLOG_REL = Path("docs/working/backlog.md")
 _CAP_RE = re.compile(r"CAP-(\d+)")
@@ -186,6 +183,11 @@ def promote(
     depends_on: str | None = None,
 ) -> PromoteResult:
     """Promote a capture: scaffold a packet + a backlog draft entry; mark it promoted."""
+    # Lazy import: task_service pulls grain.cli.output → the grain.cli package (which imports
+    # this module's CLI group), so a module-level import would be a circular import.
+    from grain.services import task_service
+    from grain.services.intake_service import _next_task_num
+
     cap = _get(root, cap_id)
     if cap.status == "promoted":
         raise CaptureError(f"{cap_id} is already promoted (→ {cap.task or '?'})")

@@ -102,3 +102,33 @@ def test_promote_twice_raises(packet_repo):
     cs.promote(packet_repo, cid, phase=3)
     with pytest.raises(cs.CaptureError):
         cs.promote(packet_repo, cid, phase=3)
+
+
+def test_mcp_capture_branch(packet_repo):
+    """The MCP `capture` tool (DAEMON's in-process seam) files an inbox item."""
+    from grain.services.mcp_service import handle_request
+
+    request = {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "tools/call",
+        "params": {"name": "capture", "arguments": {"title": "via mcp", "kind": "feature"}},
+    }
+    response = handle_request(packet_repo, request)
+    result = response["result"]
+    assert result["isError"] is False
+    assert result["structuredContent"]["cap_id"] == "CAP-0001"
+    assert cs.list_captures(packet_repo)[0].title == "via mcp"
+
+
+def test_mcp_capture_bad_kind_is_error(packet_repo):
+    from grain.services.mcp_service import handle_request
+
+    request = {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "tools/call",
+        "params": {"name": "capture", "arguments": {"title": "x", "kind": "banana"}},
+    }
+    result = handle_request(packet_repo, request)["result"]
+    assert result["isError"] is True
