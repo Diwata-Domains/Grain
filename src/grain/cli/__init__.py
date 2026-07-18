@@ -47,6 +47,7 @@ from .report import report_cmd
 from .metrics import metrics_group
 from .issue import issue_group
 from .intake import intake_group
+from .capture import capture_group
 from .workflow import workflow_group
 from .suggest import suggest_group
 from .recipe import recipe_group
@@ -358,6 +359,7 @@ main.add_command(report_cmd)
 main.add_command(metrics_group)
 main.add_command(issue_group)
 main.add_command(intake_group)
+main.add_command(capture_group)
 main.add_command(workflow_group)
 main.add_command(suggest_group)
 main.add_command(recipe_group)
