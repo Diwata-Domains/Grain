@@ -1,5 +1,22 @@
 ## [Unreleased]
 
+## [0.8.0] — 2026-07-17
+
+grain-kit now consumes Grain's vocabulary and engine as separate published packages
+rather than shipping the only copy. A service that wants the types or the reducer no
+longer installs a TUI framework and a tree-sitter language pack to get them.
+
+### Changed
+- `grain.contracts.workflow` is a re-export shim over the `grain-contracts`
+  distribution (the workflow vocabulary — protocol, run, gate, artifact, stop_reason).
+- `grain.engine.kernel` is a re-export shim over the `grain-core` distribution (the
+  pure `advance()` reducer and the `RunStore` port). Same object identities, so
+  `except grain.engine.kernel.ConcurrentModification` still catches what the engine
+  raises.
+- grain-kit now depends on `grain-contracts>=0.1` and `grain-core>=0.1`.
+
+## [0.7.1] — 2026-07-14
+
 Phase 38 — tooling-friction remediation, sourced from a sweep of every
 `docs/working/tooling_notes.md` on the machine and verified against 0.6.0.
 

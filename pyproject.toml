@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "grain-kit"
-version = "0.6.0"
+version = "0.8.0"
 description = "CLI-first workflow toolkit for structured AI-assisted software development."
 readme = "README.md"
 license = "MIT"
@@ -29,6 +29,7 @@ classifiers = [
 ]
 dependencies = [
     "grain-contracts>=0.2",
+    "grain-core>=0.1",
     "click>=8.1",
     "PyYAML>=6.0",
     "networkx>=3.3",
