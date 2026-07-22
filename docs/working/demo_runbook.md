@@ -4,23 +4,32 @@
 **Audience:** Python coders, mixed experience
 **Every command below was executed and its output verified.**
 
+**Two variants:** this runbook drives the pre-baked `examples/demo` repo (safest, fully scripted).
+For an **onboarding-first** demo — adopt a real company monorepo live with `grain onboard`, then let
+the agent read it — use **`demo_script_acme.md`** (repo: `/Users/domicile/acme-platform`).
+
 ---
 
 ## Before you go on stage
 
-1. **grain-kit 0.6.0 is published.** It carries the MIT relicense and every
-   demo-readiness fix. Install it, but pass `--refresh` — `uv tool install`
-   will otherwise reuse a cached index and silently give you 0.5.0:
+1. **grain-kit 0.8.0 is published (latest on PyPI, verified on 0.8.0 2026-07-20).**
+   Install it, but pass `--refresh` — `uv tool install` will otherwise reuse a cached
+   index and silently give you an older build:
    ```bash
    uv tool install --force --refresh grain-kit
-   grain --version        # must print: grain, version 0.6.0 (installed)
+   grain --version        # must print: grain, version 0.8.0 (installed)
    ```
-   Verify that line before you go on stage. 0.5.0 still crashes on `orchestrate`.
+   Verify that line before you go on stage. All beats below were re-run on 0.8.0; the only
+   change since 0.6.0 is that `grain status` and the office/json outputs carry a few more
+   fields — richer, not different. The exit codes (close → 3, guard → 1) are unchanged.
 
 2. Use the pre-baked repo at `products/grain/examples/demo/`. It is a mixed
    monorepo: `services/api/` (Python, 3 passing tests) plus `company/handbook.docx`
    and `company/q3-budget.xlsx`. Do **not** run `grain init` live — the first-run
    output includes two yellow warnings about the project name and AGENTS.md.
+   (`grain onboard` on an *existing* repo is different — a deterministic scaffold, clean to run
+   live; that's the `demo_script_acme.md` variant. It does leave `bootstrap_incomplete` until the
+   agent runs the onboard prompt, which is the point of that demo, not a wart.)
 
    **Rehearsing mutates it** — `grain task create` and `grain office propose` write
    packets and artifacts. Treat the committed copy as a template and work on a
